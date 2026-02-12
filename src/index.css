@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-off-white: #F8F9FA;
+  --color-pulpito-roxo: #6D28D9;
+  --color-pulpito-laranja: #F97316;
+  --color-pulpito-texto: #1A1A1B;
+  
+  --font-poppins: "Poppins", sans-serif;
+  --font-inter: "Inter", sans-serif;
+}
+
+body {
+  background-color: var(--color-off-white);
+  color: var(--color-pulpito-texto);
+  font-family: var(--font-inter);
+}
