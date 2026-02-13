@@ -15,25 +15,27 @@ const Login = () => {
 
     try {
       if (isSignUp) {
+        // Cadastro: Envia o Nome para os metadados do Supabase
         const { error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             data: { full_name: nome }
           }
         });
         if (error) throw error;
-        alert("Conta criada com sucesso! Você já pode entrar.");
+        alert("Conta criada com sucesso! Agora você já pode entrar.");
         setIsSignUp(false);
       } else {
+        // Login: Entra direto com E-mail e Senha
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
         if (error) throw error;
       }
     } catch (error) {
-      alert(error.message);
+      alert("Erro: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -42,38 +44,38 @@ const Login = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFDFF] p-6">
       
-      {/* SEÇÃO DA LOGO OFICIAL */}
+      {/* LOGO OFICIAL DO APP */}
       <div className="mb-10 text-center">
-        <div className="w-28 h-28 mx-auto mb-4 drop-shadow-md">
+        <div className="w-32 h-32 mx-auto mb-4 drop-shadow-xl overflow-hidden rounded-[32px]">
           <img 
             src="/logo.png" 
             alt="Logo Verbo" 
-            className="w-full h-full object-contain"
-            // Se a imagem não carregar, ele mostra um ícone reserva
-            onError={(e) => e.target.src = 'https://via.placeholder.com/150?text=VERBO'} 
+            className="w-full h-full object-cover"
+            // Caso a imagem falhe, mostra um placeholder elegante
+            onError={(e) => { e.target.src = 'https://via.placeholder.com/150/5B2DFF/FFFFFF?text=VERBO'; }}
           />
         </div>
         <h1 className="text-3xl font-black text-[#0F172A] tracking-tighter uppercase italic">
           Verbo
         </h1>
-        <p className="text-gray-400 text-sm font-medium">A plataforma do pregador moderno</p>
+        <p className="text-gray-400 text-sm font-medium">A voz do pregador moderno</p>
       </div>
 
-      {/* CARD DE LOGIN */}
-      <div className="w-full max-w-sm bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+      {/* FORMULÁRIO */}
+      <div className="w-full max-w-sm bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
         <h2 className="text-xl font-bold text-slate-800 mb-6 text-center">
-          {isSignUp ? 'Criar sua conta' : 'Bem-vindo de volta'}
+          {isSignUp ? 'Criar sua conta' : 'Acesse seu painel'}
         </h2>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          {/* Nome (Apenas no Cadastro) */}
+          {/* Nome Completo (Apenas se for cadastro) */}
           {isSignUp && (
-            <div className="relative animate-in fade-in slide-in-from-top-2">
+            <div className="relative">
               <User className="absolute left-4 top-3.5 text-gray-300" size={20} />
               <input
                 type="text"
                 placeholder="Seu nome completo"
-                className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-[#5B2DFF] outline-none transition-all"
+                className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-[#5B2DFF] outline-none transition-all font-medium"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 required={isSignUp}
@@ -86,8 +88,8 @@ const Login = () => {
             <Mail className="absolute left-4 top-3.5 text-gray-300" size={20} />
             <input
               type="email"
-              placeholder="Seu e-mail"
-              className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-[#5B2DFF] outline-none transition-all"
+              placeholder="E-mail"
+              className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-[#5B2DFF] outline-none transition-all font-medium"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -100,7 +102,7 @@ const Login = () => {
             <input
               type="password"
               placeholder="Sua senha"
-              className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-[#5B2DFF] outline-none transition-all"
+              className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-[#5B2DFF] outline-none transition-all font-medium"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -110,14 +112,14 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#5B2DFF] text-white font-bold py-4 rounded-2xl shadow-lg shadow-purple-100 hover:bg-[#3A1DB8] transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+            className="w-full bg-[#5B2DFF] text-white font-bold py-4 rounded-2xl shadow-lg shadow-purple-100 hover:bg-[#4822D9] transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
           >
             {loading ? (
               <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
             ) : isSignUp ? (
               <><UserPlus size={20} /> Criar Conta</>
             ) : (
-              <><LogIn size={20} /> Entrar</>
+              <><LogIn size={20} /> Entrar no App</>
             )}
           </button>
         </form>
@@ -126,12 +128,12 @@ const Login = () => {
           onClick={() => setIsSignUp(!isSignUp)}
           className="w-full mt-6 text-sm font-bold text-[#5B2DFF] hover:underline"
         >
-          {isSignUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Começar agora'}
+          {isSignUp ? 'Já tem uma conta? Entrar' : 'Novo por aqui? Criar conta agora'}
         </button>
       </div>
       
-      <p className="mt-12 text-[10px] text-gray-300 font-bold uppercase tracking-[4px]">
-        Verbo • School Tech
+      <p className="mt-12 text-[10px] text-gray-300 font-black uppercase tracking-[4px]">
+        School Tech • Verbo
       </p>
     </div>
   );
