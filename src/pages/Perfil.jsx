@@ -241,7 +241,7 @@ const Perfil = () => {
           </div>
           <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-center mb-6">
             <h4 className="text-2xl font-black text-slate-800 tracking-tighter mb-2">Verbo</h4>
-            <p className="text-gray-400 text-sm leading-relaxed">Unindo teologia e tecnologia para potencializar a voz do pregador moderno [cite: 2025-06-02].</p>
+            <p className="text-gray-400 text-sm leading-relaxed">Unindo teologia e tecnologia para potencializar a voz do pregador moderno.</p>
           </div>
           <div className="space-y-4">
             <div className="flex items-start gap-4 p-2">
@@ -250,7 +250,7 @@ const Perfil = () => {
             </div>
             <div className="flex items-start gap-4 p-2">
               <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl"><Globe size={20}/></div>
-              <div><h5 className="font-bold text-slate-700 text-sm">App Verbo</h5><p className="text-xs text-gray-400">O app que todo pregador precisa [cite: 2025-06-02].</p></div>
+              <div><h5 className="font-bold text-slate-700 text-sm">App Verbo</h5><p className="text-xs text-gray-400">O app que todo pregador precisa.</p></div>
             </div>
           </div>
         </div>
