@@ -1,121 +1,138 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Play, Clock, Search, Edit2, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Sparkles, Plus, BookOpen, ScrollText, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const [nome, setNome] = useState('');
+  const [saudacao, setSaudacao] = useState('Olá');
   const [sermoes, setSermoes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSermoes();
+    carregarDadosIniciais();
   }, []);
 
-  async function fetchSermoes() {
+  async function carregarDadosIniciais() {
     try {
-      const { data, error } = await supabase
+      // 1. Pegar dados do usuário logado
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const nomeCompleto = user.user_metadata?.full_name || 'Pregador';
+        const primeiroNome = nomeCompleto.split(' ')[0];
+        
+        // Lógica de Saudação por Horário
+        const hora = new Date().getHours();
+        let textoSaudacao = "Bom dia";
+        if (hora >= 12 && hora < 18) textoSaudacao = "Boa tarde";
+        if (hora >= 18 || hora < 5) textoSaudacao = "Boa noite";
+
+        // Personalização para o seu perfil (Pastor)
+        // Substitua 'seu-email@teste.com' pelo seu e-mail real do cadastro
+        const ehPastor = user.email === 'seu-email-aqui@gmail.com'; 
+        const saudacaoFinal = ehPastor 
+          ? `${textoSaudacao}, Pastor ${primeiroNome}` 
+          : `${textoSaudacao}, ${primeiroNome}`;
+        
+        setSaudacao(saudacaoFinal);
+        setNome(primeiroNome);
+      }
+
+      // 2. Carregar a lista de sermões recente
+      const { data } = await supabase
         .from('sermoes')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      if (error) throw error;
-      setSermoes(data || []);
+      if (data) setSermoes(data);
     } catch (error) {
-      console.error('Erro ao buscar sermões:', error.message);
+      console.error('Erro ao carregar dashboard:', error);
     } finally {
       setLoading(false);
     }
   }
 
-  async function deleteSermao(id) {
-    if (window.confirm('Tem certeza que deseja excluir este sermão permanentemente?')) {
-      try {
-        const { error } = await supabase.from('sermoes').delete().eq('id', id);
-        if (error) throw error;
-        setSermoes(sermoes.filter(s => s.id !== id));
-      } catch (error) {
-        alert('Erro ao excluir: ' + error.message);
-      }
-    }
-  }
-
   return (
-    <div className="p-6 pb-24 max-w-4xl mx-auto">
-      {/* Cabeçalho Ajustado */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            {/* Logo oficial vindo da pasta public */}
-            <img src="/logo.png" alt="Logo VERBO" className="w-10 h-10 rounded-lg shadow-sm" />
-            <h1 className="text-2xl font-extrabold bg-gradient-to-r from-[#5B2DFF] to-[#3A1DB8] bg-clip-text text-transparent tracking-tight">
-              VERBO
-            </h1>
-          </div>
-          <p className="text-gray-500 text-sm font-medium ml-1">O Verbo nasce da Palavra.</p>
+    <div className="min-h-screen bg-[#FDFDFF] p-6 pb-32">
+      {/* HEADER PERSONALIZADO */}
+      <header className="mt-8 mb-10">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] font-black uppercase tracking-[3px] text-[#5B2DFF] opacity-60">
+            Painel do Pregador
+          </span>
         </div>
+        <h1 className="text-3xl font-black text-slate-800 tracking-tighter leading-tight">
+          {saudacao} <Sparkles className="inline text-yellow-400 mb-1" size={24} />
+        </h1>
+        <p className="text-gray-400 font-medium text-sm">
+          {sermoes.length > 0 
+            ? `Você tem ${sermoes.length} sermões preparados.` 
+            : "Pronto para escrever sua próxima mensagem?"}
+        </p>
+      </header>
+
+      {/* AÇÕES RÁPIDAS */}
+      <div className="grid grid-cols-2 gap-4 mb-10">
+        <button 
+          onClick={() => navigate('/editor')}
+          className="bg-[#5B2DFF] p-6 rounded-[32px] text-white shadow-lg shadow-purple-100 flex flex-col items-center justify-center gap-3 active:scale-95 transition-all"
+        >
+          <Plus size={28} />
+          <span className="font-bold text-xs uppercase tracking-widest">Novo Sermão</span>
+        </button>
+        
+        <button 
+          onClick={() => navigate('/devocional')}
+          className="bg-white p-6 rounded-[32px] text-slate-700 border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-3 active:scale-95 transition-all"
+        >
+          <BookOpen size={28} className="text-[#5B2DFF]" />
+          <span className="font-bold text-xs uppercase tracking-widest">Devocionais</span>
+        </button>
       </div>
 
-      {/* Barra de Pesquisa */}
-      <div className="relative mb-8">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-        <input 
-          type="text" 
-          placeholder="Buscar sermão ou tema..." 
-          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B2DFF] outline-none shadow-sm"
-        />
-      </div>
-
-      <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <Clock size={18} className="text-[#5B2DFF]" />
-        Sermões Recentes
-      </h2>
-
-      {loading ? (
-        <div className="flex justify-center py-10">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5B2DFF]"></div>
+      {/* LISTA DE SERMÕES RECENTES */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Sermões Recentes</h3>
+          <ScrollText size={18} className="text-gray-300" />
         </div>
-      ) : (
-        <div className="grid gap-4">
-          {sermoes.map((sermao) => (
-            <div key={sermao.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 group-hover:text-[#5B2DFF] transition-colors">
-                    {sermao.titulo || 'Sem Título'}
-                  </h3>
-                  <p className="text-gray-500 text-xs mb-3">
-                    {sermao.referencia_biblica || 'Referência não informada'} • <span className="text-[#5B2DFF] font-semibold">{sermao.tema || 'Geral'}</span>
-                  </p>
-                  
-                  {/* Botões de Ação */}
-                  <div className="flex gap-3 mt-2">
-                    <Link 
-                      to={`/leitura/${sermao.id}`}
-                      className="flex items-center gap-2 bg-[#5B2DFF] text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#3A1DB8] transition-colors"
-                    >
-                      <Play size={14} /> PREGAR
-                    </Link>
-                    
-                    <Link 
-                      to={`/editor/${sermao.id}`}
-                      className="flex items-center gap-2 bg-gray-100 text-gray-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-gray-200 transition-colors"
-                    >
-                      <Edit2 size={14} /> EDITAR
-                    </Link>
 
-                    <button 
-                      onClick={() => deleteSermao(sermao.id)}
-                      className="flex items-center gap-2 bg-red-50 text-red-500 px-3 py-2 rounded-lg font-bold text-xs hover:bg-red-100 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+        <div className="space-y-4">
+          {loading ? (
+            <div className="animate-pulse space-y-4">
+              {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 rounded-3xl" />)}
+            </div>
+          ) : sermoes.length > 0 ? (
+            sermoes.map((sermao) => (
+              <div 
+                key={sermao.id}
+                onClick={() => navigate(`/leitura/${sermao.id}`)}
+                className="bg-white p-5 rounded-[28px] border border-gray-50 shadow-sm flex items-center justify-between group active:bg-gray-50"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-[#5B2DFF] group-hover:text-white transition-colors">
+                    <ScrollText size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-700 text-sm line-clamp-1">{sermao.titulo}</h4>
+                    <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase mt-1">
+                      <Clock size={12} />
+                      {new Date(sermao.created_at).toLocaleDateString('pt-BR')}
+                    </div>
                   </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-10 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200">
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Nenhum sermão encontrado</p>
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </section>
     </div>
   );
 };
