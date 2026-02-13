@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, Quote } from 'lucide-react';
 
-const Devocional = () => {
+const Devocionais = () => {
   return (
     <div className="p-6 pb-32 max-w-4xl mx-auto bg-[#FDFDFF] min-h-screen">
       <header className="mb-8">
@@ -35,4 +35,4 @@ const Devocional = () => {
   );
 };
 
-export default Devocional;
+export default Devocionais;

@@ -8,7 +8,7 @@ import Login from './pages/Login';
 import Editor from './pages/Editor';
 import Leitura from './pages/Leitura';
 import Perfil from './pages/Perfil';
-import Devocional from './pages/Devocional'; // <--- ESTE IMPORT É OBRIGATÓRIO
+import Devocionais from './pages/Devocionais';
 
 // Componente Navbar
 const Navbar = () => {
