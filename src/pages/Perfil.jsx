@@ -1,94 +1,114 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { User, Mail, Shield, LogOut, ChevronRight, Award } from 'lucide-react';
+import { Mail, Lock, LogIn, UserPlus, Sparkles } from 'lucide-react';
 
-const Perfil = () => {
-  const [usuario, setUsuario] = useState({ nome: "Usuário", email: "" });
+const Login = () => {
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false); // Alterna entre Login e Cadastro
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  useEffect(() => {
-    // Busca os dados reais do usuário logado
-    const getUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUsuario({
-          nome: user.email.split('@')[0], // Pega o nome antes do @ como apelido
-          email: user.email,
-          plano: "Premium"
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        // Lógica de Cadastro (Criar conta com senha)
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
         });
+        if (error) throw error;
+        alert("Conta criada com sucesso! Você já pode entrar.");
+        setIsSignUp(false); // Volta para a tela de login
+      } else {
+        // Lógica de Login (Entrar com senha)
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
       }
-    };
-    getUserData();
-  }, []);
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) alert("Erro ao sair: " + error.message);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="p-6 pb-24 max-w-4xl mx-auto">
-      {/* Cabeçalho do Perfil */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="relative mb-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-[#5B2DFF] to-[#3A1DB8] rounded-full flex items-center justify-center text-white shadow-lg">
-            <User size={40} />
-          </div>
-          <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 rounded-full border-4 border-white"></div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFDFF] p-6">
+      {/* Logo e Título */}
+      <div className="mb-10 text-center">
+        <div className="bg-[#5B2DFF] w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200 mx-auto mb-4 rotate-3">
+          <Sparkles className="text-white" size={32} />
         </div>
-        <h2 className="text-xl font-extrabold text-gray-900 capitalize">{usuario.nome}</h2>
-        <p className="text-gray-500 text-xs">{usuario.email}</p>
+        <h1 className="text-3xl font-black text-[#0F172A] tracking-tighter uppercase">Verbo</h1>
+        <p className="text-gray-400 text-sm font-medium">A plataforma do pregador moderno</p>
       </div>
 
-      <div className="grid gap-4">
-        {/* Card de Plano */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-50 text-[#5B2DFF] rounded-lg">
-              <Award size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Status da Conta</p>
-              <p className="text-sm font-bold text-gray-800">Plano {usuario.plano}</p>
-            </div>
+      <div className="w-full max-w-sm bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+        <h2 className="text-xl font-bold text-slate-800 mb-6 text-center">
+          {isSignUp ? 'Criar sua conta' : 'Bem-vindo de volta'}
+        </h2>
+
+        <form onSubmit={handleAuth} className="space-y-4">
+          {/* Campo E-mail */}
+          <div className="relative">
+            <Mail className="absolute left-4 top-3.5 text-gray-300" size={20} />
+            <input
+              type="email"
+              placeholder="Seu e-mail"
+              className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-[#5B2DFF] outline-none transition-all"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-          <ChevronRight size={18} className="text-gray-300" />
-        </div>
 
-        {/* Configurações */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <button className="w-full p-4 flex items-center justify-between border-b border-gray-50">
-            <div className="flex items-center gap-3 text-gray-700">
-              <Shield size={18} />
-              <span className="text-sm font-medium">Segurança</span>
-            </div>
-            <ChevronRight size={16} className="text-gray-300" />
-          </button>
-          
-          <button className="w-full p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3 text-gray-700">
-              <Mail size={18} />
-              <span className="text-sm font-medium">Suporte</span>
-            </div>
-            <ChevronRight size={16} className="text-gray-300" />
-          </button>
-        </div>
+          {/* Campo Senha */}
+          <div className="relative">
+            <Lock className="absolute left-4 top-3.5 text-gray-300" size={20} />
+            <input
+              type="password"
+              placeholder="Sua senha"
+              className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-[#5B2DFF] outline-none transition-all"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-        {/* Botão Sair com Função Real */}
-        <button 
-          onClick={handleLogout}
-          className="mt-4 w-full p-4 flex items-center justify-center gap-2 text-red-500 font-bold text-sm bg-red-50 rounded-2xl hover:bg-red-100 transition-colors"
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#5B2DFF] text-white font-bold py-4 rounded-2xl shadow-lg shadow-purple-100 hover:bg-[#3A1DB8] transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+            ) : isSignUp ? (
+              <><UserPlus size={20} /> Criar Conta</>
+            ) : (
+              <><LogIn size={20} /> Entrar</>
+            )}
+          </button>
+        </form>
+
+        {/* Alternar entre Login e Cadastro */}
+        <button
+          onClick={() => setIsSignUp(!isSignUp)}
+          className="w-full mt-6 text-sm font-bold text-[#5B2DFF] hover:underline"
         >
-          <LogOut size={18} />
-          Sair do Verbo
+          {isSignUp ? 'Já tenho uma conta? Entrar' : 'Não tem conta? Criar uma agora'}
         </button>
       </div>
 
-      <div className="mt-8 text-center opacity-30">
-        <p className="text-[10px] font-bold">VERBO v1.1.0</p>
-        <p className="text-[10px] italic">O Verbo nasce da Palavra.</p>
-      </div>
+      <p className="mt-10 text-[10px] text-gray-300 font-bold uppercase tracking-widest text-center max-w-[200px]">
+        Desenvolvido para transformar sua pregação
+      </p>
     </div>
   );
 };
 
-export default Perfil;
+export default Login;
