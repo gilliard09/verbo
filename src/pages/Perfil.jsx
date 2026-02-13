@@ -1,12 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
 import { User, Mail, Shield, LogOut, ChevronRight, Award } from 'lucide-react';
 
 const Perfil = () => {
-  // Dados simulados do usuário (Pastores/Empreendedores)
-  const usuario = {
-    nome: "Jeferson",
-    email: "contato@verbo.com.br",
-    plano: "Premium"
+  const [usuario, setUsuario] = useState({ nome: "Usuário", email: "" });
+
+  useEffect(() => {
+    // Busca os dados reais do usuário logado
+    const getUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUsuario({
+          nome: user.email.split('@')[0], // Pega o nome antes do @ como apelido
+          email: user.email,
+          plano: "Premium"
+        });
+      }
+    };
+    getUserData();
+  }, []);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) alert("Erro ao sair: " + error.message);
   };
 
   return (
@@ -19,55 +35,57 @@ const Perfil = () => {
           </div>
           <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 rounded-full border-4 border-white"></div>
         </div>
-        <h2 className="text-xl font-extrabold text-gray-900">{usuario.nome}</h2>
+        <h2 className="text-xl font-extrabold text-gray-900 capitalize">{usuario.nome}</h2>
         <p className="text-gray-500 text-xs">{usuario.email}</p>
       </div>
 
-      {/* Grid de Informações */}
       <div className="grid gap-4">
         {/* Card de Plano */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#5B2DFF] transition-all">
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-50 text-[#5B2DFF] rounded-lg">
               <Award size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Status da Conta</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Status da Conta</p>
               <p className="text-sm font-bold text-gray-800">Plano {usuario.plano}</p>
             </div>
           </div>
-          <ChevronRight size={18} className="text-gray-300 group-hover:text-[#5B2DFF]" />
+          <ChevronRight size={18} className="text-gray-300" />
         </div>
 
         {/* Configurações */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <button className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-50">
+          <button className="w-full p-4 flex items-center justify-between border-b border-gray-50">
             <div className="flex items-center gap-3 text-gray-700">
               <Shield size={18} />
-              <span className="text-sm font-medium">Segurança e Senha</span>
+              <span className="text-sm font-medium">Segurança</span>
             </div>
             <ChevronRight size={16} className="text-gray-300" />
           </button>
           
-          <button className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+          <button className="w-full p-4 flex items-center justify-between">
             <div className="flex items-center gap-3 text-gray-700">
               <Mail size={18} />
-              <span className="text-sm font-medium">Suporte Técnica</span>
+              <span className="text-sm font-medium">Suporte</span>
             </div>
             <ChevronRight size={16} className="text-gray-300" />
           </button>
         </div>
 
-        {/* Botão Sair */}
-        <button className="mt-4 w-full p-4 flex items-center justify-center gap-2 text-red-500 font-bold text-sm bg-red-50 rounded-2xl hover:bg-red-100 transition-colors">
+        {/* Botão Sair com Função Real */}
+        <button 
+          onClick={handleLogout}
+          className="mt-4 w-full p-4 flex items-center justify-center gap-2 text-red-500 font-bold text-sm bg-red-50 rounded-2xl hover:bg-red-100 transition-colors"
+        >
           <LogOut size={18} />
           Sair do Verbo
         </button>
       </div>
 
-      <div className="mt-8 text-center">
-        <p className="text-[10px] text-gray-400 font-medium">VERBO v1.0.0</p>
-        <p className="text-[10px] text-gray-300 italic">O Verbo nasce da Palavra.</p>
+      <div className="mt-8 text-center opacity-30">
+        <p className="text-[10px] font-bold">VERBO v1.1.0</p>
+        <p className="text-[10px] italic">O Verbo nasce da Palavra.</p>
       </div>
     </div>
   );
