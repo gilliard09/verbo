@@ -1,133 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
-import { Trash2, Calendar, Loader2, Quote, Sparkles, BookOpen, AlertCircle } from 'lucide-react';
+import React from 'react';
+import { Sparkles, Quote } from 'lucide-react';
 
-const Devocionais = () => {
-  const [devocionalDoDia, setDevocionalDoDia] = useState(null);
-  const [historico, setHistorico] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    verificarDevocional();
-  }, []);
-
-  async function verificarDevocional() {
-    try {
-      setLoading(true);
-      const hoje = new Date().toLocaleDateString('en-CA'); // Formato YYYY-MM-DD exato
-
-      // Busca o devocional de hoje usando a nova coluna
-      const { data, error } = await supabase
-        .from('devocionais')
-        .select('*')
-        .eq('data_criacao_dia', hoje)
-        .maybeSingle();
-
-      if (data) {
-        setDevocionalDoDia(data);
-      } else {
-        // Se não existir, gera um automaticamente
-        await gerarNovoDevocional(hoje);
-      }
-      
-      await fetchHistorico(hoje);
-    } catch (err) {
-      console.error("Erro geral:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function gerarNovoDevocional(dataHoje) {
-    const textoIA = `📖 *Provérbios 3:5-6*\n\n"Confie no Senhor de todo o seu coração". Como ensinava Charles Spurgeon, a soberania de Deus é o travesseiro onde o cristão descansa a cabeça. John Piper nos lembra que a alegria no Senhor é nossa força. Que sua caminhada hoje seja guiada não pela sua prudência, mas pela dependência total do Espírito.`;
-
-    try {
-      const { data, error } = await supabase
-        .from('devocionais')
-        .insert([{ 
-          texto: textoIA, 
-          data_criacao_dia: dataHoje,
-          is_ia: true 
-        }])
-        .select()
-        .single();
-
-      if (data) setDevocionalDoDia(data);
-    } catch (e) {
-      console.error("Erro ao inserir:", e);
-    }
-  }
-
-  async function fetchHistorico(hoje) {
-    // Busca tudo que não é de hoje para o histórico
-    const { data } = await supabase
-      .from('devocionais')
-      .select('*')
-      .neq('data_criacao_dia', hoje)
-      .order('id', { ascending: false }); // Usando ID para ordenar se a data falhar
-    
-    setHistorico(data || []);
-  }
-
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <Loader2 className="animate-spin text-purple-600 mb-4" size={40} />
-      <p className="text-gray-500 font-medium">Sincronizando com o céu...</p>
-    </div>
-  );
-
+const Devocional = () => {
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
-      <header className="bg-white p-6 pt-12 shadow-sm border-b border-purple-50">
-        <h1 className="text-3xl font-extrabold text-gray-900 font-poppins">Devocionais</h1>
-        <div className="flex items-center gap-2 text-purple-600 mt-1">
-          <Sparkles size={16} />
-          <span className="text-[10px] font-bold uppercase tracking-widest italic">Insights Teológicos Diários</span>
+    <div className="p-6 pb-24 max-w-4xl mx-auto bg-[#FDFDFF] min-h-screen">
+      <header className="mb-8">
+        <h1 className="text-4xl font-black text-[#0F172A] mb-1">Devocionais</h1>
+        <div className="flex items-center gap-2">
+          <Sparkles size={16} className="text-[#5B2DFF]" />
+          <span className="text-[10px] font-extrabold text-[#5B2DFF] uppercase tracking-widest">
+            Insights Teológicos Diários
+          </span>
         </div>
       </header>
 
-      <main className="p-4 space-y-6">
-        {/* Card do Dia */}
-        {devocionalDoDia ? (
-          <div className="bg-white rounded-3xl shadow-xl border-t-4 border-purple-600 p-6 relative">
-            <Quote className="absolute top-4 right-4 text-purple-50 size-16" />
-            <div className="relative z-10">
-              <div className="bg-purple-100 text-purple-700 w-fit px-3 py-1 rounded-full text-[10px] font-black uppercase mb-4">
-                Hoje • {new Date().toLocaleDateString('pt-BR')}
-              </div>
-              <p className="text-gray-800 text-lg leading-relaxed italic whitespace-pre-wrap font-serif">
-                {devocionalDoDia.texto}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white p-6 rounded-2xl text-center text-gray-400">
-             Toque para carregar a reflexão de hoje.
-          </div>
-        )}
+      <div className="relative bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 overflow-hidden">
+        {/* Detalhe Roxo no Topo */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#5B2DFF] to-[#D946EF]"></div>
+        
+        <div className="flex justify-between items-start mb-6">
+          <span className="bg-purple-50 text-[#5B2DFF] text-[10px] font-bold px-3 py-1 rounded-full uppercase">
+            Hoje • 12/02/2026
+          </span>
+          <Quote size={40} className="text-purple-50" />
+        </div>
 
-        {/* Histórico */}
-        {historico.length > 0 && (
-          <div className="pt-4">
-            <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2">Caminhada Anterior</h3>
-            <div className="space-y-3">
-              {historico.map(item => (
-                <div key={item.id} className="bg-white/60 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
-                  <div className="bg-gray-100 p-2 rounded-lg text-gray-400">
-                    <BookOpen size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-gray-600 text-sm truncate">{item.texto}</p>
-                    <p className="text-[10px] text-gray-400">Reflexão Anterior</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
+        <div className="prose prose-slate">
+          <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+            📖 *Provérbios 3:5-6*
+          </h3>
+          <p className="text-lg text-slate-600 leading-relaxed italic font-serif">
+            "Confie no Senhor de todo o seu coração". Como ensinava Charles Spurgeon, a soberania de Deus é o travesseiro onde o cristão descansa a cabeça. John Piper nos lembra que a alegria no Senhor é nossa força. Que sua caminhada hoje seja guiada não pela sua prudência, mas pela dependência total do Espírito.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default Devocionais;
+export default Devocional;
