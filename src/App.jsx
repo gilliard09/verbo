@@ -2,32 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
-// Importação das suas páginas
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Editor from './pages/Editor';
 import Leitura from './pages/Leitura';
 import Perfil from './pages/Perfil';
-
-// Importação dos ícones para o menu
 import { Home, PenTool, User, BookOpen } from 'lucide-react';
 
-// Componente do Menu Inferior
 const Navbar = () => {
   const location = useLocation();
-  
-  // O menu não aparece no modo de leitura para focar na pregação
   if (location.pathname.startsWith('/leitura')) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center shadow-[0_-4px_20px_rgba(0,0,0,0.03)] pb-8">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center shadow-[0_-4px_20px_rgba(0,0,0,0.03)] pb-8 z-50">
       <Link to="/" className={`flex flex-col items-center ${location.pathname === '/' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <Home size={22} />
         <span className="text-[10px] font-bold mt-1">Início</span>
       </Link>
-      <Link to="/editor" className={`flex flex-col items-center ${location.pathname === '/editor' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
-        <PenTool size={22} />
-        <span className="text-[10px] font-bold mt-1">Escrever</span>
+      <Link to="/devocional" className={`flex flex-col items-center ${location.pathname === '/devocional' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+        <BookOpen size={22} />
+        <span className="text-[10px] font-bold mt-1">Devocional</span>
+      </Link>
+      <Link to="/editor" className="flex flex-col items-center -mt-8">
+        <div className="bg-[#5B2DFF] p-3 rounded-full shadow-lg shadow-purple-200 text-white">
+          <PenTool size={24} />
+        </div>
       </Link>
       <Link to="/perfil" className={`flex flex-col items-center ${location.pathname === '/perfil' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <User size={22} />
@@ -42,29 +41,23 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Busca sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
-
-    // Escuta mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) return null; // Ou um loading spinner roxo
+  if (loading) return null;
 
   return (
     <Router>
       <div className="min-h-screen bg-[#FDFDFF]">
         {!session ? (
-          <Routes>
-            <Route path="*" element={<Login />} />
-          </Routes>
+          <Routes><Route path="*" element={<Login />} /></Routes>
         ) : (
           <>
             <Routes>
