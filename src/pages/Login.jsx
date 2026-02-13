@@ -48,12 +48,15 @@ const Login = () => {
       <div className="mb-10 text-center">
         <div className="w-32 h-32 mx-auto mb-4 drop-shadow-xl overflow-hidden rounded-[32px]">
           <img 
-            src="public/logo.png" 
-            alt="Logo Verbo" 
-            className="w-full h-full object-cover"
-            // Caso a imagem falhe, mostra um placeholder elegante
-            onError={(e) => { e.target.src = 'https://via.placeholder.com/150/5B2DFF/FFFFFF?text=VERBO'; }}
-          />
+  src="/logo.png?v=1" 
+  alt="Logo Verbo" 
+  className="w-full h-full object-contain"
+  style={{ display: 'block' }}
+  onError={(e) => {
+    console.error("Erro ao carregar a logo. Verifique se o arquivo está na pasta /public");
+    e.target.src = 'https://ui-avatars.com/api/?name=Verbo&background=5B2DFF&color=fff&size=128'; 
+  }}
+/>
         </div>
         <h1 className="text-3xl font-black text-[#0F172A] tracking-tighter uppercase italic">
           Verbo
@@ -133,7 +136,7 @@ const Login = () => {
       </div>
       
       <p className="mt-12 text-[10px] text-gray-300 font-black uppercase tracking-[4px]">
-        School Tech • Verbo
+        Por @ojefersonrocha • Verbo
       </p>
     </div>
   );
