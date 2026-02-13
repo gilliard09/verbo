@@ -24,7 +24,7 @@ const Dashboard = () => {
         if (hora >= 18 || hora < 5) periodo = "Boa noite";
 
         // Substitua pelo seu e-mail para ativar o prefixo Pastor
-        const ehPastor = user.email === 'jeferson@exemplo.com'; 
+        const ehPastor = user.email === 'jefersonrocha998@gmail.com'; 
         setSaudacao(`${periodo}, ${ehPastor ? 'Pastor ' : ''}${nomeCompleto.split(' ')[0]}`);
       }
 
