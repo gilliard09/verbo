@@ -29,7 +29,7 @@ const Navbar = () => {
       
       <Link to="/devocional" className={`flex flex-col items-center ${location.pathname === '/devocional' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <BookOpen size={22} />
-        <span className="text-[10px] font-bold mt-1">Devocional</span>
+        <span className="text-[10px] font-bold mt-1">Biblioteca</span>
       </Link>
       
       <Link to="/editor" className="flex flex-col items-center -mt-10">
