@@ -95,8 +95,8 @@ const Biblioteca = () => {
   return (
     <div className="min-h-screen bg-[#FDFDFF] p-6 pb-32 animate-in fade-in">
       <header className="mt-8 mb-8">
-        <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic uppercase">Biblioteca</h1>
-        <p className="text-gray-400 text-sm font-medium">Sua estante digital da School Tech.</p>
+        <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Biblioteca</h1>
+        <p className="text-gray-400 text-sm font-medium">Sua estante digital.</p>
       </header>
 
       {/* BARRA DE BUSCA */}
@@ -145,7 +145,7 @@ const Biblioteca = () => {
           <span className="text-[10px] font-black uppercase tracking-widest opacity-80 italic">Aperfeiçoamento</span>
           <h2 className="text-xl font-black mt-1 mb-2">Formação para Pregadores</h2>
           <button 
-            onClick={() => window.open('https://pay.hotmart.com/seu-link-curso', '_blank')}
+            onClick={() => window.open('https://pay.cakto.com.br/34x5w3a_460886', '_blank')}
             className="bg-white text-[#5B2DFF] px-6 py-3 rounded-2xl font-black text-xs active:scale-95 transition-all flex items-center gap-2"
           >
             QUERO ME INSCREVER <ChevronRight size={14} />

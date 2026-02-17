@@ -96,7 +96,7 @@ const Editor = () => {
         </button>
         
         <h1 className="text-lg font-extrabold bg-gradient-to-r from-[#5B2DFF] to-[#3A1DB8] bg-clip-text text-transparent uppercase">
-          {id ? 'Editar Mensagem' : 'Nova Revelação'}
+          {id ? 'Editar Mensagem' : 'Novo Sermão'}
         </h1>
 
         <button 

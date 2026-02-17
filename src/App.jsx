@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
-// Importação das páginas - Garante o 's' em Devocionais para evitar erro na Vercel
+// Importação das páginas - Trocamos Devocionais por Biblioteca [cite: 2025-06-02]
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Editor from './pages/Editor';
 import Leitura from './pages/Leitura';
 import Perfil from './pages/Perfil';
-import Devocionais from './pages/Devocionais'; 
+import Biblioteca from './pages/Biblioteca'; // 👈 Importação correta
 
 // Importação de Ícones
 import { Home, BookOpen, PenTool, User } from 'lucide-react';
@@ -17,7 +17,7 @@ import { Home, BookOpen, PenTool, User } from 'lucide-react';
 const Navbar = () => {
   const location = useLocation();
   
-  // Esconde a barra no modo leitura ou login
+  // Esconde a barra no modo leitura (agora checando também se está no leitor de PDF) ou login
   if (location.pathname.startsWith('/leitura') || location.pathname === '/login') return null;
 
   return (
@@ -27,7 +27,8 @@ const Navbar = () => {
         <span className="text-[10px] font-bold mt-1">Início</span>
       </Link>
       
-      <Link to="/devocional" className={`flex flex-col items-center ${location.pathname === '/devocional' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+      {/* Rota atualizada para /biblioteca */}
+      <Link to="/biblioteca" className={`flex flex-col items-center ${location.pathname === '/biblioteca' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <BookOpen size={22} />
         <span className="text-[10px] font-bold mt-1">Biblioteca</span>
       </Link>
@@ -51,13 +52,11 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Verifica sessão inicial (importante para links de e-mail)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
 
-    // 2. Escuta mudanças de autenticação em tempo real
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
@@ -83,10 +82,11 @@ function App() {
           </Routes>
         ) : (
           <>
-            <div className="pb-32"> {/* Padding para não cobrir conteúdo com a Navbar */}
+            <div className="pb-10"> {/* Ajustado para não criar espaço excessivo, o padding-bottom da biblioteca cuida do resto */}
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/devocional" element={<Devocionais />} />
+                {/* Rota da Biblioteca atualizada */}
+                <Route path="/biblioteca" element={<Biblioteca />} /> 
                 <Route path="/editor" element={<Editor />} />
                 <Route path="/editor/:id" element={<Editor />} />
                 <Route path="/leitura/:id" element={<Leitura />} />

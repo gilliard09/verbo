@@ -1,74 +1,58 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Info, Maximize2, RotateCw, ExternalLink, Loader2 } from 'lucide-react';
+import { ChevronLeft, Maximize2, Download, BookOpen, Loader2 } from 'lucide-react';
 
 const LeitorLivro = ({ livro, onVoltar }) => {
-  const [carregando, setCarregando] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // A URL do PDF vem da coluna 'conteudo' do seu banco de dados
+  // Link do PDF vindo do banco de dados
   const pdfUrl = livro.conteudo;
-  
-  // Usamos o visualizador do Google para renderizar o PDF de forma otimizada no mobile
-  const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#1A1A1A]">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[#121212] animate-in fade-in duration-500">
       
-      {/* HEADER MINIMALISTA ESTILO READER */}
-      <header className="p-4 flex items-center justify-between bg-white/5 backdrop-blur-md border-b border-white/10">
-        <button 
-          onClick={onVoltar} 
-          className="text-white p-2 hover:bg-white/10 rounded-full transition-all"
-        >
-          <ChevronLeft size={24} />
+      {/* HEADER ULTRA MINIMALISTA (ESTILO KINDLE) */}
+      <header className="px-6 py-4 flex items-center justify-between bg-black/20 backdrop-blur-md border-b border-white/5">
+        <button onClick={onVoltar} className="text-white/80 hover:text-white transition-colors">
+          <ChevronLeft size={28} />
         </button>
         
-        <div className="text-center">
-          <h2 className="text-[10px] font-black uppercase tracking-[3px] text-white/50">
-            Lendo agora
-          </h2>
-          <h3 className="text-sm font-bold text-white truncate max-w-[200px]">
-            {livro.titulo}
-          </h3>
+        <div className="flex flex-col items-center">
+          <span className="text-[9px] font-black uppercase tracking-[4px] text-[#5B2DFF]">Leitura Ativa</span>
+          <h2 className="text-xs font-medium text-white/90 italic">{livro.titulo}</h2>
         </div>
 
-        <button 
-          onClick={() => window.open(pdfUrl, '_blank')}
-          className="text-white/70 p-2"
-          title="Abrir PDF original"
-        >
-          <ExternalLink size={18} />
+        <button onClick={() => window.open(pdfUrl)} className="text-white/40">
+          <Download size={20} />
         </button>
       </header>
 
-      {/* ÁREA DO DOCUMENTO */}
-      <main className="flex-1 relative bg-slate-800">
-        {carregando && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10">
-            <Loader2 className="animate-spin text-[#5B2DFF] mb-4" size={40} />
-            <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Preparando sua leitura...</p>
+      {/* CONTAINER DO PDF - Ocupa a tela toda para focar no conteúdo */}
+      <main className="flex-1 relative bg-[#1A1A1A]">
+        {loading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#121212] z-10">
+            <Loader2 className="animate-spin text-[#5B2DFF] mb-4" size={32} />
+            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest">Carregando Páginas...</p>
           </div>
         )}
-        
+
+        {/* DICA: Para ficar IGUAL ao Kindle, o ideal seria converter o PDF para texto. 
+            Como usamos PDF, este visualizador abaixo é o mais limpo possível.
+        */}
         <iframe
-          src={googleViewerUrl}
-          className="w-full h-full border-none shadow-2xl"
-          onLoad={() => setCarregando(false)}
+          src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+          className="w-full h-full border-none"
+          onLoad={() => setLoading(false)}
           title={livro.titulo}
         />
       </main>
 
-      {/* BARRA DE APOIO AO LEITOR */}
-      <footer className="p-4 bg-white flex items-center justify-between rounded-t-[32px]">
-        <div className="flex items-center gap-3 text-slate-400">
-          <Info size={16} />
-          <span className="text-[10px] font-bold uppercase tracking-tight">
-            Deslize para navegar pelas páginas
+      {/* RODAPÉ DISCRETO */}
+      <footer className="p-4 bg-black/40 border-t border-white/5 flex justify-center">
+        <div className="flex items-center gap-2 text-white/20">
+          <BookOpen size={12} />
+          <span className="text-[9px] font-bold uppercase tracking-tighter">
+            Leitura digital
           </span>
-        </div>
-        
-        <div className="flex items-center gap-2 text-[#5B2DFF]">
-          <span className="text-[10px] font-black uppercase">Pr. Jeferson</span>
-          <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse"></div>
         </div>
       </footer>
     </div>
