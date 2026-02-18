@@ -17,13 +17,12 @@ const Biblioteca = () => {
     titulo: '',
     autor: 'Pr. Jeferson',
     capa_url: '',
-    conteudo: '', // Aqui agora salvaremos a URL do PDF
+    conteudo: '', // Aqui salvaremos a URL do PDF (Supabase Storage)
     preco: 'R$ 9,99',
     link_venda: '',
     adquirido: true
   });
 
-  // E-mail do Pastor Jeferson para liberar o botão de (+)
   const adminEmail = 'jefersonrocha998@gmail.com'; 
 
   useEffect(() => {
@@ -61,7 +60,7 @@ const Biblioteca = () => {
       if (error) throw error;
       
       setShowAdminForm(false);
-      // Reset do form
+      // Reset do formulário
       setNovoLivro({ titulo: '', autor: 'Pr. Jeferson', capa_url: '', conteudo: '', preco: 'R$ 9,99', link_venda: '', adquirido: true });
       fetchLivros();
     } catch (error) {
@@ -82,7 +81,7 @@ const Biblioteca = () => {
     </div>
   );
 
-  // Se um livro estiver selecionado, exibe o componente do Leitor de PDF
+  // Exibe o Leitor de PDF se um livro for selecionado
   if (livroSelecionado) {
     return (
       <LeitorLivro 
@@ -95,8 +94,8 @@ const Biblioteca = () => {
   return (
     <div className="min-h-screen bg-[#FDFDFF] p-6 pb-32 animate-in fade-in">
       <header className="mt-8 mb-8">
-        <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Biblioteca</h1>
-        <p className="text-gray-400 text-sm font-medium">Sua estante digital.</p>
+        <h1 className="text-4xl font-playfair font-black text-slate-800 tracking-tight italic">Biblioteca</h1>
+        <p className="text-gray-400 text-sm font-medium">Sua estante digital School Tech.</p>
       </header>
 
       {/* BARRA DE BUSCA */}
@@ -104,7 +103,7 @@ const Biblioteca = () => {
         <Search size={18} className="text-gray-300" />
         <input 
           type="text" 
-          placeholder="Buscar ebook..." 
+          placeholder="Buscar ebook ou PDF..." 
           className="bg-transparent outline-none w-full font-medium text-sm text-slate-600"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
@@ -119,7 +118,7 @@ const Biblioteca = () => {
             onClick={() => livro.adquirido ? setLivroSelecionado(livro) : window.open(livro.link_venda, '_blank')} 
             className="group cursor-pointer"
           >
-            <div className="relative aspect-[3/4] rounded-[24px] overflow-hidden shadow-lg transition-transform active:scale-95 group-hover:shadow-purple-100 group-hover:shadow-2xl transition-all">
+            <div className="relative aspect-[3/4] rounded-[24px] overflow-hidden shadow-lg transition-transform active:scale-95 group-hover:shadow-purple-100 transition-all">
               <img 
                 src={livro.capa_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300'} 
                 alt={livro.titulo} 
@@ -142,13 +141,13 @@ const Biblioteca = () => {
       {/* BANNER DO CURSO */}
       <div className="mt-12 bg-gradient-to-br from-[#5B2DFF] to-[#D946EF] rounded-[32px] p-6 text-white shadow-xl relative overflow-hidden group">
         <div className="relative z-10">
-          <span className="text-[10px] font-black uppercase tracking-widest opacity-80 italic">Aperfeiçoamento</span>
-          <h2 className="text-xl font-black mt-1 mb-2">Formação para Pregadores</h2>
+          <span className="text-[10px] font-black uppercase tracking-widest opacity-80 italic">Oportunidade</span>
+          <h2 className="text-xl font-black mt-1 mb-2">Formação de Pregadores</h2>
           <button 
             onClick={() => window.open('https://pay.cakto.com.br/34x5w3a_460886', '_blank')}
             className="bg-white text-[#5B2DFF] px-6 py-3 rounded-2xl font-black text-xs active:scale-95 transition-all flex items-center gap-2"
           >
-            QUERO ME INSCREVER <ChevronRight size={14} />
+            INSCREVER-SE AGORA <ChevronRight size={14} />
           </button>
         </div>
         <BookOpen className="absolute right-[-20px] bottom-[-20px] text-white/10 w-40 h-40 -rotate-12 group-hover:scale-110 transition-transform" />
@@ -164,7 +163,7 @@ const Biblioteca = () => {
         </button>
       )}
 
-      {/* MODAL DE CADASTRO (ADMIN) */}
+      {/* MODAL DE CADASTRO (ADMIN) - FOCO EM PDF */}
       {showAdminForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 p-6 flex items-center justify-center animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-md rounded-[40px] p-8 max-h-[85vh] overflow-y-auto shadow-2xl relative">
@@ -177,41 +176,47 @@ const Biblioteca = () => {
 
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-purple-50 text-[#5B2DFF] rounded-2xl"><UploadCloud size={24}/></div>
-              <h3 className="font-black uppercase text-xs tracking-widest text-slate-800">Publicar Novo Ebook</h3>
+              <h3 className="font-black uppercase text-xs tracking-widest text-slate-800">Lançar Novo PDF</h3>
             </div>
             
             <form onSubmit={handleSalvarLivro} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Título do Livro</label>
-                <input required className="w-full p-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 focus:bg-white focus:ring-1 ring-purple-200 transition-all" onChange={e => setNovoLivro({...novoLivro, titulo: e.target.value})} />
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Título do Ebook</label>
+                <input required className="w-full p-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 focus:bg-white focus:ring-1 ring-purple-200" onChange={e => setNovoLivro({...novoLivro, titulo: e.target.value})} />
               </div>
 
+              {/* CAMPO DE LINK DO PDF */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Link do PDF (URL do Storage)</label>
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Link do PDF (Storage)</label>
                 <div className="relative">
-                   <LinkIcon size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                   <input required placeholder="https://..." className="w-full p-4 pl-10 bg-slate-50 rounded-2xl outline-none text-xs text-blue-600 font-medium" onChange={e => setNovoLivro({...novoLivro, conteudo: e.target.value})} />
+                   <LinkIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                   <input 
+                    required 
+                    placeholder="https://..." 
+                    className="w-full p-4 pl-10 bg-slate-50 rounded-2xl outline-none text-xs text-blue-600 font-medium focus:bg-white focus:ring-1 ring-purple-200" 
+                    onChange={e => setNovoLivro({...novoLivro, conteudo: e.target.value})} 
+                   />
                 </div>
-                <p className="text-[9px] text-gray-400 mt-1 px-2">Suba o PDF no Supabase Storage e cole o link aqui.</p>
+                <p className="text-[9px] text-gray-400 mt-1 px-2 italic">Suba o PDF no Supabase Storage e cole o link público aqui.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Preço Exibido</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Preço</label>
                   <input placeholder="R$ 9,99" className="w-full p-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold" onChange={e => setNovoLivro({...novoLivro, preco: e.target.value})} />
                 </div>
                 <div className="space-y-1 flex flex-col">
-                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Status</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Acesso</label>
                   <select className="w-full p-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold appearance-none cursor-pointer" onChange={e => setNovoLivro({...novoLivro, adquirido: e.target.value === 'true'})}>
                     <option value="true">Liberado</option>
-                    <option value="false">Bloqueado (Venda)</option>
+                    <option value="false">Bloqueado</option>
                   </select>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Link da Capa (Imagem)</label>
-                <input className="w-full p-4 bg-slate-50 rounded-2xl outline-none text-xs" placeholder="URL da imagem da capa" onChange={e => setNovoLivro({...novoLivro, capa_url: e.target.value})} />
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Capa do Livro (URL)</label>
+                <input className="w-full p-4 bg-slate-50 rounded-2xl outline-none text-xs" placeholder="Link da imagem da capa" onChange={e => setNovoLivro({...novoLivro, capa_url: e.target.value})} />
               </div>
 
               <button 
@@ -219,7 +224,7 @@ const Biblioteca = () => {
                 disabled={enviando}
                 className="w-full py-5 bg-[#5B2DFF] text-white rounded-[28px] font-bold shadow-lg shadow-purple-100 flex items-center justify-center gap-2 mt-4 active:scale-95 transition-all disabled:opacity-50"
               >
-                {enviando ? <Loader2 className="animate-spin" size={20}/> : 'LANÇAR EBOOK'}
+                {enviando ? <Loader2 className="animate-spin" size={20}/> : 'SUBIR PARA ESTANTE'}
               </button>
             </form>
           </div>

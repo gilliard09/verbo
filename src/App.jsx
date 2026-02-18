@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import { Analytics } from "@vercel/analytics/next"
 
 // Importação das páginas - Trocamos Devocionais por Biblioteca [cite: 2025-06-02]
 import Dashboard from './pages/Dashboard';
