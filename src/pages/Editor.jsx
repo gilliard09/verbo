@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { Save, ArrowLeft, Book, Sparkles } from 'lucide-react';
+import { Save, ArrowLeft, Book, Sparkles, Loader2 } from 'lucide-react'; // Adicionado Loader2
+import { GoogleGenerativeAI } from "@google/generative-ai"; // Importação da IA
 
 const Editor = () => {
   const { id } = useParams();
@@ -10,6 +11,10 @@ const Editor = () => {
   const [conteudo, setConteudo] = useState('');
   const [referencia, setReferencia] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingIA, setLoadingIA] = useState(false); // Estado para o carregamento da IA
+
+  // Configuração da IA (Use sua chave do .env)
+  const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
   useEffect(() => {
     if (id) fetchSermao();
@@ -34,6 +39,40 @@ const Editor = () => {
     }
   }
 
+  // FUNÇÃO DA INTELIGÊNCIA ARTIFICIAL
+  async function invocarIA() {
+    if (!conteudo.trim()) {
+      alert("Escreva pelo menos uma ideia ou versículo para a IA te ajudar!");
+      return;
+    }
+
+    setLoadingIA(true);
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const prompt = `Você é um assistente de teologia. 
+      O tema é "${titulo}" e a referência é "${referencia}".
+      Com base no texto abaixo, continue a pregação com uma aplicação prática e 
+      uma linguagem acessível/descomplicada, mantendo o tom de conversa real.
+      
+      Texto atual:
+      ${conteudo}`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const textoSugerido = response.text();
+
+      // Adiciona o texto da IA ao seu conteúdo atual
+      setConteudo(prev => prev + "\n\n--- Sugestão da IA ---\n" + textoSugerido);
+      
+    } catch (error) {
+      console.error("Erro na IA:", error);
+      alert("Não consegui conectar com a IA agora. Verifique sua chave de API.");
+    } finally {
+      setLoadingIA(false);
+    }
+  }
+
   async function salvar() {
     if (!titulo.trim()) {
       alert("Por favor, insira um título.");
@@ -42,47 +81,29 @@ const Editor = () => {
 
     setLoading(true);
     try {
-      // 1. Pegamos o usuário logado (Essencial para o RLS)
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        throw new Error("Sessão expirada. Faça login novamente.");
-      }
+      if (userError || !user) throw new Error("Sessão expirada.");
 
-      // 2. Montamos o objeto exatamente como as colunas do banco
       const dadosSermao = {
         titulo: titulo,
         conteudo: conteudo,
-        referencia_biblica: referencia, // Nome da coluna que criamos via SQL
+        referencia_biblica: referencia,
         user_id: user.id
       };
 
       let result;
-
       if (id) {
-        // Atualizar sermão existente
-        result = await supabase
-          .from('sermoes')
-          .update(dadosSermao)
-          .eq('id', id)
-          .select(); // O .select() força o Supabase a confirmar a gravação
+        result = await supabase.from('sermoes').update(dadosSermao).eq('id', id).select();
       } else {
-        // Inserir novo sermão
-        result = await supabase
-          .from('sermoes')
-          .insert([dadosSermao])
-          .select();
+        result = await supabase.from('sermoes').insert([dadosSermao]).select();
       }
 
       if (result.error) throw result.error;
-
-      // Se chegamos aqui, salvou de verdade
       alert("✅ Mensagem guardada com sucesso!");
       navigate('/'); 
-      
     } catch (error) {
       console.error("Erro detalhado:", error);
-      alert("Erro ao guardar: " + (error.message || "Verifique sua conexão"));
+      alert("Erro ao guardar: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -134,9 +155,21 @@ const Editor = () => {
         onChange={(e) => setConteudo(e.target.value)}
       />
 
-      <div className="fixed bottom-28 right-8">
-        <button className="bg-white border border-purple-100 p-4 rounded-full shadow-xl text-[#5B2DFF]">
-          <Sparkles size={24} />
+      {/* BOTÃO FLUTUANTE DA IA CONFIGURADO */}
+      <div className="fixed bottom-28 right-8 flex flex-col items-center gap-2">
+        {loadingIA && (
+          <span className="text-[10px] font-black uppercase text-[#5B2DFF] animate-pulse">
+            Pensando...
+          </span>
+        )}
+        <button 
+          onClick={invocarIA}
+          disabled={loadingIA}
+          className={`p-4 rounded-full shadow-2xl transition-all active:scale-90 ${
+            loadingIA ? 'bg-gray-100 text-gray-400' : 'bg-white border border-purple-100 text-[#5B2DFF] hover:bg-purple-50'
+          }`}
+        >
+          {loadingIA ? <Loader2 className="animate-spin" size={24} /> : <Sparkles size={24} />}
         </button>
       </div>
     </div>

@@ -1,76 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Download, Maximize2, Loader2, ExternalLink } from 'lucide-react';
+import { ChevronLeft, Type, Moon, Sun, Loader2 } from 'lucide-react';
 
 const LeitorLivro = ({ livro, onVoltar }) => {
+  const [conteudoTexto, setConteudoTexto] = useState('');
   const [loading, setLoading] = useState(true);
+  const [tema, setTema] = useState('sepia');
+  const [fontSize, setFontSize] = useState(20); // Fonte maior por padrão para o púlpito
+  const [showControls, setShowControls] = useState(false);
 
-  // O conteúdo aqui é a URL do PDF que você salvou no Supabase
-  const pdfUrl = livro.conteudo;
+  useEffect(() => {
+    // Função para buscar o texto do arquivo hospedado
+    const carregarTexto = async () => {
+      try {
+        const response = await fetch(livro.conteudo);
+        const texto = await response.text();
+        setConteudoTexto(texto);
+      } catch (error) {
+        setConteudoTexto("Erro ao carregar o conteúdo. Verifique o link do arquivo.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (livro.conteudo.startsWith('http')) {
+      carregarTexto();
+    } else {
+      setConteudoTexto(livro.conteudo);
+      setLoading(false);
+    }
+  }, [livro.conteudo]);
+
+  const temasStyles = {
+    white: { bg: 'bg-[#FFFFFF]', text: 'text-slate-900', border: 'border-gray-200', title: 'text-slate-500' },
+    sepia: { bg: 'bg-[#F4ECD8]', text: 'text-[#5B4636]', border: 'border-[#E2D6B5]', title: 'text-[#8C7867]' },
+    dark: { bg: 'bg-[#121212]', text: 'text-gray-400', border: 'border-white/5', title: 'text-gray-600' }
+  };
+
+  const s = temasStyles[tema];
+
+  if (loading) return (
+    <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[#121212]">
+      <Loader2 className="animate-spin text-[#5B2DFF] mb-4" size={32} />
+      <p className="text-white/30 text-xs font-black uppercase tracking-widest">Preparando Púlpito...</p>
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#121212] animate-in fade-in duration-500">
-      
-      {/* HEADER ESTILO KINDLE OASIS */}
-      <header className="px-6 py-4 flex items-center justify-between bg-black/40 backdrop-blur-md border-b border-white/5">
-        <button 
-          onClick={onVoltar} 
-          className="text-white/70 hover:text-white transition-all active:scale-90"
-        >
-          <ChevronLeft size={28} />
-        </button>
-        
-        <div className="flex flex-col items-center max-w-[60%]">
-          <span className="text-[9px] font-black uppercase tracking-[3px] text-[#5B2DFF] mb-0.5">
-            Lendo agora
-          </span>
-          <h2 className="text-xs font-medium text-white/90 italic truncate w-full text-center font-playfair">
-            {livro.titulo}
-          </h2>
-        </div>
-
-        <button 
-          onClick={() => window.open(pdfUrl, '_blank')} 
-          className="text-white/40 hover:text-[#5B2DFF] transition-colors"
-        >
-          <ExternalLink size={20} />
-        </button>
+    <div className={`fixed inset-0 z-[60] flex flex-col transition-colors duration-500 ${s.bg}`}>
+      <header className={`p-4 flex items-center justify-between border-b ${s.border}`}>
+        <button onClick={onVoltar} className={s.text}><ChevronLeft size={24} /></button>
+        <h2 className={`text-[10px] font-black uppercase tracking-widest ${s.title}`}>{livro.titulo}</h2>
+        <button onClick={() => setShowControls(!showControls)} className={s.text}><Type size={20} /></button>
       </header>
 
-      {/* ÁREA DO DOCUMENTO */}
-      <main className="flex-1 relative overflow-hidden bg-[#1A1A1A]">
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#121212] z-10">
-            <Loader2 className="animate-spin text-[#5B2DFF] mb-4" size={32} />
-            <p className="text-white/30 text-[10px] font-black uppercase tracking-widest">
-              Abrindo Manuscrito...
-            </p>
-          </div>
-        )}
-
-        {/* Utilizamos o parâmetro #toolbar=0 para tentar esconder a barra do navegador.
-            Nota: Alguns navegadores mobile forçam a exibição da barra deles.
-        */}
-        <iframe
-          src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-          className="w-full h-full border-none"
-          onLoad={() => setLoading(false)}
-          title={livro.titulo}
-          allow="fullscreen"
-        />
+      <main className="flex-1 overflow-y-auto p-6 md:p-12 pb-32">
+        <article 
+          className={`max-w-2xl mx-auto leading-[1.8] font-serif ${s.text} whitespace-pre-wrap`}
+          style={{ fontSize: `${fontSize}px` }}
+        >
+          <h1 className="text-4xl font-playfair font-black mb-8 leading-tight">{livro.titulo}</h1>
+          <div className="w-12 h-1 bg-[#5B2DFF] mb-10 opacity-30 rounded-full"></div>
+          
+          {conteudoTexto}
+        </article>
       </main>
 
-      {/* FOOTER DISCRETO */}
-      <footer className="p-4 bg-black/60 border-t border-white/5 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-[9px] font-bold text-white/20 uppercase tracking-tighter">
-            Modo de Leitura Ativo
-          </span>
+      {showControls && (
+        <div className={`absolute bottom-24 left-4 right-4 p-6 rounded-[32px] shadow-2xl border ${s.bg} ${s.border} animate-in fade-in slide-in-from-bottom-4`}>
+          <div className="flex items-center justify-between mb-8">
+            <span className={`text-[10px] font-black uppercase tracking-widest ${s.title}`}>Tamanho da Fonte</span>
+            <div className="flex gap-6">
+              <button onClick={() => setFontSize(Math.max(16, fontSize - 2))} className={`p-2 font-bold ${s.text}`}>A-</button>
+              <button onClick={() => setFontSize(Math.min(32, fontSize + 2))} className={`p-2 text-xl font-bold ${s.text}`}>A+</button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className={`text-[10px] font-black uppercase tracking-widest ${s.title}`}>Tema de Leitura</span>
+            <div className="flex gap-4">
+              <button onClick={() => setTema('white')} className="w-10 h-10 bg-white border border-gray-300 rounded-full" />
+              <button onClick={() => setTema('sepia')} className="w-10 h-10 bg-[#F4ECD8] border border-[#E2D6B5] rounded-full" />
+              <button onClick={() => setTema('dark')} className="w-10 h-10 bg-[#121212] border border-white/10 rounded-full" />
+            </div>
+          </div>
         </div>
-        <span className="text-[9px] font-black text-white/10 uppercase italic">
-          School Tech Digital
-        </span>
-      </footer>
+      )}
     </div>
   );
 };
