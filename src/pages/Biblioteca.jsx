@@ -78,7 +78,7 @@ const Biblioteca = () => {
     <div className="min-h-screen bg-[#FDFDFF] p-6 pb-32 animate-in fade-in duration-500">
       <header className="mt-8 mb-8">
         <h1 className="text-4xl font-inter font-black text-slate-800 tracking-tight">Produtos</h1>
-        <p className="text-gray-400 text-sm font-medium">Materiais exclusivos do Pr. Jeferson</p>
+        <p className="text-gray-400 text-sm font-medium">Materiais exclusivos</p>
       </header>
 
       {/* BUSCA */}
