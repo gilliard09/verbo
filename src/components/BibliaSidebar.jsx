@@ -92,7 +92,7 @@ const BibliaSidebar = ({ isOpen, onClose }) => {
 
           <div className="mt-auto pt-6 border-t border-gray-100">
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
-              School Tech Digital • Pr. Jeferson
+              Bíblia Rápida • Verbo app
             </p>
           </div>
         </div>
