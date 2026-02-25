@@ -9,16 +9,23 @@ import Editor from './pages/Editor';
 import Leitura from './pages/Leitura';
 import Perfil from './pages/Perfil';
 import Biblioteca from './pages/Biblioteca';
+import LandingPage from './pages/LandingPage'; // 👈 Importação da sua nova LP
 
 // Importação de Componentes e Ícones
-import BibliaSidebar from './components/BibliaSidebar'; // 👈 Importação da Bíblia
+import BibliaSidebar from './components/BibliaSidebar';
 import { Home, BookOpen, PenTool, User, Book } from 'lucide-react';
 
 // Componente de Navegação Inferior
-const Navbar = ({ onOpenBiblia }) => { // 👈 Recebe a função para abrir a bíblia
+const Navbar = ({ onOpenBiblia }) => {
   const location = useLocation();
   
-  if (location.pathname.startsWith('/leitura') || location.pathname === '/login') return null;
+  // Esconde a barra em páginas públicas ou de leitura
+  const publicPages = ['/login', '/landing'];
+  if (location.pathname.startsWith('/leitura') || publicPages.includes(location.pathname) || location.pathname === '/') {
+    // Se estiver na raiz "/" e não logado, a Navbar não deve aparecer.
+    // O controle fino será feito no componente App abaixo.
+    return null; 
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-50 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
@@ -38,11 +45,7 @@ const Navbar = ({ onOpenBiblia }) => { // 👈 Recebe a função para abrir a b�
         </div>
       </Link>
 
-      {/* NOVO BOTÃO DA BÍBLIA NA NAVBAR */}
-      <button 
-        onClick={onOpenBiblia} 
-        className="flex flex-col items-center text-gray-400 hover:text-[#5B2DFF] transition-colors"
-      >
+      <button onClick={onOpenBiblia} className="flex flex-col items-center text-gray-400">
         <Book size={22} />
         <span className="text-[10px] font-bold mt-1">Bíblia</span>
       </button>
@@ -58,7 +61,7 @@ const Navbar = ({ onOpenBiblia }) => { // 👈 Recebe a função para abrir a b�
 function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [bibliaAberta, setBibliaAberta] = useState(false); // 👈 Estado da Bíblia
+  const [bibliaAberta, setBibliaAberta] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -86,10 +89,15 @@ function App() {
     <Router>
       <div className="min-h-screen bg-[#FDFDFF]">
         {!session ? (
+          /* ROTAS PÚBLICAS (Usuário não logado) */
           <Routes>
-            <Route path="*" element={<Login />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            {/* Qualquer outra rota redireciona para a Landing Page */}
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         ) : (
+          /* ROTAS PRIVADAS (Usuário logado) */
           <>
             <div className="pb-10">
               <Routes>
@@ -103,10 +111,8 @@ function App() {
               </Routes>
             </div>
             
-            {/* Navbar passando a função de abrir a Bíblia */}
             <Navbar onOpenBiblia={() => setBibliaAberta(true)} />
 
-            {/* Componente da Bíblia Sidebar */}
             <BibliaSidebar 
               isOpen={bibliaAberta} 
               onClose={() => setBibliaAberta(false)} 
