@@ -19,12 +19,14 @@ import { Home, BookOpen, PenTool, User, Book } from 'lucide-react';
 const Navbar = ({ onOpenBiblia, session }) => {
   const location = useLocation();
   
-  // Lógica para esconder a navbar: se não estiver logado ou em páginas específicas
-  const isPublic = location.pathname === '/login' || location.pathname === '/landing';
-  const isReading = location.pathname.startsWith('/leitura');
-  
-  // Importante: Se o usuário estiver na raiz "/" e NÃO houver sessão, a navbar some (pois é a Landing Page)
-  if (!session || isPublic || isReading) return null;
+  // A Navbar só deve aparecer se o usuário estiver logado E não estiver na Landing, Login ou Leitura
+  const hideNavbar = !session || 
+                     location.pathname === '/login' || 
+                     location.pathname === '/landing' ||
+                     (location.pathname === '/' && !session) || // Se for a raiz sem sessão (LP)
+                     location.pathname.startsWith('/leitura');
+
+  if (hideNavbar) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-50 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
@@ -67,11 +69,10 @@ function App() {
   const [bibliaAberta, setBibliaAberta] = useState(false);
 
   useEffect(() => {
-    // Busca sessão inicial
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
       } catch (error) {
         console.error("Erro Supabase:", error);
       } finally {
@@ -81,9 +82,8 @@ function App() {
 
     getInitialSession();
 
-    // Escuta mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
       setLoading(false);
     });
 
@@ -95,7 +95,9 @@ function App() {
       <div className="h-screen w-full flex items-center justify-center bg-[#FDFDFF]">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-[#5B2DFF] border-solid border-gray-200"></div>
-          <span className="text-[10px] font-black text-[#5B2DFF] uppercase tracking-widest italic">O Verbo está carregando...</span>
+          <span className="text-[10px] font-black text-[#5B2DFF] uppercase tracking-widest italic text-center">
+            O Verbo está carregando...
+          </span>
         </div>
       </div>
     );
@@ -104,39 +106,32 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-[#FDFDFF]">
-        <Routes>
-          {!session ? (
-            /* --- ROTAS PÚBLICAS --- */
-            <Route path="/*" element={
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            } />
-          ) : (
-            /* --- ROTAS PRIVADAS --- */
-            <Route path="/*" element={
-              <>
-                <div className="pb-24">
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/biblioteca" element={<Biblioteca />} /> 
-                    <Route path="/editor" element={<Editor />} />
-                    <Route path="/editor/:id" element={<Editor />} />
-                    <Route path="/leitura/:id" element={<Leitura />} />
-                    <Route path="/perfil" element={<Perfil />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </div>
-                
-                {/* Elementos fixos da interface logada */}
-                <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
-                <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
-              </>
-            } />
-          )}
-        </Routes>
+        <div className={session ? "pb-24" : ""}>
+          <Routes>
+            {/* Rota Raiz Decisiva */}
+            <Route path="/" element={!session ? <LandingPage /> : <Dashboard />} />
+            
+            {/* Rotas de Login/Públicas */}
+            <Route path="/login" element={!session ? <Login /> : <Navigate to="/" replace />} />
+            <Route path="/landing" element={<LandingPage />} />
+
+            {/* Rotas Privadas (Só renderizam se houver sessão) */}
+            <Route path="/biblioteca" element={session ? <Biblioteca /> : <Navigate to="/login" replace />} />
+            <Route path="/editor" element={session ? <Editor /> : <Navigate to="/login" replace />} />
+            <Route path="/editor/:id" element={session ? <Editor /> : <Navigate to="/login" replace />} />
+            <Route path="/leitura/:id" element={session ? <Leitura /> : <Navigate to="/login" replace />} />
+            <Route path="/perfil" element={session ? <Perfil /> : <Navigate to="/login" replace />} />
+
+            {/* Fallback de Erro */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+
+        {/* Componentes Globais Condicionais */}
+        <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
+        {session && (
+          <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
+        )}
       </div>
     </Router>
   );
