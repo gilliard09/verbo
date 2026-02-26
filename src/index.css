@@ -1,11 +1,9 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
 
 /* Fontes */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@400;700;900&display=swap');
 
-:root {
+@theme {
   --color-off-white: #F8F9FA;
   --color-pulpito-roxo: #6D28D9;
   --color-pulpito-laranja: #F97316;
@@ -19,9 +17,9 @@
   font-family: 'Playfair Display', serif;
 }
 
-/* Base - Simplificado para Tailwind 4 */
-@layer base {
-  body {
-    @apply bg-[#F8F9FA] text-[#1A1A1B] font-inter;
-  }
+/* Aplicação Global */
+:root {
+  background-color: #F8F9FA;
+  color: #1A1A1B;
+  font-family: "Inter", sans-serif;
 }
