@@ -44,27 +44,16 @@ const Navbar = ({ onOpenBiblia, session }) => {
 
 function App() {
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Loading desativado por padrão para diagnóstico
   const [bibliaAberta, setBibliaAberta] = useState(false);
 
   useEffect(() => {
-    // 1. SAFETY TIMER: Se o Supabase travar, libera o app em 3 segundos
-    const timer = setTimeout(() => {
-      if (loading) {
-        console.warn("Timeout de segurança: Forçando carregamento da Landing Page.");
-        setLoading(false);
-      }
-    }, 3000);
-
     const checkSession = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         setSession(initialSession);
       } catch (error) {
         console.error("Erro na busca de sessão:", error);
-      } finally {
-        setLoading(false);
-        clearTimeout(timer);
       }
     };
 
@@ -72,27 +61,18 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
-      setLoading(false);
     });
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(timer);
     };
   }, []);
-
-  if (loading) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#FDFDFF]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#5B2DFF]"></div>
-      </div>
-    );
-  }
 
   return (
     <Router>
       <div className="min-h-screen bg-[#FDFDFF]">
         <Routes>
+          {/* A lógica agora renderiza LandingPage se session for null imediatamente */}
           <Route path="/" element={!session ? <LandingPage /> : <Dashboard />} />
           <Route path="/login" element={!session ? <Login /> : <Navigate to="/" replace />} />
           <Route path="/landing" element={<LandingPage />} />
