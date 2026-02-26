@@ -9,7 +9,7 @@ import Editor from './pages/Editor';
 import Leitura from './pages/Leitura';
 import Perfil from './pages/Perfil';
 import Biblioteca from './pages/Biblioteca';
-import LandingPage from './pages/LandingPage'; 
+import LandingPage from './pages/Teste'; 
 
 // Componentes
 import BibliaSidebar from './components/BibliaSidebar';
