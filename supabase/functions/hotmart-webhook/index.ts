@@ -23,10 +23,13 @@ serve(async (req) => {
     console.log("Recebido da Hotmart:", body)
 
     const email = body.data?.buyer?.email
-    const status = body.event // 'PURCHASE_APPROVED'
+    const status = body.event // Evento enviado pela Hotmart
     const hotmartProductId = body.data?.product?.id?.toString() // ID do produto na Hotmart
 
-    if (status === 'PURCHASE_APPROVED' && email && hotmartProductId) {
+    // --- ATUALIZAÇÃO: Aceita Compra Aprovada OU Compra Completa ---
+    const eventosValidos = ['PURCHASE_APPROVED', 'PURCHASE_COMPLETE'];
+
+    if (eventosValidos.includes(status) && email && hotmartProductId) {
       
       // 3. Buscar o usuário pelo e-mail
       const { data: userData, error: userError } = await supabaseClient
@@ -36,7 +39,9 @@ serve(async (req) => {
         .single()
 
       if (userError || !userData) {
-        return new Response(JSON.stringify({ error: "Usuário não encontrado" }), { status: 404 })
+        // Retornamos 200 mesmo se não achar o perfil para a Hotmart não ficar tentando reenviar infinitamente
+        console.error("Usuário não encontrado no banco:", email)
+        return new Response(JSON.stringify({ error: "Usuário não encontrado no profiles" }), { status: 200 })
       }
 
       // 4. Buscar o curso que tem esse hotmart_id vinculado
@@ -48,32 +53,37 @@ serve(async (req) => {
 
       if (cursoError || !cursoData) {
         console.error("Curso não vinculado a esse ID Hotmart:", hotmartProductId)
-        return new Response(JSON.stringify({ error: "Curso não configurado no app" }), { status: 404 })
+        return new Response(JSON.stringify({ error: "Curso não configurado no app" }), { status: 200 })
       }
 
-      // 5. Criar a matrícula para o curso correto
+      // 5. Criar ou atualizar a matrícula para o curso correto (upsert evita duplicidade)
       const { error: matriculaError } = await supabaseClient
         .from('matriculas')
         .upsert({ 
           user_id: userData.id, 
           curso_id: cursoData.id,
           status: 'ativo' 
-        })
+        }, { onConflict: 'user_id, curso_id' }) // Garante que não duplique se os dois eventos chegarem
 
       if (matriculaError) throw matriculaError
 
-      return new Response(JSON.stringify({ message: "Acesso liberado com sucesso!" }), { 
+      return new Response(JSON.stringify({ message: `Acesso liberado via ${status}!` }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200 
       })
     }
 
-    return new Response(JSON.stringify({ message: "Evento ignorado" }), { status: 200 })
+    // Para qualquer outro evento (cancelamento, boleto impresso, etc), retornamos 200 para limpar o log da Hotmart
+    return new Response(JSON.stringify({ message: "Evento recebido e ignorado logicamente" }), { 
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200 
+    })
 
   } catch (error) {
+    console.error("Erro no processamento:", error.message)
     return new Response(JSON.stringify({ error: error.message }), { 
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400 
+      status: 200 // Mantemos 200 no catch para evitar retentativas infinitas da Hotmart por erros de lógica
     })
   }
 })

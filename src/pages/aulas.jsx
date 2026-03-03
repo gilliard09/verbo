@@ -51,20 +51,24 @@ const Aulas = () => {
         return;
       }
 
+      // 1. Busca as aulas DESTE curso
       const { data: listaAulas } = await supabase
         .from('aulas')
         .select('*')
         .eq('curso_id', cursoId)
         .order('ordem', { ascending: true });
         
+      // 2. CORREÇÃO: Busca o progresso filtrando apenas aulas que pertencem a este cursoId
       const { data: progresso } = await supabase
         .from('progresso_aulas')
-        .select('aula_id')
-        .eq('user_id', user.id);
+        .select('aula_id, aulas!inner(curso_id)') 
+        .eq('user_id', user.id)
+        .eq('aulas.curso_id', cursoId);
 
       if (listaAulas && listaAulas.length > 0) {
         setAulas(listaAulas);
         setAulaAtiva(listaAulas[0]);
+        // Armazena apenas os IDs das aulas concluídas deste curso específico
         setConcluidas(new Set(progresso?.map(p => p.aula_id)));
       }
     } catch (error) { 
