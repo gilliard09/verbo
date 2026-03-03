@@ -13,7 +13,7 @@ import Biblioteca from './pages/biblioteca';
 import LandingPage from './pages/landingpage'; 
 import Cursos from './pages/cursos';
 import Aulas from './pages/aulas';
-import AdminDashboard from './pages/AdminDashboard'; // <--- Adicionado: Importação do Painel Admin
+import AdminDashboard from './pages/admindashboard'; // <--- Adicionado: Importação do Painel Admin
 
 // --- COMPONENTES ---
 import BibliaSidebar from './components/BibliaSidebar';
