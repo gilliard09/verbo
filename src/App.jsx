@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import { Analytics } from '@vercel/analytics/react'; // <--- ADICIONADO: Integração Vercel
 
 // --- IMPORTAÇÕES (Tudo em minúsculo conforme padronizado) ---
 import Dashboard from './pages/dashboard';
@@ -10,23 +11,23 @@ import Leitura from './pages/leitura';
 import Perfil from './pages/perfil';
 import Biblioteca from './pages/biblioteca';
 import LandingPage from './pages/landingpage'; 
+import Cursos from './pages/cursos';
+import Aulas from './pages/aulas';
+import AdminDashboard from './pages/AdminDashboard'; // <--- Adicionado: Importação do Painel Admin
 
 // --- COMPONENTES ---
 import BibliaSidebar from './components/BibliaSidebar';
-import { Home, BookOpen, PenTool, User, Book } from 'lucide-react';
+import { Home, PenTool, User, Book, PlayCircle, LayoutDashboard } from 'lucide-react';
 
 const Navbar = ({ onOpenBiblia, session }) => {
   const location = useLocation();
   
-  // A Navbar só deve sumir se:
-  // 1. Não houver sessão (Usuário deslogado na Landing Page)
-  // 2. O usuário estiver na tela de Login
-  // 3. O usuário estiver no modo de Leitura (para não atrapalhar a pregação)
+  // Páginas onde a Navbar NÃO deve aparecer
   const isPublicPage = location.pathname === '/login' || location.pathname === '/landing';
   const isReading = location.pathname.startsWith('/leitura');
+  const isAdminPage = location.pathname.startsWith('/admin'); // <--- Esconde a navbar no painel admin para ganhar espaço
   
-  // Se não tem sessão OU é uma página que exige foco/limpeza, retorna null
-  if (!session || isPublicPage || isReading) return null;
+  if (!session || isPublicPage || isReading || isAdminPage) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-[100] pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
@@ -34,8 +35,8 @@ const Navbar = ({ onOpenBiblia, session }) => {
         <Home size={22} /><span className="text-[10px] font-bold mt-1">Início</span>
       </Link>
       
-      <Link to="/biblioteca" className={`flex flex-col items-center ${location.pathname === '/biblioteca' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
-        <BookOpen size={22} /><span className="text-[10px] font-bold mt-1">Produtos</span>
+      <Link to="/cursos" className={`flex flex-col items-center ${location.pathname.startsWith('/cursos') ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+        <PlayCircle size={22} /><span className="text-[10px] font-bold mt-1">Academia</span>
       </Link>
       
       <Link to="/editor" className="flex flex-col items-center -mt-10">
@@ -85,7 +86,6 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Tela de loading simples para evitar "pulo" de conteúdo
   if (isChecking) {
     return (
       <div className="min-h-screen bg-[#FDFDFF] flex items-center justify-center">
@@ -97,13 +97,21 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-[#FDFDFF]">
-        {/* Adicionado padding-bottom condicional para o conteúdo não ficar escondido atrás da Navbar */}
+        {/* Ajuste do padding inferior: se estiver no admin, não precisa de espaço para a navbar */}
         <main className={session ? "pb-24" : ""}>
           <Routes>
             <Route path="/" element={session ? <Dashboard /> : <LandingPage />} />
             <Route path="/login" element={!session ? <Login /> : <Navigate to="/" replace />} />
             <Route path="/landing" element={<LandingPage />} />
             
+            {/* --- ACADEMIA VERBO --- */}
+            <Route path="/cursos" element={session ? <Cursos /> : <Navigate to="/login" replace />} />
+            <Route path="/cursos/:cursoId" element={session ? <Aulas /> : <Navigate to="/login" replace />} />
+            
+            {/* --- PAINEL ADMIN --- */}
+            <Route path="/admin" element={session ? <AdminDashboard /> : <Navigate to="/login" replace />} />
+            
+            {/* --- FERRAMENTAS DO PREGADOR --- */}
             <Route path="/biblioteca" element={session ? <Biblioteca /> : <Navigate to="/login" replace />} />
             <Route path="/editor" element={session ? <Editor /> : <Navigate to="/login" replace />} />
             <Route path="/editor/:id" element={session ? <Editor /> : <Navigate to="/login" replace />} />
@@ -115,8 +123,8 @@ function App() {
         </main>
         
         <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
+        <Analytics /> {/* <--- ADICIONADO: Componente de monitoramento da Vercel */}
         
-        {/* A Bíblia só é montada se houver sessão para economizar memória */}
         {session && (
           <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
         )}

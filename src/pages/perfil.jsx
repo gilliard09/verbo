@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { QRCodeCanvas } from 'qrcode.react';
 import html2canvas from 'html2canvas';
+import { Link } from 'react-router-dom'; // Adicionado para o link do Admin
 import { 
   User, LogOut, Camera, Phone, 
   CheckCircle2, Loader2, Save, KeyRound,
   ChevronRight, Instagram, Info, Share2, X,
-  Download, Sparkles, ShieldCheck, Globe, Heart
+  Download, Sparkles, ShieldCheck, Globe, Heart,
+  LayoutDashboard // Ícone para o Admin
 } from 'lucide-react';
 
 const Perfil = () => {
@@ -21,13 +23,13 @@ const Perfil = () => {
     nome: '',
     email: '',
     telefone: '',
-    avatar_url: ''
+    avatar_url: '',
+    role: 'user' // Adicionado estado para a role
   });
 
   const [novaSenha, setNovaSenha] = useState('');
   const [textoCard, setTextoCard] = useState("Escaneie e organize seus sermões agora mesmo!");
 
-  // URL do seu app para o QR Code (Substitua pela sua URL da Vercel)
   const appUrl = window.location.origin; 
 
   useEffect(() => {
@@ -38,11 +40,19 @@ const Perfil = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Buscamos dados extras na tabela profiles que criamos
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
         setPerfil({
           nome: user.user_metadata?.full_name || '',
           email: user.email || '',
           telefone: user.user_metadata?.phone_contact || '',
-          avatar_url: user.user_metadata?.avatar_url || ''
+          avatar_url: user.user_metadata?.avatar_url || '',
+          role: profileData?.role || 'user' // Define se é admin ou user
         });
       }
     } catch (error) {
@@ -117,13 +127,32 @@ const Perfil = () => {
         <div className="w-24 h-24 bg-gradient-to-tr from-[#5B2DFF] to-[#D946EF] rounded-[32px] mx-auto flex items-center justify-center shadow-xl border-4 border-white overflow-hidden mb-4">
           <span className="text-3xl font-black text-white">{perfil.nome.charAt(0) || 'P'}</span>
         </div>
-        <h2 className="text-xl font-black text-slate-800 tracking-tight">{perfil.nome || 'Pregador'}</h2>
-        <p className="text-gray-400 text-xs font-medium">{perfil.email}</p>
+        <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">{perfil.nome || 'Pregador'}</h2>
+        <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">
+          {perfil.role === 'admin' ? '🛡️ Administrador' : 'Membro do Verbo'}
+        </p>
       </header>
 
       {/* VIEW: MENU PRINCIPAL */}
       {view === 'menu' && (
         <div className="max-w-md mx-auto space-y-3 animate-in fade-in duration-500">
+          
+          {/* BOTÃO EXCLUSIVO DE ADMIN */}
+          {perfil.role === 'admin' && (
+            <Link to="/admin" className="w-full bg-slate-900 p-5 rounded-[28px] shadow-lg shadow-slate-200 flex items-center justify-between active:scale-[0.98] transition-all border border-slate-800">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-slate-800 text-yellow-400 rounded-2xl ring-1 ring-white/10">
+                  <LayoutDashboard size={20}/>
+                </div>
+                <div className="text-left">
+                  <span className="font-black text-white text-xs uppercase tracking-tight block">Painel de Gestão</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Gerir Cursos e Aulas</span>
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-slate-600"/>
+            </Link>
+          )}
+
           <button onClick={() => setView('dados')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-purple-50 text-[#5B2DFF] rounded-2xl"><User size={20}/></div>
@@ -151,8 +180,8 @@ const Perfil = () => {
             <ChevronRight size={18} className="text-gray-300"/>
           </button>
 
-          <button onClick={() => supabase.auth.signOut()} className="w-full mt-6 p-5 text-red-500 font-bold text-sm bg-red-50 rounded-[28px] active:scale-95 transition-all">
-            Sair da Conta
+          <button onClick={() => supabase.auth.signOut()} className="w-full mt-6 p-5 text-red-500 font-bold text-xs uppercase tracking-widest bg-red-50 rounded-[28px] active:scale-95 transition-all shadow-sm">
+            Encerrar Sessão
           </button>
         </div>
       )}
@@ -165,22 +194,22 @@ const Perfil = () => {
             <button type="button" onClick={() => setView('menu')} className="p-2 text-gray-400"><X size={20}/></button>
           </div>
           <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 block">Nome</label>
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 block">Nome Completo</label>
             <input className="w-full bg-transparent font-bold text-slate-700 outline-none px-2" value={perfil.nome} onChange={(e) => setPerfil({...perfil, nome: e.target.value})} required />
           </div>
           <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 block">Telefone</label>
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 block">Telefone de Contato</label>
             <input className="w-full bg-transparent font-bold text-slate-700 outline-none px-2" value={perfil.telefone} onChange={(e) => setPerfil({...perfil, telefone: e.target.value})} />
           </div>
           <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 block">Nova Senha (opcional)</label>
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 block">Redefinir Senha (opcional)</label>
             <div className="flex items-center gap-2 px-2">
               <KeyRound size={16} className="text-[#5B2DFF]" />
-              <input type="password" placeholder="Mín. 6 caracteres" className="w-full bg-transparent font-bold text-slate-700 outline-none text-sm" value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} />
+              <input type="password" placeholder="Mínimo 6 caracteres" className="w-full bg-transparent font-bold text-slate-700 outline-none text-sm" value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} />
             </div>
           </div>
           <button type="submit" disabled={updating} className={`w-full py-5 rounded-[28px] font-bold text-white shadow-lg transition-all ${success ? 'bg-green-500' : 'bg-[#5B2DFF]'}`}>
-            {updating ? <Loader2 className="animate-spin mx-auto" size={20}/> : success ? 'Salvo!' : 'Salvar Alterações'}
+            {updating ? <Loader2 className="animate-spin mx-auto" size={20}/> : success ? 'Sucesso!' : 'Salvar Alterações'}
           </button>
         </form>
       )}
@@ -189,12 +218,12 @@ const Perfil = () => {
       {view === 'gerador' && (
         <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 pb-10">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-widest">Convite Instagram</h3>
+            <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-widest">Convite Social</h3>
             <button onClick={() => setView('menu')} className="p-2 text-gray-400"><X size={20}/></button>
           </div>
 
           <div className="mb-6 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-1 block">Frase Personalizada</label>
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-1 block">Frase do Card</label>
             <input 
               type="text"
               maxLength={60}
@@ -225,7 +254,7 @@ const Perfil = () => {
             </div>
           </div>
 
-          <button onClick={baixarCard} disabled={downloading} className="w-full mt-6 bg-slate-800 text-white py-5 rounded-[28px] font-bold flex items-center justify-center gap-3 shadow-lg">
+          <button onClick={baixarCard} disabled={downloading} className="w-full mt-6 bg-slate-800 text-white py-5 rounded-[28px] font-bold flex items-center justify-center gap-3 shadow-lg hover:bg-slate-900 transition-colors">
             {downloading ? <Loader2 className="animate-spin" size={20}/> : <Download size={20}/>}
             {downloading ? 'Gerando...' : 'Baixar Imagem'}
           </button>
@@ -236,21 +265,21 @@ const Perfil = () => {
       {view === 'sobre' && (
         <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Sobre o App</h3>
+            <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Sobre o Verbo</h3>
             <button onClick={() => setView('menu')} className="p-2 text-gray-400"><X size={20}/></button>
           </div>
           <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-center mb-6">
-            <h4 className="text-2xl font-black text-slate-800 tracking-tighter mb-2">Verbo</h4>
-            <p className="text-gray-400 text-sm leading-relaxed">Unindo teologia e tecnologia para potencializar a voz do pregador moderno.</p>
+            <h4 className="text-2xl font-black text-slate-800 tracking-tighter mb-2 italic uppercase">Verbo</h4>
+            <p className="text-gray-400 text-sm leading-relaxed">Conectando teologia profunda e tecnologia intuitiva para os pregadores do novo tempo.</p>
           </div>
           <div className="space-y-4">
-            <div className="flex items-start gap-4 p-2">
+            <div className="flex items-start gap-4 p-4 bg-white rounded-3xl border border-gray-50">
               <div className="p-3 bg-purple-50 text-[#5B2DFF] rounded-2xl"><ShieldCheck size={20}/></div>
-              <div><h5 className="font-bold text-slate-700 text-sm">Privacidade</h5><p className="text-xs text-gray-400">Dados seguros e criptografados.</p></div>
+              <div><h5 className="font-bold text-slate-700 text-sm">Criptografia</h5><p className="text-xs text-gray-400">Seus sermões são privados e protegidos.</p></div>
             </div>
-            <div className="flex items-start gap-4 p-2">
+            <div className="flex items-start gap-4 p-4 bg-white rounded-3xl border border-gray-50">
               <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl"><Globe size={20}/></div>
-              <div><h5 className="font-bold text-slate-700 text-sm">App Verbo</h5><p className="text-xs text-gray-400">O app que todo pregador precisa.</p></div>
+              <div><h5 className="font-bold text-slate-700 text-sm">Escalabilidade</h5><p className="text-xs text-gray-400">Acesse de qualquer lugar do mundo.</p></div>
             </div>
           </div>
         </div>
