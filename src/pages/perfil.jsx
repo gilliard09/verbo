@@ -249,7 +249,7 @@ const Perfil = () => {
             <div className="z-10 space-y-4">
               <p className="text-white font-bold text-lg leading-tight px-2">{textoCard}</p>
               <div className="flex items-center justify-center gap-2 text-white/60">
-                <Sparkles size={12} /><span className="text-[9px] font-black uppercase tracking-widest">Acesse verbo-app.vercel.app</span>
+                <Sparkles size={12} /><span className="text-[9px] font-black uppercase tracking-widest">Acesse appverbo.com.br</span>
               </div>
             </div>
           </div>
