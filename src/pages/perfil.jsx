@@ -279,7 +279,7 @@ const Perfil = () => {
             </div>
             <div className="flex items-start gap-4 p-4 bg-white rounded-3xl border border-gray-50">
               <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl"><Globe size={20}/></div>
-              <div><h5 className="font-bold text-slate-700 text-sm">Escalabilidade</h5><p className="text-xs text-gray-400">Acesse de qualquer lugar do mundo.</p></div>
+              <div><h5 className="font-bold text-slate-700 text-sm">Escalabilidade</h5><p className="text-xs text-gray-400">Acesse de qualquer lugar do mundo em qualquer dispositivo.</p></div>
             </div>
           </div>
         </div>
