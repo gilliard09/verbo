@@ -30,7 +30,8 @@ const Navbar = ({ onOpenBiblia, session }) => {
   if (!session || isPublicPage || isReading || isAdminPage) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-[100] pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+    /* AJUSTE: pb-[calc(env(safe-area-inset-bottom)+12px)] resolve o corte no iPhone 11 */
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-3 flex justify-between items-center z-[100] pb-[calc(env(safe-area-inset-bottom)+12px)] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
       <Link to="/" className={`flex flex-col items-center ${location.pathname === '/' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <Home size={22} /><span className="text-[10px] font-bold mt-1">Início</span>
       </Link>
@@ -97,8 +98,8 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-[#FDFDFF]">
-        {/* Ajuste do padding inferior: se estiver no admin, não precisa de espaço para a navbar */}
-        <main className={session ? "pb-24" : ""}>
+        {/* AJUSTE: O padding inferior do main agora acompanha a altura dinâmica da Navbar */}
+        <main className={session ? "pb-[calc(env(safe-area-inset-bottom)+100px)]" : ""}>
           <Routes>
             <Route path="/" element={session ? <Dashboard /> : <LandingPage />} />
             <Route path="/login" element={!session ? <Login /> : <Navigate to="/" replace />} />
@@ -123,7 +124,7 @@ function App() {
         </main>
         
         <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
-        <Analytics /> {/* <--- ADICIONADO: Componente de monitoramento da Vercel */}
+        <Analytics />
         
         {session && (
           <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />

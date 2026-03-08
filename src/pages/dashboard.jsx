@@ -130,7 +130,7 @@ const Dashboard = () => {
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                             {n.tipo === 'promocao' ? <Sparkle size={12} className="text-orange-500" /> : <Megaphone size={12} className="text-blue-500" />}
-                            <span className="text-[10px] font-black text-slate-800 uppercase italic leading-none">{n.titulo}</span>
+                            <span className="text-[10px] font-black text-slate-800 uppercase leading-none">{n.titulo}</span>
                           </div>
                           {isExpanded ? <ChevronUp size={12} className="text-slate-300" /> : <ChevronDown size={12} className="text-slate-300" />}
                         </div>
