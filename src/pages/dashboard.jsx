@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Sparkles, ScrollText, Clock, Trash2, Edit3 } from 'lucide-react';
+import { Sparkles, ScrollText, Clock, Trash2, Edit3, Bell, X, Megaphone, Sparkle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -9,16 +9,35 @@ const Dashboard = () => {
   const [sermoes, setSermoes] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ESTADOS PARA NOTIFICAÇÕES
+  const [notificacoes, setNotificacoes] = useState([]);
+  const [showNotificacoes, setShowNotificacoes] = useState(false);
+  const [temNovidade, setTemNovidade] = useState(false);
+  const [expandedId, setExpandedId] = useState(null); // Novo: Controla qual aviso está expandido
+
   useEffect(() => {
     carregarDados();
+    carregarNotificacoes();
   }, []);
+
+  async function carregarNotificacoes() {
+    const { data } = await supabase
+      .from('notificacoes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+    
+    if (data) {
+      setNotificacoes(data);
+      if (data.length > 0) setTemNovidade(true);
+    }
+  }
 
   async function carregarDados() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // 1. Lógica da Saudação
         const nomeCompleto = user.user_metadata?.full_name || 'Pregador';
         const hora = new Date().getHours();
         let periodo = "Bom dia";
@@ -28,12 +47,10 @@ const Dashboard = () => {
         const ehPastor = user.email === 'jefersonrocha998@gmail.com'; 
         setSaudacao(`${periodo}, ${ehPastor ? 'Pastor ' : ''}${nomeCompleto.split(' ')[0]}`);
 
-        // 2. BUSCA FILTRADA (A correção está aqui)
-        // Adicionamos o .eq('user_id', user.id) para garantir que você veja só os SEUS
         const { data, error } = await supabase
           .from('sermoes')
           .select('*')
-          .eq('user_id', user.id) // <--- FILTRO ESSENCIAL
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -57,20 +74,91 @@ const Dashboard = () => {
     }
   }
 
+  // Função para lidar com o clique na notificação
+  const handleNotificacaoClick = (n) => {
+    if (expandedId === n.id) {
+      // Se já estiver expandido e tiver link, abre o link
+      if (n.link) window.open(n.link, '_blank');
+      // Opcional: fechar ao clicar de novo se não tiver link
+      else setExpandedId(null);
+    } else {
+      // Se estiver fechado, apenas expande
+      setExpandedId(n.id);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFDFF] p-6 pb-32">
-      <header className="mt-10 mb-10">
-        <h1 className="text-3xl font-bold text-slate-800 tracking-tighter leading-tight">
-          {saudacao} <Sparkles className="inline text-yellow-400 mb-1" size={24} />
-        </h1>
-        <p className="text-gray-400 font-medium text-sm">
-          {sermoes.length === 0 ? "Nenhuma mensagem preparada." : `Você tem ${sermoes.length} mensagens salvas.`}
-        </p>
+      <header className="mt-10 mb-10 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tighter leading-tight">
+            {saudacao} <Sparkles className="inline text-yellow-400 mb-1" size={24} />
+          </h1>
+          <p className="text-gray-400 font-medium text-sm">
+            {sermoes.length === 0 ? "Nenhuma mensagem preparada." : `Você tem ${sermoes.length} mensagens salvas.`}
+          </p>
+        </div>
+
+        <div className="relative">
+          <button 
+            onClick={() => { setShowNotificacoes(!showNotificacoes); setTemNovidade(false); }}
+            className={`p-3 rounded-2xl transition-all relative ${showNotificacoes ? 'bg-[#5B2DFF] text-white' : 'bg-white border border-gray-100 text-slate-400 shadow-sm'}`}
+          >
+            <Bell size={20} />
+            {temNovidade && (
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            )}
+          </button>
+
+          {showNotificacoes && (
+            <div className="absolute right-0 mt-3 w-72 bg-white rounded-[32px] border border-gray-100 shadow-2xl z-50 p-5 animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Novidades</h4>
+                <button onClick={() => { setShowNotificacoes(false); setExpandedId(null); }}><X size={16} className="text-slate-300" /></button>
+              </div>
+              
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                {notificacoes.length > 0 ? (
+                  notificacoes.map(n => {
+                    const isExpanded = expandedId === n.id;
+                    return (
+                      <div 
+                        key={n.id} 
+                        onClick={() => handleNotificacaoClick(n)}
+                        className={`p-4 rounded-2xl cursor-pointer transition-all border ${isExpanded ? 'bg-white border-purple-100 shadow-sm' : 'bg-slate-50 border-transparent hover:bg-slate-100'}`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            {n.tipo === 'promocao' ? <Sparkle size={12} className="text-orange-500" /> : <Megaphone size={12} className="text-blue-500" />}
+                            <span className="text-[10px] font-black text-slate-800 uppercase italic leading-none">{n.titulo}</span>
+                          </div>
+                          {isExpanded ? <ChevronUp size={12} className="text-slate-300" /> : <ChevronDown size={12} className="text-slate-300" />}
+                        </div>
+                        
+                        <p className={`text-[11px] text-slate-500 leading-relaxed transition-all ${isExpanded ? '' : 'line-clamp-2'}`}>
+                          {n.mensagem}
+                        </p>
+
+                        {isExpanded && n.link && (
+                          <div className="mt-3 pt-2 border-t border-slate-50 flex justify-end">
+                            <span className="text-[9px] font-black text-[#5B2DFF] uppercase tracking-tighter">Clique para ver mais →</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-[11px] text-gray-400 italic text-center py-4">Tudo atualizado por aqui!</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       <section>
         <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-2">
-          <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-[3px] opacity-40">Suas Mensagens</h3>
+          <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-[3px] opacity-40 text-left">Suas Mensagens</h3>
         </div>
 
         <div className="space-y-4">
@@ -89,7 +177,7 @@ const Dashboard = () => {
                   <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center group-hover:bg-[#5B2DFF] group-hover:text-white transition-colors">
                     <ScrollText size={20} />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 text-left">
                     <h4 className="font-bold text-slate-700 text-sm line-clamp-1">{sermao.titulo}</h4>
                     <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase mt-1">
                       <Clock size={12} />
