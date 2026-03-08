@@ -147,8 +147,8 @@ const LandingPage = () => {
 
           <div className="bg-[#4C1D95] rounded-[48px] p-12 text-white relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-            <h3 className="text-3xl font-black mb-6 italic leading-tight text-center">“Mais de 120 sermões criados nas últimas 2 semanas por alunos!”</h3>
-            <p className="text-shadow-purple-100 text-center font-bold uppercase text-[10px] tracking-widest">Prova social • Verbo app</p>
+            <h3 className="text-3xl font-black mb-6 italic leading-tight text-center">“Mais de 500 acessos nos últimos 7 dias!”</h3>
+            <p className="text-shadow-purple-100 text-center font-bold uppercase text-[10px] tracking-widest">• Verbo app</p>
             <div className="mt-8 pt-8 border-t border-white/10 flex justify-center gap-2">
               {[1,2,3,4,5].map(i => <Sparkles key={i} size={16} className="text-yellow-400 fill-yellow-400" />)}
             </div>
