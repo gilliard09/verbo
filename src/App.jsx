@@ -10,47 +10,49 @@ import Editor from './pages/editor';
 import Leitura from './pages/leitura';
 import Perfil from './pages/perfil';
 import Biblioteca from './pages/biblioteca';
-import LandingPage from './pages/landingpage'; 
+import LandingPage from './pages/landingpage';
 import Cursos from './pages/cursos';
 import Aulas from './pages/aulas';
 import AdminDashboard from './pages/admindashboard';
 
 // --- COMPONENTES ---
 import BibliaSidebar from './components/BibliaSidebar';
+import RotaAdmin from './components/RotaAdmin';
 import { Home, PenTool, User, Book, PlayCircle } from 'lucide-react';
 
 const Navbar = ({ onOpenBiblia, session }) => {
   const location = useLocation();
-  
+
   const isPublicPage = location.pathname === '/login' || location.pathname === '/landing';
   const isReading = location.pathname.startsWith('/leitura');
   const isAdminPage = location.pathname.startsWith('/admin');
-  
-  if (!session || isPublicPage || isReading || isAdminPage) return null;
+  const isEditor = location.pathname.startsWith('/editor');
+
+  if (!session || isPublicPage || isReading || isAdminPage || isEditor) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-[100] pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
       <Link to="/" className={`flex flex-col items-center ${location.pathname === '/' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <Home size={22} /><span className="text-[10px] font-bold mt-1">Início</span>
       </Link>
-      
+
       <Link to="/cursos" className={`flex flex-col items-center ${location.pathname.startsWith('/cursos') ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <PlayCircle size={22} /><span className="text-[10px] font-bold mt-1">Academia</span>
       </Link>
-      
+
       <Link to="/editor" className="flex flex-col items-center -mt-10">
         <div className="bg-[#5B2DFF] p-4 rounded-full text-white shadow-lg shadow-purple-200 hover:scale-105 active:scale-95 transition-all">
           <PenTool size={24} />
         </div>
       </Link>
-      
-      <button 
-        onClick={onOpenBiblia} 
+
+      <button
+        onClick={onOpenBiblia}
         className="flex flex-col items-center text-gray-400 hover:text-[#5B2DFF] transition-colors cursor-pointer"
       >
         <Book size={22} /><span className="text-[10px] font-bold mt-1">Bíblia</span>
       </button>
-      
+
       <Link to="/perfil" className={`flex flex-col items-center ${location.pathname === '/perfil' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <User size={22} /><span className="text-[10px] font-bold mt-1">Perfil</span>
       </Link>
@@ -95,7 +97,6 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-[#FDFDFF]">
-        {/* Ajuste do padding inferior: se estiver no admin, não precisa de espaço para a navbar */}
         <main className={session ? "pb-24" : ""}>
           <Routes>
             <Route path="/" element={session ? <Dashboard /> : <LandingPage />} />
@@ -103,7 +104,7 @@ function App() {
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/cursos" element={session ? <Cursos /> : <Navigate to="/login" replace />} />
             <Route path="/cursos/:cursoId" element={session ? <Aulas /> : <Navigate to="/login" replace />} />
-            <Route path="/admin" element={session ? <AdminDashboard /> : <Navigate to="/login" replace />} />
+            <Route path="/admin" element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
             <Route path="/biblioteca" element={session ? <Biblioteca /> : <Navigate to="/login" replace />} />
             <Route path="/editor" element={session ? <Editor /> : <Navigate to="/login" replace />} />
             <Route path="/editor/:id" element={session ? <Editor /> : <Navigate to="/login" replace />} />
@@ -112,10 +113,10 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
-        
+
         <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
         <Analytics />
-        
+
         {session && (
           <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
         )}

@@ -1,27 +1,74 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { 
-  Save, ArrowLeft, Book, Sparkles, Loader2, 
-  Bold, Italic, Quote, Highlighter 
-} from 'lucide-react'; 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  Save, ArrowLeft, Book, Loader2,
+  Bold, Italic, Quote, Highlighter, CheckCircle2,
+  Clock, AlignLeft, RotateCcw, Maximize2, Minimize2,
+  AlertTriangle, X
+} from 'lucide-react';
+
+const PALAVRAS_POR_MINUTO = 120;
+const AUTO_SAVE_DELAY = 30000;
+const RASCUNHO_KEY = (id) => `verbo_rascunho_${id || 'novo'}`;
+const HISTORICO_KEY = (id) => `verbo_historico_${id || 'novo'}`;
+
+const Toast = ({ visivel, tipo, mensagem, onFechar }) => (
+  <div className={`fixed top-6 left-1/2 z-[200] transition-all duration-400 ${visivel ? '-translate-x-1/2 translate-y-0 opacity-100 scale-100' : '-translate-x-1/2 -translate-y-4 opacity-0 scale-95 pointer-events-none'}`}>
+    <div className={`flex items-center gap-3 px-5 py-3.5 rounded-[20px] shadow-2xl border ${tipo === 'sucesso' ? 'bg-green-500 border-green-400 text-white' : tipo === 'erro' ? 'bg-red-500 border-red-400 text-white' : 'bg-slate-900 border-white/10 text-white'}`}>
+      {tipo === 'sucesso' && <CheckCircle2 size={16} />}
+      {tipo === 'erro' && <AlertTriangle size={16} />}
+      <span className="text-xs font-black uppercase tracking-wide">{mensagem}</span>
+      <button onClick={onFechar} className="ml-1 opacity-60 hover:opacity-100"><X size={14} /></button>
+    </div>
+  </div>
+);
 
 const Editor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const textAreaRef = useRef(null); // Ref para manipular a seleção de texto
-  
+  const textAreaRef = useRef(null);
+
   const [titulo, setTitulo] = useState('');
   const [conteudo, setConteudo] = useState('');
   const [referencia, setReferencia] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loadingIA, setLoadingIA] = useState(false);
+  const [telaCheia, setTelaCheia] = useState(true);
+  const [autoSaveAtivo, setAutoSaveAtivo] = useState(false);
+  const autoSaveRef = useRef(null);
+  const [historico, setHistorico] = useState([]);
+  const [mostrarHistorico, setMostrarHistorico] = useState(false);
+  const [toast, setToast] = useState({ visivel: false, tipo: 'info', mensagem: '' });
 
-  const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+  const metricas = useMemo(() => {
+    const palavras = conteudo.trim() ? conteudo.trim().split(/\s+/).length : 0;
+    const minutos = Math.ceil(palavras / PALAVRAS_POR_MINUTO);
+    return { palavras, minutos };
+  }, [conteudo]);
+
+  const mostrarToast = useCallback((mensagem, tipo = 'info', duracao = 3000) => {
+    setToast({ visivel: true, tipo, mensagem });
+    setTimeout(() => setToast(t => ({ ...t, visivel: false })), duracao);
+  }, []);
 
   useEffect(() => {
-    if (id) fetchSermao();
+    if (id) {
+      fetchSermao();
+    } else {
+      const rascunho = localStorage.getItem(RASCUNHO_KEY(null));
+      if (rascunho) {
+        try {
+          const { titulo: t, conteudo: c, referencia: r, savedAt } = JSON.parse(rascunho);
+          setTitulo(t || ''); setConteudo(c || ''); setReferencia(r || '');
+          const tempo = new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          mostrarToast(`Rascunho recuperado das ${tempo}`, 'info');
+        } catch (e) {}
+      }
+    }
+    try {
+      const hist = JSON.parse(localStorage.getItem(HISTORICO_KEY(id)) || '[]');
+      setHistorico(hist);
+    } catch (e) {}
   }, [id]);
 
   async function fetchSermao() {
@@ -34,130 +81,197 @@ const Editor = () => {
         setReferencia(data.referencia_biblica || '');
       }
     } catch (error) {
-      console.error("Erro ao carregar:", error.message);
+      mostrarToast('Erro ao carregar sermão', 'erro');
     }
   }
 
-  // FUNÇÃO PARA FORMATAR TEXTO SELECIONADO
-  const aplicarFormatacao = (prefixo, sufixo) => {
+  useEffect(() => {
+    if (!conteudo && !titulo) return;
+    clearTimeout(autoSaveRef.current);
+    setAutoSaveAtivo(false);
+    autoSaveRef.current = setTimeout(() => {
+      setAutoSaveAtivo(true);
+      const dados = { titulo, conteudo, referencia, savedAt: new Date().toISOString() };
+      localStorage.setItem(RASCUNHO_KEY(id), JSON.stringify(dados));
+      setTimeout(() => setAutoSaveAtivo(false), 2000);
+    }, AUTO_SAVE_DELAY);
+    return () => clearTimeout(autoSaveRef.current);
+  }, [titulo, conteudo, referencia, id]);
+
+  const aplicarFormatacao = useCallback((prefixo, sufixo) => {
     const el = textAreaRef.current;
     if (!el) return;
-
     const start = el.selectionStart;
     const end = el.selectionEnd;
-    const textoSelecionado = conteudo.substring(start, end);
-    
-    // Se não houver seleção, apenas insere os símbolos
-    const novoTexto = 
-      conteudo.substring(0, start) + 
-      prefixo + textoSelecionado + sufixo + 
-      conteudo.substring(end);
-
-    setConteudo(novoTexto);
-    
-    // Devolve o foco ao editor
+    const selecionado = conteudo.substring(start, end);
+    const novo = conteudo.substring(0, start) + prefixo + selecionado + sufixo + conteudo.substring(end);
+    setConteudo(novo);
     setTimeout(() => {
       el.focus();
       el.setSelectionRange(start + prefixo.length, end + prefixo.length);
     }, 10);
-  };
-
-  async function invocarIA() {
-    if (!conteudo.trim()) {
-      alert("Escreva pelo menos uma ideia para a IA te ajudar!");
-      return;
-    }
-    setLoadingIA(true);
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      const prompt = `Você é um assistente de teologia para o Pastor Jeferson. 
-      O tema é "${titulo}" e a referência é "${referencia}".
-      Continue a pregação com aplicação prática e linguagem acessível.
-      Use frases curtas. Texto: ${conteudo}`;
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      setConteudo(prev => prev + "\n\n--- Sugestão da IA ---\n" + response.text());
-    } catch (error) {
-      alert("Erro na IA: Verifique sua chave.");
-    } finally {
-      setLoadingIA(false);
-    }
-  }
+  }, [conteudo]);
 
   async function salvar() {
-    if (!titulo.trim()) { alert("Insira um título."); return; }
+    if (!titulo.trim()) { mostrarToast('Insira um título para salvar.', 'erro'); return; }
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const dadosSermao = { titulo, conteudo, referencia_biblica: referencia, user_id: user.id };
-      let res = id ? await supabase.from('sermoes').update(dadosSermao).eq('id', id) : await supabase.from('sermoes').insert([dadosSermao]);
+
+      if (id && conteudo.trim()) {
+        const novoHistorico = [
+          { conteudo, titulo, referencia, savedAt: new Date().toISOString() },
+          ...historico.slice(0, 4)
+        ];
+        localStorage.setItem(HISTORICO_KEY(id), JSON.stringify(novoHistorico));
+        setHistorico(novoHistorico);
+      }
+
+      const res = id
+        ? await supabase.from('sermoes').update(dadosSermao).eq('id', id)
+        : await supabase.from('sermoes').insert([dadosSermao]);
+
       if (res.error) throw res.error;
-      navigate('/'); 
+      localStorage.removeItem(RASCUNHO_KEY(id));
+      mostrarToast('Sermão salvo com sucesso!', 'sucesso');
+      setTimeout(() => navigate('/'), 1200);
     } catch (error) {
-      alert("Erro ao guardar: " + error.message);
+      mostrarToast('Erro ao salvar: ' + error.message, 'erro');
     } finally {
       setLoading(false);
     }
   }
 
+  const restaurarVersao = (versao) => {
+    setConteudo(versao.conteudo);
+    setTitulo(versao.titulo);
+    setReferencia(versao.referencia);
+    setMostrarHistorico(false);
+    mostrarToast('Versão anterior restaurada!', 'info');
+  };
+
+  const formatarHora = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
   return (
-    <div className="p-6 pb-24 max-w-4xl mx-auto bg-white min-h-screen">
-      <div className="flex items-center justify-between mb-8">
-        <button onClick={() => navigate(-1)} className="text-gray-400"><ArrowLeft size={24} /></button>
-        <h1 className="text-lg font-extrabold bg-gradient-to-r from-[#5B2DFF] to-[#3A1DB8] bg-clip-text text-transparent uppercase">
+    <div className={`bg-white flex flex-col transition-all duration-300 ${telaCheia ? 'fixed inset-0 z-[150]' : 'min-h-screen'}`}>
+
+      <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem} onFechar={() => setToast(t => ({ ...t, visivel: false }))} />
+
+      {/* Header */}
+      <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
+        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-slate-700 transition-colors p-1">
+          <ArrowLeft size={22} />
+        </button>
+        <h1 className="text-sm font-black bg-gradient-to-r from-[#5B2DFF] to-[#3A1DB8] bg-clip-text text-transparent uppercase tracking-widest">
           {id ? 'Editar Mensagem' : 'Novo Sermão'}
         </h1>
-        <button onClick={salvar} disabled={loading} className="bg-[#5B2DFF] text-white p-3 rounded-2xl shadow-lg disabled:opacity-50 active:scale-95">
-          <Save size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setTelaCheia(t => !t)} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+            {telaCheia ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
+          {historico.length > 0 && (
+            <button onClick={() => setMostrarHistorico(true)} className="p-2 text-slate-300 hover:text-[#5B2DFF] transition-colors" title="Histórico de versões">
+              <RotateCcw size={18} />
+            </button>
+          )}
+          <button onClick={salvar} disabled={loading}
+            className="bg-[#5B2DFF] text-white p-3 rounded-2xl shadow-lg disabled:opacity-50 active:scale-95 hover:bg-[#4a22e0] transition-all">
+            {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+          </button>
+        </div>
       </div>
 
-      <input 
-        type="text" 
-        placeholder="Título da pregação..." 
-        className="w-full text-3xl font-black border-none outline-none mb-2 placeholder:text-gray-200 focus:ring-0 text-slate-800"
-        value={titulo}
-        onChange={(e) => setTitulo(e.target.value)}
-      />
-      
-      <div className="flex items-center gap-2 mb-4 text-[#5B2DFF] bg-purple-50 p-3 rounded-2xl">
-        <Book size={18} />
-        <input 
-          type="text" 
-          placeholder="Referência Bíblica" 
-          className="text-sm font-bold border-none outline-none w-full bg-transparent focus:ring-0"
-          value={referencia}
-          onChange={(e) => setReferencia(e.target.value)}
+      {/* Título e referência */}
+      <div className="px-6 pt-5 shrink-0">
+        <input
+          type="text"
+          placeholder="Título da pregação..."
+          className="w-full text-2xl font-black border-none outline-none mb-3 placeholder:text-gray-200 focus:ring-0 text-slate-800"
+          value={titulo}
+          onChange={e => setTitulo(e.target.value)}
+        />
+        <div className="flex items-center gap-2 mb-4 text-[#5B2DFF] bg-purple-50 p-3 rounded-2xl">
+          <Book size={16} />
+          <input
+            type="text"
+            placeholder="Referência Bíblica (ex: João 3:16)"
+            className="text-sm font-bold border-none outline-none w-full bg-transparent focus:ring-0"
+            value={referencia}
+            onChange={e => setReferencia(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-1 mb-3 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit">
+          <button onClick={() => aplicarFormatacao('**', '**')} className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Negrito"><Bold size={16} /></button>
+          <button onClick={() => aplicarFormatacao('*', '*')} className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Itálico"><Italic size={16} /></button>
+          <button onClick={() => aplicarFormatacao('> ', '')} className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Citação"><Quote size={16} /></button>
+          <button onClick={() => aplicarFormatacao('==', '==')} className="p-2 hover:bg-purple-100 text-purple-500 rounded-lg transition-all" title="Destaque"><Highlighter size={16} /></button>
+        </div>
+      </div>
+
+      {/* Textarea */}
+      <div className="flex-1 px-6 overflow-hidden">
+        <textarea
+          ref={textAreaRef}
+          placeholder="Escreva a mensagem aqui..."
+          className="w-full h-full border-none outline-none resize-none text-slate-700 leading-relaxed text-base focus:ring-0 pb-4"
+          style={{ minHeight: telaCheia ? 'calc(100vh - 280px)' : '45vh' }}
+          value={conteudo}
+          onChange={e => setConteudo(e.target.value)}
         />
       </div>
 
-      {/* TOOLBAR DE FORMATAÇÃO DISCRETA */}
-      <div className="flex items-center gap-1 mb-4 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit">
-        <button onClick={() => aplicarFormatacao('**', '**')} className="p-2 hover:bg-white rounded-lg text-slate-600 transition-all" title="Negrito"><Bold size={18} /></button>
-        <button onClick={() => aplicarFormatacao('*', '*')} className="p-2 hover:bg-white rounded-lg text-slate-600 transition-all" title="Itálico"><Italic size={18} /></button>
-        <button onClick={() => aplicarFormatacao('> ', '')} className="p-2 hover:bg-white rounded-lg text-slate-600 transition-all" title="Citação"><Quote size={18} /></button>
-        <button onClick={() => aplicarFormatacao('==', '==')} className="p-2 hover:bg-purple-100 text-purple-600 rounded-lg transition-all" title="Marcador Pastel"><Highlighter size={18} /></button>
+      {/* Rodapé */}
+      <div className="px-6 py-3 border-t border-slate-50 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 text-slate-300">
+            <AlignLeft size={12} />
+            <span className="text-[10px] font-black uppercase tracking-widest">{metricas.palavras} palavras</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-300">
+            <Clock size={12} />
+            <span className="text-[10px] font-black uppercase tracking-widest">~{metricas.minutos} min</span>
+          </div>
+        </div>
+        <div className={`flex items-center gap-1.5 transition-opacity duration-500 ${autoSaveAtivo ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Rascunho salvo</span>
+        </div>
       </div>
 
-      <textarea 
-        ref={textAreaRef}
-        placeholder="Escreva a mensagem..." 
-        className="w-full h-[50vh] border-none outline-none resize-none text-slate-700 leading-relaxed text-lg focus:ring-0"
-        value={conteudo}
-        onChange={(e) => setConteudo(e.target.value)}
-      />
-
-      <div className="fixed bottom-28 right-8 flex flex-col items-center gap-2">
-        {loadingIA && <span className="text-[10px] font-black uppercase text-[#5B2DFF] animate-pulse">Inspirando...</span>}
-        <button 
-          onClick={invocarIA} 
-          disabled={loadingIA}
-          className={`p-4 rounded-full shadow-2xl transition-all ${loadingIA ? 'bg-gray-100 text-gray-400' : 'bg-white border border-purple-100 text-[#5B2DFF]'}`}
-        >
-          {loadingIA ? <Loader2 className="animate-spin" size={24} /> : <Sparkles size={24} />}
-        </button>
-      </div>
+      {/* Modal histórico */}
+      {mostrarHistorico && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMostrarHistorico(false)} />
+          <div className="relative bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest flex items-center gap-2">
+                <RotateCcw size={14} className="text-[#5B2DFF]" /> Histórico de Versões
+              </h3>
+              <button onClick={() => setMostrarHistorico(false)} className="p-1 text-slate-300 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto">
+              {historico.map((versao, i) => (
+                <button key={i} onClick={() => restaurarVersao(versao)} className="w-full p-5 text-left hover:bg-purple-50 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-slate-700 truncate">{versao.titulo || 'Sem título'}</p>
+                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">{versao.conteudo?.substring(0, 80)}...</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-[9px] font-black text-slate-300 uppercase block">{formatarHora(versao.savedAt)}</span>
+                      <span className="text-[9px] text-[#5B2DFF] font-bold mt-1 block">Restaurar →</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100">
+              <p className="text-[9px] text-slate-300 text-center font-bold uppercase tracking-widest">Versões salvas localmente · Últimas 5</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
