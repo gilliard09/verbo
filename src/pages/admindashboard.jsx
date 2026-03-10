@@ -226,17 +226,21 @@ const AdminDashboard = () => {
       );
       setDadosGrafico(ultimos7);
 
-      // Gráfico de crescimento de usuários (8 semanas)
-      const semanas = await Promise.all(
-        Array.from({ length: 8 }, async (_, i) => {
-          const fim = new Date(); fim.setDate(hoje.getDate() - i * 7);
-          const ini = new Date(fim); ini.setDate(fim.getDate() - 6);
-          const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
-            .gte('created_at', ini.toISOString()).lte('created_at', fim.toISOString());
-          return { label: `S${8 - i}`, valor: count || 0 };
+      // Gráfico de novos usuários — últimos 7 dias (igual ao gráfico de sermões)
+      const ultimos7Usuarios = await Promise.all(
+        Array.from({ length: 7 }, async (_, i) => {
+          const d = new Date();
+          d.setDate(hoje.getDate() - (6 - i)); // do mais antigo para o mais recente
+          const dia = d.toISOString().split('T')[0];
+          const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', `${dia}T00:00:00`)
+            .lte('created_at', `${dia}T23:59:59`);
+          return { label: diasSemana[d.getDay()], valor: count || 0 };
         })
       );
-      setDadosCrescimento(semanas.reverse());
+      setDadosCrescimento(ultimos7Usuarios);
     } catch (err) { console.error(err); }
   };
 
@@ -528,7 +532,7 @@ const AdminDashboard = () => {
               {/* Crescimento usuários 8 semanas */}
               <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]">
                 <h4 className="text-white font-bold text-sm mb-5 flex items-center gap-2">
-                  <TrendingUp size={16} className="text-green-400" /> Novos Usuários — 8 semanas
+                  <TrendingUp size={16} className="text-green-400" /> Novos Usuários — 7 dias
                 </h4>
                 <div className="h-36 flex items-end gap-2">
                   {dadosCrescimento.map((sem, i) => (
@@ -792,7 +796,7 @@ const AdminDashboard = () => {
                       {n.tipo === 'promocao' ? <Sparkles size={18} /> : n.tipo === 'aula' ? <Bell size={18} /> : <Megaphone size={18} />}
                     </div>
                     <div className="text-left">
-                      <h3 className="font-black text-slate-800 text-sm uppercase tracking-tighter">{n.titulo}</h3>
+                      <h3 className="font-black text-slate-800 text-sm uppercase italic tracking-tighter">{n.titulo}</h3>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">{n.mensagem}</p>
                       <span className="text-[9px] font-bold text-slate-300 mt-2 block uppercase">{new Date(n.created_at).toLocaleDateString('pt-BR')}</span>
                     </div>
