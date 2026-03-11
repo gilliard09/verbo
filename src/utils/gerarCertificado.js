@@ -207,7 +207,7 @@ export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoVa
     <div class="top-row">
       <div>
         <div class="brand-name">Verbo</div>
-        <div class="brand-sub">Academia Ministerial</div>
+        <div class="brand-sub">appverbo.com.br</div>
       </div>
       <div class="cert-badge">Certificado Oficial</div>
     </div>

@@ -10,7 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 const Cursos = () => {
-  const { isPlus, loading: loadingPlano } = usePlano(); // ← loading do plano separado
+  const { isPlus, loading: loadingPlano } = usePlano();
   const navigate = useNavigate();
   const [cursos, setCursos] = useState([]);
   const [ultimoVideo, setUltimoVideo] = useState(null);
@@ -61,8 +61,6 @@ const Cursos = () => {
         const porcentagem = totalAulas > 0 ? Math.round((aulasFeitas / totalAulas) * 100) : 0;
         return {
           ...c,
-          // ← acesso por matrícula individual (cursos avulsos pagos)
-          // o acesso por plano (isPlus) é tratado na UI abaixo
           temMatricula: idsComMatricula.has(c.id),
           totalAulas,
           aulasFeitas,
@@ -156,7 +154,57 @@ const Cursos = () => {
     });
   };
 
-  // ─── Aguarda AMBOS carregarem antes de decidir o que mostrar ─────────────────
+  // ─── Componente do player — aparece para TODOS os usuários ───────────────────
+  const CardVideoCanal = () => (
+    <div className="bg-white border border-slate-100 rounded-[28px] overflow-hidden shadow-sm mb-6">
+      <div className="p-4 border-b border-slate-50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-red-50 rounded-xl flex items-center justify-center">
+            <Youtube size={14} className="text-red-500" />
+          </div>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vídeo novo no canal</p>
+            <p className="text-[9px] text-slate-300 font-bold">youtube.com/@ojefersonrocha</p>
+          </div>
+        </div>
+        {/* Badge "novo" piscando */}
+        <div className="flex items-center gap-1.5 bg-red-50 px-2.5 py-1 rounded-full">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-[9px] font-black uppercase tracking-widest text-red-500">Novo</span>
+        </div>
+      </div>
+
+      {loadingVideo ? (
+        <div className="aspect-video flex items-center justify-center bg-slate-50">
+          <Loader2 className="animate-spin text-slate-300" size={28} />
+        </div>
+      ) : ultimoVideo ? (
+        <>
+          {!playerAberto ? (
+            <button onClick={() => setPlayerAberto(true)} className="w-full relative aspect-video overflow-hidden group">
+              <img src={ultimoVideo.thumb} alt={ultimoVideo.titulo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
+                <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                  <PlayCircle size={32} className="text-white fill-white" />
+                </div>
+              </div>
+            </button>
+          ) : (
+            <div className="relative aspect-video">
+              <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${ultimoVideo.id}?autoplay=1`} title={ultimoVideo.titulo} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              <button onClick={() => setPlayerAberto(false)} className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"><X size={14} /></button>
+            </div>
+          )}
+          <div className="p-4">
+            <p className="font-black text-slate-800 text-sm leading-snug mb-1">{ultimoVideo.titulo}</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{ultimoVideo.publicado}</p>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+
+  // ─── Loading ─────────────────────────────────────────────────────────────────
   if (loading || loadingPlano) return (
     <div className="min-h-screen flex items-center justify-center">
       <Loader2 className="animate-spin text-[#5B2DFF]" size={32} />
@@ -173,16 +221,13 @@ const Cursos = () => {
         <p className="font-black text-slate-700 uppercase text-sm tracking-tight">Erro ao carregar</p>
         <p className="text-slate-400 text-xs mt-1">Verifique sua conexão e tente novamente.</p>
       </div>
-      <button
-        onClick={carregarDados}
-        className="flex items-center gap-2 px-6 py-3 bg-[#5B2DFF] text-white rounded-2xl font-black text-xs uppercase shadow-lg"
-      >
+      <button onClick={carregarDados} className="flex items-center gap-2 px-6 py-3 bg-[#5B2DFF] text-white rounded-2xl font-black text-xs uppercase shadow-lg">
         <RefreshCw size={14} /> Tentar novamente
       </button>
     </div>
   );
 
-  // ─── Academia bloqueada — só aparece depois que plano E cursos carregaram ────
+  // ─── Academia bloqueada ───────────────────────────────────────────────────────
   if (!isPlus) {
     return (
       <div className="min-h-screen pb-28">
@@ -193,51 +238,8 @@ const Cursos = () => {
           </header>
         </div>
 
-        {/* Player do último vídeo */}
-        <div className="px-6 max-w-2xl mx-auto mb-6">
-          <div className="bg-white border border-slate-100 rounded-[28px] overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-slate-50 flex items-center gap-2">
-              <div className="w-7 h-7 bg-red-50 rounded-xl flex items-center justify-center">
-                <Youtube size={14} className="text-red-500" />
-              </div>
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Último vídeo do canal</p>
-                <p className="text-[9px] text-slate-300 font-bold">youtube.com/@ojefersonrocha</p>
-              </div>
-            </div>
-
-            {loadingVideo ? (
-              <div className="aspect-video flex items-center justify-center bg-slate-50">
-                <Loader2 className="animate-spin text-slate-300" size={28} />
-              </div>
-            ) : ultimoVideo ? (
-              <>
-                {!playerAberto ? (
-                  <button onClick={() => setPlayerAberto(true)} className="w-full relative aspect-video overflow-hidden group">
-                    <img src={ultimoVideo.thumb} alt={ultimoVideo.titulo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                      <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                        <PlayCircle size={32} className="text-white fill-white" />
-                      </div>
-                    </div>
-                  </button>
-                ) : (
-                  <div className="relative aspect-video">
-                    <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${ultimoVideo.id}?autoplay=1`} title={ultimoVideo.titulo} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-                    <button onClick={() => setPlayerAberto(false)} className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"><X size={14} /></button>
-                  </div>
-                )}
-                <div className="p-4">
-                  <p className="font-black text-slate-800 text-sm leading-snug mb-1">{ultimoVideo.titulo}</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{ultimoVideo.publicado}</p>
-                </div>
-              </>
-            ) : (
-              <div className="aspect-video flex items-center justify-center bg-slate-50">
-                <p className="text-slate-300 text-xs font-bold">Vídeo não disponível no momento</p>
-              </div>
-            )}
-          </div>
+        <div className="px-6 max-w-2xl mx-auto">
+          <CardVideoCanal />
         </div>
 
         <div className="px-6 max-w-2xl mx-auto flex flex-col items-center gap-5 text-center">
@@ -269,10 +271,13 @@ const Cursos = () => {
   // ─── Academia liberada (isPlus = true) ───────────────────────────────────────
   return (
     <div className="p-6 pb-28 max-w-2xl mx-auto">
-      <header className="mb-8 mt-2">
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-black tracking-tight uppercase text-slate-800">Academia Verbo</h1>
         <p className="text-gray-400 text-sm mt-1">Sua formação ministerial descomplicada.</p>
       </header>
+
+      {/* Vídeo do canal — visível para todos os planos */}
+      <CardVideoCanal />
 
       {cursos.length === 0 ? (
         <div className="text-center p-12 border-2 border-dashed border-gray-100 rounded-[32px]">
@@ -283,7 +288,6 @@ const Cursos = () => {
         <div className="space-y-4">
           {cursos.map((curso) => {
             const expandida = descricaoExpandida.has(curso.id);
-            // isPlus tem acesso a TODOS os cursos, independente de matrícula individual
             const temAcesso = isPlus || curso.temMatricula;
 
             return (
