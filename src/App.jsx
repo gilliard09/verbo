@@ -14,6 +14,7 @@ import LandingPage from './pages/landingpage';
 import Cursos from './pages/cursos';
 import Aulas from './pages/aulas';
 import AdminDashboard from './pages/admindashboard';
+import Upgrade from './pages/upgrade';
 
 // --- COMPONENTES ---
 import BibliaSidebar from './components/BibliaSidebar';
@@ -23,12 +24,13 @@ import { Home, PenTool, User, Book, PlayCircle } from 'lucide-react';
 const Navbar = ({ onOpenBiblia, session }) => {
   const location = useLocation();
 
-  const isPublicPage = location.pathname === '/login' || location.pathname === '/landing';
-  const isReading = location.pathname.startsWith('/leitura');
-  const isAdminPage = location.pathname.startsWith('/admin');
-  const isEditor = location.pathname.startsWith('/editor');
+  const isPublicPage  = location.pathname === '/login' || location.pathname === '/landing';
+  const isReading     = location.pathname.startsWith('/leitura');
+  const isAdminPage   = location.pathname.startsWith('/admin');
+  const isEditor      = location.pathname.startsWith('/editor');
+  const isUpgrade     = location.pathname.startsWith('/upgrade');
 
-  if (!session || isPublicPage || isReading || isAdminPage || isEditor) return null;
+  if (!session || isPublicPage || isReading || isAdminPage || isEditor || isUpgrade) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-[100] pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
@@ -99,18 +101,19 @@ function App() {
       <div className="min-h-screen bg-[#FDFDFF]">
         <main className={session ? "pb-24" : ""}>
           <Routes>
-            <Route path="/" element={session ? <Dashboard /> : <LandingPage />} />
-            <Route path="/login" element={!session ? <Login /> : <Navigate to="/" replace />} />
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/cursos" element={session ? <Cursos /> : <Navigate to="/login" replace />} />
-            <Route path="/cursos/:cursoId" element={session ? <Aulas /> : <Navigate to="/login" replace />} />
-            <Route path="/admin" element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
-            <Route path="/biblioteca" element={session ? <Biblioteca /> : <Navigate to="/login" replace />} />
-            <Route path="/editor" element={session ? <Editor /> : <Navigate to="/login" replace />} />
-            <Route path="/editor/:id" element={session ? <Editor /> : <Navigate to="/login" replace />} />
-            <Route path="/leitura/:id" element={session ? <Leitura /> : <Navigate to="/login" replace />} />
-            <Route path="/perfil" element={session ? <Perfil /> : <Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
+            <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
+            <Route path="/landing"         element={<LandingPage />} />
+            <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
+            <Route path="/cursos/:cursoId" element={session ? <Aulas />         : <Navigate to="/login" replace />} />
+            <Route path="/admin"           element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
+            <Route path="/biblioteca"      element={session ? <Biblioteca />    : <Navigate to="/login" replace />} />
+            <Route path="/editor"          element={session ? <Editor />        : <Navigate to="/login" replace />} />
+            <Route path="/editor/:id"      element={session ? <Editor />        : <Navigate to="/login" replace />} />
+            <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
+            <Route path="/perfil"          element={session ? <Perfil />        : <Navigate to="/login" replace />} />
+            <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
+            <Route path="*"                element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 

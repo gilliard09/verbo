@@ -8,6 +8,7 @@ import {
   CheckCircle2, Loader2, Save, KeyRound,
   ChevronRight, Instagram, Info, Share2, X,
   Download, Sparkles, ShieldCheck, Globe, Heart,
+  MessageSquare, Star, Bug, Smile,
   LayoutDashboard, Mail, Lock, Eye, EyeOff,
   PenTool, BookOpen, TrendingUp, Award, AlertTriangle
 } from 'lucide-react';
@@ -61,6 +62,9 @@ const Perfil = () => {
   const [downloading, setDownloading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [feedback, setFeedback] = useState({ tipo: 'sugestao', estrelas: 5, mensagem: '' });
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackSucesso, setFeedbackSucesso] = useState(false);
   const [view, setView] = useState('menu');
   const [success, setSuccess] = useState(false);
   const [erro, setErro] = useState('');
@@ -208,6 +212,28 @@ const Perfil = () => {
     } catch (err) { console.error(err); } finally { setDownloading(false); }
   };
 
+  const enviarFeedback = async () => {
+    if (!feedback.mensagem.trim()) return;
+    setFeedbackLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('feedbacks').insert({
+        user_id: user?.id,
+        email: user?.email,
+        tipo: feedback.tipo,
+        estrelas: feedback.estrelas,
+        mensagem: feedback.mensagem.trim(),
+      });
+      setFeedbackSucesso(true);
+      setFeedback({ tipo: 'sugestao', estrelas: 5, mensagem: '' });
+      setTimeout(() => { setFeedbackSucesso(false); setView('menu'); }, 2500);
+    } catch (e) {
+      console.error('Erro ao enviar feedback:', e);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-[#FDFDFF]">
       <Loader2 className="animate-spin text-[#5B2DFF]" size={32} />
@@ -300,6 +326,17 @@ const Perfil = () => {
               </div>
             </div>
             <Share2 size={18} className="text-gray-300" />
+          </button>
+
+          <button onClick={() => setView('feedback')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-yellow-50 rounded-2xl"><MessageSquare size={18} className="text-yellow-500" /></div>
+              <div className="text-left">
+                <p className="font-bold text-slate-700 text-sm">Feedback</p>
+                <p className="text-[10px] text-gray-400">Sugestões, bugs e elogios</p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-gray-300" />
           </button>
 
           <button onClick={() => setView('sobre')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
@@ -477,6 +514,97 @@ const Perfil = () => {
             {downloading ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
             {downloading ? 'Gerando...' : 'Baixar Imagem'}
           </button>
+        </div>
+      )}
+
+      {/* ── VIEW: FEEDBACK ── */}
+      {view === 'feedback' && (
+        <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Feedback</h3>
+            <button onClick={() => setView('menu')} className="p-2 text-gray-400"><X size={20} /></button>
+          </div>
+
+          {feedbackSucesso ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <div className="w-16 h-16 bg-green-50 rounded-[24px] flex items-center justify-center">
+                <CheckCircle2 size={32} className="text-green-500" />
+              </div>
+              <p className="font-black text-slate-800 text-lg">Obrigado!</p>
+              <p className="text-slate-400 text-sm">Seu feedback foi enviado com sucesso.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+
+              {/* Tipo */}
+              <div className="bg-white p-4 rounded-[24px] border border-gray-100">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Tipo</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'sugestao', label: 'Sugestão', icon: <Star size={14} />, cor: 'yellow' },
+                    { id: 'bug',      label: 'Bug',       icon: <Bug size={14} />,  cor: 'red' },
+                    { id: 'elogio',   label: 'Elogio',    icon: <Smile size={14} />, cor: 'green' },
+                    { id: 'outro',    label: 'Outro',     icon: <MessageSquare size={14} />, cor: 'purple' },
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setFeedback(f => ({ ...f, tipo: t.id }))}
+                      className={`flex items-center gap-2 p-3 rounded-2xl border-2 font-bold text-xs transition-all ${
+                        feedback.tipo === t.id
+                          ? 'border-[#5B2DFF] bg-purple-50 text-[#5B2DFF]'
+                          : 'border-gray-100 text-slate-400'
+                      }`}
+                    >
+                      {t.icon} {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Estrelas */}
+              <div className="bg-white p-4 rounded-[24px] border border-gray-100">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Sua avaliação</p>
+                <div className="flex gap-2 justify-center">
+                  {[1,2,3,4,5].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setFeedback(f => ({ ...f, estrelas: n }))}
+                      className="transition-transform active:scale-90"
+                    >
+                      <Star
+                        size={32}
+                        className={n <= feedback.estrelas ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-100'}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mensagem */}
+              <div className="bg-white p-4 rounded-[24px] border border-gray-100">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Mensagem</p>
+                <textarea
+                  rows={4}
+                  placeholder="Conta o que você está pensando..."
+                  value={feedback.mensagem}
+                  onChange={e => setFeedback(f => ({ ...f, mensagem: e.target.value }))}
+                  className="w-full text-sm text-slate-700 placeholder-gray-300 resize-none focus:outline-none leading-relaxed"
+                />
+                <p className="text-[10px] text-gray-300 text-right mt-1">{feedback.mensagem.length}/500</p>
+              </div>
+
+              <button
+                onClick={enviarFeedback}
+                disabled={feedbackLoading || !feedback.mensagem.trim()}
+                className="w-full py-5 rounded-[28px] font-bold text-white bg-[#5B2DFF] shadow-lg shadow-purple-100 hover:bg-[#4a22e0] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {feedbackLoading
+                  ? <Loader2 className="animate-spin" size={20} />
+                  : <><MessageSquare size={18} /> Enviar Feedback</>
+                }
+              </button>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { usePlano } from '../hooks/usePlano';
+import { gerarCertificado } from '../utils/gerarCertificado';
 import { supabase } from '../supabaseClient';
-import { jsPDF } from "jspdf";
 import {
   ChevronLeft, Play, CheckCircle,
   Loader2, Lightbulb, LightbulbOff, ChevronRight,
@@ -97,6 +98,7 @@ const ToastConclusao = ({ visivel, titulo }) => (
 // ─── Componente principal ──────────────────────────────────────────────────────
 const Aulas = () => {
   const { cursoId } = useParams();
+  const { isPlus, loading: loadingPlano } = usePlano();
   const [aulas, setAulas] = useState([]);
   const [aulaAtiva, setAulaAtiva] = useState(null);
   const [concluidas, setConcluidas] = useState(new Set());
@@ -162,9 +164,9 @@ const Aulas = () => {
         .from('matriculas').select('status')
         .eq('user_id', user.id).eq('curso_id', cursoId).maybeSingle();
 
-      if (!matricula || matricula.status !== 'ativo') {
-        setTemAcesso(false); setLoading(false); return;
-      }
+      const acessoPorMatricula = matricula?.status === 'ativo';
+      setTemAcesso(acessoPorMatricula);
+      // Se não tem matrícula, mas é Plus, continua carregando as aulas
 
       const { data: listaAulas } = await supabase
         .from('aulas').select('*').eq('curso_id', cursoId).order('ordem', { ascending: true });
@@ -185,27 +187,15 @@ const Aulas = () => {
     }
   };
 
-  const gerarCertificado = async () => {
+  const handleGerarCertificado = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    try { doc.addImage("/logo.png", "PNG", 20, 15, 12, 12); } catch (e) {}
-    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-    doc.setTextColor(91, 45, 255);
-    doc.text("Academia Verbo", 35, 23);
-    doc.setDrawColor(91, 45, 255); doc.setLineWidth(1);
-    doc.rect(10, 10, 277, 190);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(42);
-    doc.text("CERTIFICADO", 148.5, 60, { align: "center" });
-    doc.setFontSize(30); doc.setTextColor(91, 45, 255);
-    doc.setFont("times", "bolditalic");
-    const nome = user.user_metadata?.full_name || user.email;
-    doc.text(nome.toUpperCase(), 148.5, 100, { align: "center" });
-    doc.setFont("helvetica", "bold"); doc.setFontSize(24);
-    doc.setTextColor(30, 41, 59);
-    doc.text(`"${dadosCurso?.titulo || "Curso Ministerial"}"`, 148.5, 135, { align: "center" });
-    doc.setFont("times", "italic"); doc.setFontSize(20);
-    doc.text("Pr. Jeferson Rocha", 148.5, 178, { align: "center" });
-    doc.save(`Certificado-${dadosCurso?.titulo}.pdf`);
+    const nomeAluno = user.user_metadata?.full_name || user.email.split('@')[0];
+    const nomeCurso = dadosCurso?.titulo || 'Curso Ministerial';
+    const dataFormatada = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+    // Código único: VERBO-[USERID_HASH]-[ANO]
+    const hash = (user.id || '').slice(0, 4).toUpperCase();
+    const codigoValidacao = `VERBO-${hash}-${new Date().getFullYear()}`;
+    gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoValidacao });
   };
 
   const formatarVideoUrl = (url) => {
@@ -265,7 +255,7 @@ const Aulas = () => {
   const porcentagem = aulas.length > 0 ? Math.round((concluidas.size / aulas.length) * 100) : 0;
 
   // ─── Loading ─────────────────────────────────────────────────────────────────
-  if (loading) return (
+  if (loading || loadingPlano) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white">
       <Loader2 className="animate-spin text-[#5B2DFF] mb-4" size={40} />
       <p className="text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Preparando aulas...</p>
@@ -273,7 +263,7 @@ const Aulas = () => {
   );
 
   // ─── Sem acesso ───────────────────────────────────────────────────────────────
-  if (!temAcesso) return (
+  if (!isPlus && !temAcesso) return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
       <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[32px] flex items-center justify-center mb-8 shadow-inner">
         <Lock size={48} />
@@ -537,7 +527,7 @@ const Aulas = () => {
               <div className="p-6 bg-gradient-to-br from-yellow-400 to-orange-500 m-4 rounded-[32px] text-white text-center shadow-lg">
                 <Trophy size={24} className="mx-auto mb-2" />
                 <h5 className="font-black text-xs uppercase italic tracking-tighter">Parabéns! Curso Concluído!</h5>
-                <button onClick={gerarCertificado}
+                <button onClick={handleGerarCertificado}
                   className="mt-3 w-full py-3 bg-white text-orange-500 rounded-2xl font-black text-[10px] uppercase hover:bg-orange-50 transition-colors">
                   Emitir Certificado
                 </button>

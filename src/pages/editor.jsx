@@ -5,7 +5,7 @@ import {
   Save, ArrowLeft, Book, Loader2,
   Bold, Italic, Quote, Highlighter, CheckCircle2,
   Clock, AlignLeft, RotateCcw, Maximize2, Minimize2,
-  AlertTriangle, X
+  AlertTriangle, X, Lock
 } from 'lucide-react';
 
 const PALAVRAS_POR_MINUTO = 120;
@@ -28,6 +28,11 @@ const Editor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const textAreaRef = useRef(null);
+  // TODO: ativar quando implementar planos
+  const podeCreiarSermao = true;
+  const sermoesRestantes = null;
+  const isPlus = true;
+  const percentualUso = 0;
 
   const [titulo, setTitulo] = useState('');
   const [conteudo, setConteudo] = useState('');
@@ -153,6 +158,30 @@ const Editor = () => {
 
   const formatarHora = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
+  // Bloqueio para novo sermão sem id (criação) quando limite atingido
+  if (!id && !podeCreiarSermao) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center gap-5">
+        <div className="w-16 h-16 bg-purple-50 rounded-[24px] flex items-center justify-center">
+          <Lock size={28} className="text-[#5B2DFF]" />
+        </div>
+        <div>
+          <h2 className="font-black text-xl text-slate-800 mb-2">Limite de sermões atingido</h2>
+          <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
+            O plano gratuito permite até 50 sermões salvos. Faça upgrade para ter sermões ilimitados.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/upgrade?motivo=limite_sermoes')}
+          className="bg-[#5B2DFF] text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-[#4a22e0] active:scale-95 transition-all"
+        >
+          Ver planos
+        </button>
+        <button onClick={() => navigate(-1)} className="text-slate-400 text-sm font-bold">Voltar</button>
+      </div>
+    );
+  }
+
   return (
     <div className={`bg-white flex flex-col transition-all duration-300 ${telaCheia ? 'fixed inset-0 z-[150]' : 'min-h-screen'}`}>
 
@@ -233,6 +262,21 @@ const Editor = () => {
             <span className="text-[10px] font-black uppercase tracking-widest">~{metricas.minutos} min</span>
           </div>
         </div>
+        {/* Sermões restantes no plano gratuito */}
+        {!isPlus && sermoesRestantes !== null && sermoesRestantes <= 10 && (
+          <button
+            onClick={() => navigate('/upgrade?motivo=limite_sermoes')}
+            className="flex items-center gap-1.5 text-amber-500"
+          >
+            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-400 rounded-full" style={{ width: `${percentualUso}%` }} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest">
+              {sermoesRestantes} restantes
+            </span>
+          </button>
+        )}
+
         <div className={`flex items-center gap-1.5 transition-opacity duration-500 ${autoSaveAtivo ? 'opacity-100' : 'opacity-0'}`}>
           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Rascunho salvo</span>
