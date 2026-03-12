@@ -10,7 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 const Cursos = () => {
-  const { isPlus, loading: loadingPlano } = usePlano();
+  const { isAssinante, isPlus, isFundador, temAcessoCurso, loading: loadingPlano } = usePlano();
   const navigate = useNavigate();
   const [cursos, setCursos] = useState([]);
   const [ultimoVideo, setUltimoVideo] = useState(null);
@@ -70,8 +70,10 @@ const Cursos = () => {
       });
 
       cursosFormatados.sort((a, b) => {
-        if (a.temMatricula && !b.temMatricula) return -1;
-        if (!a.temMatricula && b.temMatricula) return 1;
+        const aAcesso = temAcessoCurso(a) || a.temMatricula;
+        const bAcesso = temAcessoCurso(b) || b.temMatricula;
+        if (aAcesso && !bAcesso) return -1;
+        if (!aAcesso && bAcesso) return 1;
         return 0;
       });
 
@@ -228,7 +230,7 @@ const Cursos = () => {
   );
 
   // ─── Academia bloqueada ───────────────────────────────────────────────────────
-  if (!isPlus) {
+  if (!isAssinante) {
     return (
       <div className="min-h-screen pb-28">
         <div className="p-6 pb-0 max-w-2xl mx-auto">
@@ -288,7 +290,7 @@ const Cursos = () => {
         <div className="space-y-4">
           {cursos.map((curso) => {
             const expandida = descricaoExpandida.has(curso.id);
-            const temAcesso = isPlus || curso.temMatricula;
+            const temAcesso = temAcessoCurso(curso) || curso.temMatricula;
 
             return (
               <div
@@ -345,7 +347,14 @@ const Cursos = () => {
                         <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{curso.aulasFeitas}/{curso.totalAulas} aulas · {curso.porcentagem}%</p>
                       </div>
                     )}
-                    {!temAcesso && <span className="text-[10px] text-slate-300 font-bold mt-1.5">Conteúdo bloqueado</span>}
+                    {!temAcesso && (
+                      <span className="text-[10px] font-bold mt-1.5 flex items-center gap-1">
+                        <span className="text-slate-300">Requer plano</span>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${curso.plano_minimo === 'plus' ? 'bg-purple-100 text-purple-600' : 'bg-blue-50 text-blue-500'}`}>
+                          {curso.plano_minimo === 'plus' ? 'Plus' : 'Fundador'}
+                        </span>
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-col items-center justify-center gap-2 shrink-0">

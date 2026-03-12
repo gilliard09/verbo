@@ -48,13 +48,9 @@ const PLANOS = [
     badge: '🔥 Vagas limitadas',
     itens: [
       'Sermões ilimitados',
-      'Editor completo',
-      'Modo Púlpito',
-      'Bíblia integrada',
-      'Acesso offline',
-      'Academia Verbo completa',
-      'Novos cursos todo mês',
-      'Preço de fundador — fixo para sempre',
+      'Curso para Pregadores — incluso',
+      'Modo púlpito sem restrições',
+      'Acesso offline ilimitado',
     ],
     bloqueados: [],
     cta: 'Quero ser Fundador',
@@ -63,20 +59,19 @@ const PLANOS = [
   {
     id: 'plus',
     nome: 'Plus',
-    preco: 'R$19,90',
+    preco: 'R$47',
     periodo: '/mês',
     icon: Zap,
     cor: 'violet',
     destaque: false,
     itens: [
       'Sermões ilimitados',
-      'Editor completo',
-      'Modo Púlpito',
-      'Bíblia integrada',
-      'Acesso offline',
-      'Academia Verbo completa',
-      'Novos cursos todo mês',
-      'Cancele quando quiser',
+      'Academia Verbo completa — todos os cursos',
+      'Curso para Pregadores + Teologia Completa',
+      'Modo púlpito sem restrições',
+      'Acesso offline ilimitado',
+      'Todas as features futuras incluídas',
+      'Suporte prioritário',
     ],
     bloqueados: [],
     cta: 'Assinar Plus',
@@ -285,14 +280,12 @@ const LandingPage = () => {
                       : 'bg-white border border-slate-100 shadow-sm card-hover'
                   }`}>
 
-                  {/* Badge destaque */}
                   {plano.badge && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest whitespace-nowrap shadow-lg">
                       {plano.badge}
                     </div>
                   )}
 
-                  {/* Header */}
                   <div className="flex items-center gap-3 mb-5">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isFundador ? 'bg-white/20' : 'bg-purple-50'}`}>
                       <Icon size={20} className={isFundador ? 'text-yellow-300' : 'text-[#4C1D95]'} />
@@ -306,7 +299,6 @@ const LandingPage = () => {
                     </div>
                   </div>
 
-                  {/* Itens incluídos */}
                   <div className="space-y-2.5 flex-1 mb-6">
                     {plano.itens.map((item, j) => (
                       <div key={j} className="flex items-start gap-2.5">
@@ -322,7 +314,6 @@ const LandingPage = () => {
                     ))}
                   </div>
 
-                  {/* CTA */}
                   <button
                     onClick={() => handleNavigation(plano.href)}
                     className={`w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-95 hover:scale-105 ${

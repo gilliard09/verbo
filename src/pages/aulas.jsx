@@ -18,7 +18,6 @@ const Celebracao = ({ ativo, onFim }) => {
 
   useEffect(() => {
     if (!ativo) return;
-
     const cores = ['#5B2DFF', '#FF6B35', '#FFD700', '#00C896', '#FF3CAC', '#fff'];
     const novasPecas = Array.from({ length: 60 }, (_, i) => ({
       id: i,
@@ -31,12 +30,7 @@ const Celebracao = ({ ativo, onFim }) => {
       transform: `rotate(${Math.random() * 360}deg)`,
     }));
     setPecas(novasPecas);
-
-    const timer = setTimeout(() => {
-      setPecas([]);
-      onFim?.();
-    }, 2800);
-
+    const timer = setTimeout(() => { setPecas([]); onFim?.(); }, 2800);
     return () => clearTimeout(timer);
   }, [ativo]);
 
@@ -54,20 +48,8 @@ const Celebracao = ({ ativo, onFim }) => {
       `}</style>
       <div className="fixed inset-0 z-[200] pointer-events-none overflow-hidden">
         {pecas.map(p => (
-          <ConfettiPiece
-            key={p.id}
-            style={{
-              left: p.left,
-              top: '-20px',
-              width: p.width,
-              height: p.height,
-              background: p.background,
-              animationDelay: p.animationDelay,
-              animationDuration: p.animationDuration,
-              transform: p.transform,
-            }}
-            className="absolute rounded-sm pointer-events-none confetti-piece"
-          />
+          <ConfettiPiece key={p.id} style={{ left: p.left, top: '-20px', width: p.width, height: p.height, background: p.background, animationDelay: p.animationDelay, animationDuration: p.animationDuration, transform: p.transform }}
+            className="absolute rounded-sm pointer-events-none confetti-piece" />
         ))}
       </div>
     </>
@@ -76,17 +58,9 @@ const Celebracao = ({ ativo, onFim }) => {
 
 // ─── Toast de conclusão ────────────────────────────────────────────────────────
 const ToastConclusao = ({ visivel, titulo }) => (
-  <div
-    className={`fixed bottom-8 left-1/2 z-[150] transition-all duration-500 ${
-      visivel
-        ? '-translate-x-1/2 translate-y-0 opacity-100 scale-100'
-        : '-translate-x-1/2 translate-y-8 opacity-0 scale-95 pointer-events-none'
-    }`}
-  >
+  <div className={`fixed bottom-8 left-1/2 z-[150] transition-all duration-500 ${visivel ? '-translate-x-1/2 translate-y-0 opacity-100 scale-100' : '-translate-x-1/2 translate-y-8 opacity-0 scale-95 pointer-events-none'}`}>
     <div className="flex items-center gap-4 bg-slate-900 text-white px-6 py-4 rounded-[24px] shadow-2xl border border-white/10">
-      <div className="w-10 h-10 bg-green-500 rounded-2xl flex items-center justify-center shrink-0">
-        <CheckCircle size={20} />
-      </div>
+      <div className="w-10 h-10 bg-green-500 rounded-2xl flex items-center justify-center shrink-0"><CheckCircle size={20} /></div>
       <div>
         <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Aula concluída!</p>
         <p className="text-xs font-bold text-slate-300 truncate max-w-[220px]">{titulo}</p>
@@ -98,58 +72,40 @@ const ToastConclusao = ({ visivel, titulo }) => (
 // ─── Componente principal ──────────────────────────────────────────────────────
 const Aulas = () => {
   const { cursoId } = useParams();
-  const { isPlus, loading: loadingPlano } = usePlano();
+  // ← temAcessoCurso e isAssinante substituem isPlus para respeitar plano_minimo
+  const { isAssinante, temAcessoCurso, loading: loadingPlano } = usePlano();
   const [aulas, setAulas] = useState([]);
   const [aulaAtiva, setAulaAtiva] = useState(null);
   const [concluidas, setConcluidas] = useState(new Set());
   const [loading, setLoading] = useState(true);
-  const [temAcesso, setTemAcesso] = useState(true);
+  const [temAcessoMatricula, setTemAcessoMatricula] = useState(false);
   const [btnLoading, setBtnLoading] = useState(false);
   const [modoCinema, setModoCinema] = useState(false);
   const [dadosCurso, setDadosCurso] = useState(null);
   const [visualizarPDF, setVisualizarPDF] = useState(false);
 
-  // Celebração
   const [celebrando, setCelebrando] = useState(false);
   const [toastVisivel, setToastVisivel] = useState(false);
   const [toastTitulo, setToastTitulo] = useState('');
 
-  // Scroll da sidebar para aula ativa
   const aulaAtivaRef = useRef(null);
   const sidebarRef = useRef(null);
 
-  useEffect(() => {
-    carregarConteudo();
-  }, [cursoId]);
-
-  useEffect(() => {
-    setVisualizarPDF(false);
-  }, [aulaAtiva]);
-
-  // Scroll automático da sidebar para o item ativo
+  useEffect(() => { carregarConteudo(); }, [cursoId]);
+  useEffect(() => { setVisualizarPDF(false); }, [aulaAtiva]);
   useEffect(() => {
     if (aulaAtivaRef.current && sidebarRef.current) {
       aulaAtivaRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [aulaAtiva]);
 
-  // ─── Navegação por teclado ───────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Não interceptar se o foco estiver em inputs/textareas
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
-
       const indexAtual = aulas.findIndex(a => a.id === aulaAtiva?.id);
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (indexAtual < aulas.length - 1) setAulaAtiva(aulas[indexAtual + 1]);
-      }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (indexAtual > 0) setAulaAtiva(aulas[indexAtual - 1]);
-      }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (indexAtual < aulas.length - 1) setAulaAtiva(aulas[indexAtual + 1]); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (indexAtual > 0) setAulaAtiva(aulas[indexAtual - 1]); }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [aulas, aulaAtiva]);
@@ -164,9 +120,8 @@ const Aulas = () => {
         .from('matriculas').select('status')
         .eq('user_id', user.id).eq('curso_id', cursoId).maybeSingle();
 
-      const acessoPorMatricula = matricula?.status === 'ativo';
-      setTemAcesso(acessoPorMatricula);
-      // Se não tem matrícula, mas é Plus, continua carregando as aulas
+      // Acesso por matrícula individual (cursos avulsos)
+      setTemAcessoMatricula(matricula?.status === 'ativo');
 
       const { data: listaAulas } = await supabase
         .from('aulas').select('*').eq('curso_id', cursoId).order('ordem', { ascending: true });
@@ -192,7 +147,6 @@ const Aulas = () => {
     const nomeAluno = user.user_metadata?.full_name || user.email.split('@')[0];
     const nomeCurso = dadosCurso?.titulo || 'Curso Ministerial';
     const dataFormatada = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-    // Código único: VERBO-[USERID_HASH]-[ANO]
     const hash = (user.id || '').slice(0, 4).toUpperCase();
     const codigoValidacao = `VERBO-${hash}-${new Date().getFullYear()}`;
     gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoValidacao });
@@ -219,7 +173,6 @@ const Aulas = () => {
     const { data: { user } } = await supabase.auth.getUser();
     const jaConcluida = concluidas.has(aulaId);
     const aulaConcluidaTitulo = aulas.find(a => a.id === aulaId)?.titulo || '';
-
     try {
       if (jaConcluida) {
         await supabase.from('progresso_aulas').delete().eq('user_id', user.id).eq('aula_id', aulaId);
@@ -239,19 +192,8 @@ const Aulas = () => {
   };
 
   const indexAtual = aulas.findIndex(a => a.id === aulaAtiva?.id);
-  const irParaProxima = () => {
-    if (indexAtual < aulas.length - 1) {
-      setAulaAtiva(aulas[indexAtual + 1]);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-  const irParaAnterior = () => {
-    if (indexAtual > 0) {
-      setAulaAtiva(aulas[indexAtual - 1]);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
+  const irParaProxima = () => { if (indexAtual < aulas.length - 1) { setAulaAtiva(aulas[indexAtual + 1]); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
+  const irParaAnterior = () => { if (indexAtual > 0) { setAulaAtiva(aulas[indexAtual - 1]); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
   const porcentagem = aulas.length > 0 ? Math.round((concluidas.size / aulas.length) * 100) : 0;
 
   // ─── Loading ─────────────────────────────────────────────────────────────────
@@ -262,14 +204,21 @@ const Aulas = () => {
     </div>
   );
 
-  // ─── Sem acesso ───────────────────────────────────────────────────────────────
-  if (!isPlus && !temAcesso) return (
+  // ─── Sem acesso: não tem matrícula E o plano não cobre este curso ─────────────
+  const acessoPorPlano = temAcessoCurso(dadosCurso);
+  if (!acessoPorPlano && !temAcessoMatricula) return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
       <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[32px] flex items-center justify-center mb-8 shadow-inner">
         <Lock size={48} />
       </div>
       <h2 className="text-3xl font-black text-slate-900 mb-4 italic uppercase tracking-tighter">Área Restrita</h2>
-      <a href={dadosCurso?.checkout_url || "#"} target="_blank" rel="noopener noreferrer"
+      {/* Mostra qual plano é necessário */}
+      {isAssinante && dadosCurso?.plano_minimo === 'plus' && (
+        <p className="text-slate-400 text-sm mb-6 max-w-xs">
+          Este curso requer o plano <span className="font-black text-[#5B2DFF]">Plus</span>. Faça upgrade para acessar.
+        </p>
+      )}
+      <a href={dadosCurso?.checkout_url || '#'} target="_blank" rel="noopener noreferrer"
         className="bg-[#5B2DFF] text-white px-12 py-5 rounded-3xl font-black text-xs uppercase shadow-2xl flex items-center gap-3">
         <ShoppingCart size={16} /> GARANTIR MEU ACESSO
       </a>
@@ -280,10 +229,7 @@ const Aulas = () => {
   return (
     <div className={`min-h-screen transition-all duration-500 ${modoCinema ? 'bg-black' : 'bg-[#F8FAFC]'}`}>
 
-      {/* Celebração confetti */}
       <Celebracao ativo={celebrando} onFim={() => setCelebrando(false)} />
-
-      {/* Toast de conclusão */}
       <ToastConclusao visivel={toastVisivel} titulo={toastTitulo} />
 
       {/* ── Header ── */}
@@ -298,9 +244,7 @@ const Aulas = () => {
               <h1 className={`text-xs font-black uppercase truncate max-w-[200px] ${modoCinema ? 'text-white' : 'text-slate-800'}`}>{aulaAtiva?.titulo}</h1>
             </div>
           </div>
-
           <div className="flex items-center gap-3">
-            {/* Hint de teclado — desktop only */}
             <span className={`hidden md:flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest opacity-30 ${modoCinema ? 'text-white' : 'text-slate-500'}`}>
               <kbd className="px-1.5 py-0.5 bg-black/10 rounded text-[9px]">←</kbd>
               <kbd className="px-1.5 py-0.5 bg-black/10 rounded text-[9px]">→</kbd>
@@ -318,8 +262,6 @@ const Aulas = () => {
 
         {/* ── Coluna principal ── */}
         <div className="flex-1 space-y-6">
-
-          {/* Player */}
           <div className={`relative overflow-hidden shadow-2xl transition-all duration-700 ${modoCinema ? 'md:rounded-none' : 'md:rounded-[40px] rounded-none'} bg-black`}>
             <div className="aspect-video w-full">
               {aulaAtiva && (
@@ -329,78 +271,29 @@ const Aulas = () => {
             </div>
           </div>
 
-          {/* Controles abaixo do player */}
           <div className={`px-4 md:px-0 transition-opacity duration-500 ${modoCinema ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
-
-            {/* ── Navegação anterior / próxima ── */}
             <div className="flex items-center justify-between gap-4 mb-6">
-              <button
-                onClick={irParaAnterior}
-                disabled={indexAtual === 0}
-                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[11px] uppercase transition-all border ${
-                  indexAtual === 0
-                    ? 'opacity-30 cursor-not-allowed border-slate-200 text-slate-400 bg-white'
-                    : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:shadow-md active:scale-95'
-                }`}
-              >
+              <button onClick={irParaAnterior} disabled={indexAtual === 0}
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[11px] uppercase transition-all border ${indexAtual === 0 ? 'opacity-30 cursor-not-allowed border-slate-200 text-slate-400 bg-white' : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:shadow-md active:scale-95'}`}>
                 <ChevronLeft size={16} />
-                {indexAtual > 0 ? (
-                  <span className="hidden sm:inline truncate max-w-[140px]">
-                    {aulas[indexAtual - 1]?.titulo}
-                  </span>
-                ) : (
-                  <span>Anterior</span>
-                )}
+                {indexAtual > 0 ? <span className="hidden sm:inline truncate max-w-[140px]">{aulas[indexAtual - 1]?.titulo}</span> : <span>Anterior</span>}
               </button>
-
-              {/* Contador central */}
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">
-                {indexAtual + 1} / {aulas.length}
-              </span>
-
-              <button
-                onClick={irParaProxima}
-                disabled={indexAtual === aulas.length - 1}
-                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[11px] uppercase transition-all border ${
-                  indexAtual === aulas.length - 1
-                    ? 'opacity-30 cursor-not-allowed border-slate-200 text-slate-400 bg-white'
-                    : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:shadow-md active:scale-95'
-                }`}
-              >
-                {indexAtual < aulas.length - 1 ? (
-                  <span className="hidden sm:inline truncate max-w-[140px]">
-                    {aulas[indexAtual + 1]?.titulo}
-                  </span>
-                ) : (
-                  <span>Próxima</span>
-                )}
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">{indexAtual + 1} / {aulas.length}</span>
+              <button onClick={irParaProxima} disabled={indexAtual === aulas.length - 1}
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[11px] uppercase transition-all border ${indexAtual === aulas.length - 1 ? 'opacity-30 cursor-not-allowed border-slate-200 text-slate-400 bg-white' : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:shadow-md active:scale-95'}`}>
+                {indexAtual < aulas.length - 1 ? <span className="hidden sm:inline truncate max-w-[140px]">{aulas[indexAtual + 1]?.titulo}</span> : <span>Próxima</span>}
                 <ChevronRight size={16} />
               </button>
             </div>
 
-            {/* Título + botão de conclusão */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 uppercase tracking-tighter">
-                {aulaAtiva?.titulo}
-              </h2>
-              <button
-                onClick={() => alternarConclusao(aulaAtiva.id)}
-                className={`flex items-center justify-center gap-3 px-8 py-4 rounded-[24px] font-black text-xs transition-all shadow-xl active:scale-95 ${
-                  concluidas.has(aulaAtiva?.id)
-                    ? 'bg-green-500 text-white'
-                    : 'bg-[#5B2DFF] text-white hover:bg-[#4a22e0]'
-                }`}
-              >
-                {btnLoading
-                  ? <Loader2 className="animate-spin" size={18} />
-                  : concluidas.has(aulaAtiva?.id)
-                    ? <><CheckCircle size={18} /> CONCLUÍDA</>
-                    : <><Play size={18} fill="currentColor" /> MARCAR COMO VISTA</>
-                }
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 uppercase tracking-tighter">{aulaAtiva?.titulo}</h2>
+              <button onClick={() => alternarConclusao(aulaAtiva.id)}
+                className={`flex items-center justify-center gap-3 px-8 py-4 rounded-[24px] font-black text-xs transition-all shadow-xl active:scale-95 ${concluidas.has(aulaAtiva?.id) ? 'bg-green-500 text-white' : 'bg-[#5B2DFF] text-white hover:bg-[#4a22e0]'}`}>
+                {btnLoading ? <Loader2 className="animate-spin" size={18} /> : concluidas.has(aulaAtiva?.id) ? <><CheckCircle size={18} /> CONCLUÍDA</> : <><Play size={18} fill="currentColor" /> MARCAR COMO VISTA</>}
               </button>
             </div>
 
-            {/* Material de apoio PDF */}
             {aulaAtiva?.material_url && (
               <div className="bg-white rounded-[40px] border border-slate-200/60 shadow-sm overflow-hidden transition-all duration-500">
                 <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -425,11 +318,7 @@ const Aulas = () => {
                 {visualizarPDF && (
                   <div className="p-4 border-t border-slate-100 bg-slate-50">
                     <div className="aspect-[1/1.4] md:aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-white">
-                      <iframe
-                        src={`https://docs.google.com/viewer?url=${encodeURIComponent(aulaAtiva.material_url)}&embedded=true`}
-                        className="w-full h-full"
-                        title="Material de Apoio"
-                      />
+                      <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(aulaAtiva.material_url)}&embedded=true`} className="w-full h-full" title="Material de Apoio" />
                     </div>
                     <div className="mt-4 flex justify-center">
                       <a href={aulaAtiva.material_url} target="_blank"
@@ -447,82 +336,43 @@ const Aulas = () => {
         {/* ── Sidebar ── */}
         <aside className={`w-full lg:w-[400px] space-y-6 transition-all duration-500 ${modoCinema ? 'opacity-0 translate-x-10 pointer-events-none' : 'opacity-100'}`}>
           <div className="bg-white rounded-[40px] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col h-[700px]">
-
-            {/* Header da sidebar com progresso */}
             <div className="p-6 border-b border-slate-100 bg-slate-50/50 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Conteúdo do Curso</h4>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {concluidas.size}/{aulas.length} aulas
-                </span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{concluidas.size}/{aulas.length} aulas</span>
               </div>
-
-              {/* ── Barra de progresso ── */}
               <div className="space-y-2">
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700 ease-out"
-                    style={{
-                      width: `${porcentagem}%`,
-                      background: porcentagem === 100
-                        ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                        : 'linear-gradient(90deg, #5B2DFF, #8B5CF6)'
-                    }}
-                  />
+                  <div className="h-full rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${porcentagem}%`, background: porcentagem === 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #5B2DFF, #8B5CF6)' }} />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-slate-400">
-                    {porcentagem === 0
-                      ? 'Começar curso'
-                      : porcentagem === 100
-                        ? '🎉 Curso concluído!'
-                        : `${porcentagem}% concluído`}
+                    {porcentagem === 0 ? 'Começar curso' : porcentagem === 100 ? '🎉 Curso concluído!' : `${porcentagem}% concluído`}
                   </span>
                   {porcentagem > 0 && porcentagem < 100 && (
-                    <span className="text-[10px] font-bold text-slate-300">
-                      {aulas.length - concluidas.size} restante{aulas.length - concluidas.size !== 1 ? 's' : ''}
-                    </span>
+                    <span className="text-[10px] font-bold text-slate-300">{aulas.length - concluidas.size} restante{aulas.length - concluidas.size !== 1 ? 's' : ''}</span>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Lista de aulas */}
             <div ref={sidebarRef} className="flex-1 overflow-y-auto p-4">
               <div className="space-y-2">
                 {aulas.map((aula, idx) => (
-                  <button
-                    key={aula.id}
-                    ref={aulaAtiva?.id === aula.id ? aulaAtivaRef : null}
+                  <button key={aula.id} ref={aulaAtiva?.id === aula.id ? aulaAtivaRef : null}
                     onClick={() => { setAulaAtiva(aula); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all ${
-                      aulaAtiva?.id === aula.id
-                        ? 'bg-slate-900 text-white shadow-lg'
-                        : 'hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-all ${
-                      aulaAtiva?.id === aula.id
-                        ? 'bg-[#5B2DFF]'
-                        : concluidas.has(aula.id)
-                          ? 'bg-green-50 text-green-500'
-                          : 'bg-slate-100 text-slate-400'
-                    }`}>
-                      {concluidas.has(aula.id)
-                        ? <CheckCircle size={18} />
-                        : <span className="text-[11px] font-black">{idx + 1}</span>
-                      }
+                    className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all ${aulaAtiva?.id === aula.id ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-all ${aulaAtiva?.id === aula.id ? 'bg-[#5B2DFF]' : concluidas.has(aula.id) ? 'bg-green-50 text-green-500' : 'bg-slate-100 text-slate-400'}`}>
+                      {concluidas.has(aula.id) ? <CheckCircle size={18} /> : <span className="text-[11px] font-black">{idx + 1}</span>}
                     </div>
                     <span className="text-[13px] font-bold truncate text-left flex-1">{aula.titulo}</span>
-                    {aulaAtiva?.id === aula.id && (
-                      <div className="w-2 h-2 rounded-full bg-[#5B2DFF] animate-pulse shrink-0" />
-                    )}
+                    {aulaAtiva?.id === aula.id && <div className="w-2 h-2 rounded-full bg-[#5B2DFF] animate-pulse shrink-0" />}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Certificado ao 100% */}
             {porcentagem === 100 && (
               <div className="p-6 bg-gradient-to-br from-yellow-400 to-orange-500 m-4 rounded-[32px] text-white text-center shadow-lg">
                 <Trophy size={24} className="mx-auto mb-2" />
