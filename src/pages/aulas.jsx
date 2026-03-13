@@ -452,7 +452,7 @@ const Aulas = () => {
                     <div className="p-4 bg-slate-50">
                       <div className="aspect-[1/1.4] md:aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-white">
                         <iframe
-  src={aulaAtiva.material_url}
+  src={`https://docs.google.com/viewer?url=${encodeURIComponent(aulaAtiva.material_url)}&embedded=true`}
   className="w-full h-full"
   title="Material de Apoio"
 />
