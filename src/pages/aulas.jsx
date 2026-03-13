@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { usePlano } from '../hooks/usePlano';
 import { gerarCertificado } from '../utils/gerarCertificado';
 import { supabase } from '../supabaseClient';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import {
   ChevronLeft, Play, CheckCircle,
   Loader2, Lightbulb, LightbulbOff, ChevronRight,
@@ -72,7 +73,6 @@ const ToastConclusao = ({ visivel, titulo }) => (
 // ─── Componente principal ──────────────────────────────────────────────────────
 const Aulas = () => {
   const { cursoId } = useParams();
-  // ← temAcessoCurso e isAssinante substituem isPlus para respeitar plano_minimo
   const { isAssinante, temAcessoCurso, loading: loadingPlano } = usePlano();
   const [aulas, setAulas] = useState([]);
   const [aulaAtiva, setAulaAtiva] = useState(null);
@@ -83,6 +83,7 @@ const Aulas = () => {
   const [modoCinema, setModoCinema] = useState(false);
   const [dadosCurso, setDadosCurso] = useState(null);
   const [visualizarPDF, setVisualizarPDF] = useState(false);
+  const [baixandoPDF, setBaixandoPDF] = useState(false);
 
   const [celebrando, setCelebrando] = useState(false);
   const [toastVisivel, setToastVisivel] = useState(false);
@@ -120,7 +121,6 @@ const Aulas = () => {
         .from('matriculas').select('status')
         .eq('user_id', user.id).eq('curso_id', cursoId).maybeSingle();
 
-      // Acesso por matrícula individual (cursos avulsos)
       setTemAcessoMatricula(matricula?.status === 'ativo');
 
       const { data: listaAulas } = await supabase
@@ -150,6 +150,124 @@ const Aulas = () => {
     const hash = (user.id || '').slice(0, 4).toUpperCase();
     const codigoValidacao = `VERBO-${hash}-${new Date().getFullYear()}`;
     gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoValidacao });
+  };
+
+  // ─── Download com branding Verbo ──────────────────────────────────────────────
+  const baixarPDFComBranding = async () => {
+    if (!aulaAtiva?.material_url) return;
+    setBaixandoPDF(true);
+    try {
+      const response = await fetch(aulaAtiva.material_url);
+      const pdfBytes = await response.arrayBuffer();
+
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const helvetica     = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+      const roxo       = rgb(0.357, 0.176, 1.0);
+      const roxoClaro  = rgb(0.545, 0.369, 1.0);
+      const branco     = rgb(1, 1, 1);
+      const cinzaClaro = rgb(0.6, 0.6, 0.6);
+
+      // ── Capa ──────────────────────────────────────────────────────────────────
+      const capaPage = pdfDoc.insertPage(0, [595, 842]); // A4
+
+      capaPage.drawRectangle({ x: 0, y: 0,   width: 595, height: 842, color: roxo });
+      capaPage.drawRectangle({ x: 0, y: 600, width: 595, height: 242, color: roxoClaro, opacity: 0.3 });
+      capaPage.drawRectangle({ x: 0, y: 0,   width: 8,   height: 842, color: branco, opacity: 0.15 });
+      capaPage.drawRectangle({ x: 40, y: 260, width: 515, height: 300, color: branco, opacity: 0.06 });
+
+      capaPage.drawText('VERBO', {
+        x: 40, y: 740, size: 52, font: helveticaBold, color: branco,
+      });
+      capaPage.drawText('appverbo.com.br', {
+        x: 40, y: 715, size: 11, font: helvetica, color: rgb(0.8, 0.7, 1.0),
+      });
+      capaPage.drawLine({
+        start: { x: 40, y: 700 }, end: { x: 555, y: 700 },
+        thickness: 1, color: branco, opacity: 0.2,
+      });
+      capaPage.drawText('MATERIAL DE APOIO', {
+        x: 40, y: 650, size: 10, font: helveticaBold, color: rgb(0.8, 0.7, 1.0),
+      });
+
+      // Nome do curso com quebra de linha automática
+      const nomeCurso  = dadosCurso?.titulo || 'Curso Ministerial';
+      const tituloAula = aulaAtiva?.titulo   || '';
+      const palavrasCurso = nomeCurso.split(' ');
+      let linhaCurso = '';
+      let linhasCurso = [];
+      for (const palavra of palavrasCurso) {
+        const teste = linhaCurso ? `${linhaCurso} ${palavra}` : palavra;
+        if (helveticaBold.widthOfTextAtSize(teste, 32) > 510) {
+          linhasCurso.push(linhaCurso);
+          linhaCurso = palavra;
+        } else {
+          linhaCurso = teste;
+        }
+      }
+      if (linhaCurso) linhasCurso.push(linhaCurso);
+
+      let yCurso = 620;
+      for (const linha of linhasCurso) {
+        capaPage.drawText(linha, { x: 40, y: yCurso, size: 32, font: helveticaBold, color: branco });
+        yCurso -= 42;
+      }
+
+      capaPage.drawText(tituloAula, {
+        x: 40, y: yCurso - 16, size: 16, font: helvetica,
+        color: rgb(0.85, 0.78, 1.0), maxWidth: 510,
+      });
+
+      capaPage.drawText('Verbo — Tecnologia para quem prega', {
+        x: 40, y: 60, size: 10, font: helvetica, color: branco, opacity: 0.5,
+      });
+      capaPage.drawText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, {
+        x: 40, y: 44, size: 9, font: helvetica, color: branco, opacity: 0.35,
+      });
+
+      // ── Rodapé em todas as páginas de conteúdo ────────────────────────────────
+      const totalPaginas = pdfDoc.getPageCount();
+      for (let i = 1; i < totalPaginas; i++) {
+        const page = pdfDoc.getPage(i);
+        const { width } = page.getSize();
+
+        page.drawLine({
+          start: { x: 30, y: 28 }, end: { x: width - 30, y: 28 },
+          thickness: 0.8, color: roxo, opacity: 0.4,
+        });
+        page.drawText('VERBO', {
+          x: 30, y: 14, size: 8, font: helveticaBold, color: roxo, opacity: 0.7,
+        });
+        page.drawText('appverbo.com.br', {
+          x: 76, y: 14, size: 8, font: helvetica, color: cinzaClaro, opacity: 0.7,
+        });
+
+        const numPag = `${i} / ${totalPaginas - 1}`;
+        const larguraNum = helvetica.widthOfTextAtSize(numPag, 8);
+        page.drawText(numPag, {
+          x: width - 30 - larguraNum, y: 14,
+          size: 8, font: helvetica, color: cinzaClaro, opacity: 0.7,
+        });
+      }
+
+      // ── Salva e baixa ─────────────────────────────────────────────────────────
+      const pdfFinal = await pdfDoc.save();
+      const blob = new Blob([pdfFinal], { type: 'application/pdf' });
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const nomeArquivo = `Verbo — ${nomeCurso} — ${tituloAula}.pdf`.replace(/[/\\?%*:|"<>]/g, '-');
+      link.href     = url;
+      link.download = nomeArquivo;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Erro ao gerar PDF com branding:', err);
+      // Fallback: abre o PDF original
+      window.open(aulaAtiva.material_url, '_blank');
+    } finally {
+      setBaixandoPDF(false);
+    }
   };
 
   const formatarVideoUrl = (url) => {
@@ -192,11 +310,10 @@ const Aulas = () => {
   };
 
   const indexAtual = aulas.findIndex(a => a.id === aulaAtiva?.id);
-  const irParaProxima = () => { if (indexAtual < aulas.length - 1) { setAulaAtiva(aulas[indexAtual + 1]); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
+  const irParaProxima  = () => { if (indexAtual < aulas.length - 1) { setAulaAtiva(aulas[indexAtual + 1]); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
   const irParaAnterior = () => { if (indexAtual > 0) { setAulaAtiva(aulas[indexAtual - 1]); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
   const porcentagem = aulas.length > 0 ? Math.round((concluidas.size / aulas.length) * 100) : 0;
 
-  // ─── Loading ─────────────────────────────────────────────────────────────────
   if (loading || loadingPlano) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white">
       <Loader2 className="animate-spin text-[#5B2DFF] mb-4" size={40} />
@@ -204,7 +321,6 @@ const Aulas = () => {
     </div>
   );
 
-  // ─── Sem acesso: não tem matrícula E o plano não cobre este curso ─────────────
   const acessoPorPlano = temAcessoCurso(dadosCurso);
   if (!acessoPorPlano && !temAcessoMatricula) return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
@@ -212,7 +328,6 @@ const Aulas = () => {
         <Lock size={48} />
       </div>
       <h2 className="text-3xl font-black text-slate-900 mb-4 italic uppercase tracking-tighter">Área Restrita</h2>
-      {/* Mostra qual plano é necessário */}
       {isAssinante && dadosCurso?.plano_minimo === 'plus' && (
         <p className="text-slate-400 text-sm mb-6 max-w-xs">
           Este curso requer o plano <span className="font-black text-[#5B2DFF]">Plus</span>. Faça upgrade para acessar.
@@ -225,7 +340,6 @@ const Aulas = () => {
     </div>
   );
 
-  // ─── Render principal ─────────────────────────────────────────────────────────
   return (
     <div className={`min-h-screen transition-all duration-500 ${modoCinema ? 'bg-black' : 'bg-[#F8FAFC]'}`}>
 
@@ -294,37 +408,61 @@ const Aulas = () => {
               </button>
             </div>
 
+            {/* ── Material de Apoio ─────────────────────────────────────────────── */}
             {aulaAtiva?.material_url && (
               <div className="bg-white rounded-[40px] border border-slate-200/60 shadow-sm overflow-hidden transition-all duration-500">
                 <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex items-center gap-4">
-                    <div className="p-4 bg-orange-50 text-orange-500 rounded-3xl"><FileText size={28} /></div>
+                    <div className="p-4 bg-purple-50 text-[#5B2DFF] rounded-3xl"><FileText size={28} /></div>
                     <div>
                       <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Material de Apoio</h4>
                       <p className="text-slate-400 text-xs font-medium">Apostila em PDF disponível para esta aula.</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 w-full md:w-auto">
-                    <button onClick={() => setVisualizarPDF(!visualizarPDF)}
+                    <button
+                      onClick={() => setVisualizarPDF(!visualizarPDF)}
                       className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase transition-all ${visualizarPDF ? 'bg-slate-100 text-slate-600' : 'bg-slate-900 text-white'}`}>
                       <Eye size={16} /> {visualizarPDF ? 'Fechar Leitor' : 'Ver Apostila'}
                     </button>
-                    <a href={aulaAtiva.material_url} target="_blank" download
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-orange-500 text-white rounded-2xl font-black text-[10px] uppercase transition-all hover:bg-orange-600 shadow-lg shadow-orange-100">
-                      <Download size={16} /> Baixar PDF
-                    </a>
+                    <button
+                      onClick={baixarPDFComBranding}
+                      disabled={baixandoPDF}
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-[#5B2DFF] text-white rounded-2xl font-black text-[10px] uppercase transition-all hover:bg-[#4a22e0] shadow-lg shadow-purple-100 disabled:opacity-60 active:scale-95">
+                      {baixandoPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                      {baixandoPDF ? 'Gerando...' : 'Baixar PDF'}
+                    </button>
                   </div>
                 </div>
+
                 {visualizarPDF && (
-                  <div className="p-4 border-t border-slate-100 bg-slate-50">
-                    <div className="aspect-[1/1.4] md:aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-white">
-                      <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(aulaAtiva.material_url)}&embedded=true`} className="w-full h-full" title="Material de Apoio" />
+                  <div className="border-t border-slate-100">
+                    {/* Header visual Verbo */}
+                    <div className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-[#5B2DFF] to-[#8B5CF6]">
+                      <div className="w-7 h-7 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                        <FileText size={14} className="text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-purple-200">Material de Apoio</p>
+                        <p className="text-xs font-black text-white truncate">{aulaAtiva?.titulo}</p>
+                      </div>
+                      <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest shrink-0">Verbo</span>
                     </div>
-                    <div className="mt-4 flex justify-center">
-                      <a href={aulaAtiva.material_url} target="_blank"
-                        className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase hover:text-[#5B2DFF] transition-colors">
-                        <ExternalLink size={12} /> Abrir em tela cheia
-                      </a>
+
+                    <div className="p-4 bg-slate-50">
+                      <div className="aspect-[1/1.4] md:aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-white">
+                        <iframe
+                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(aulaAtiva.material_url)}&embedded=true`}
+                          className="w-full h-full"
+                          title="Material de Apoio"
+                        />
+                      </div>
+                      <div className="mt-4 flex justify-center">
+                        <a href={aulaAtiva.material_url} target="_blank"
+                          className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase hover:text-[#5B2DFF] transition-colors">
+                          <ExternalLink size={12} /> Abrir em tela cheia
+                        </a>
+                      </div>
                     </div>
                   </div>
                 )}
