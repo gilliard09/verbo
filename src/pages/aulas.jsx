@@ -8,7 +8,7 @@ import {
   ChevronLeft, Play, CheckCircle,
   Loader2, Lightbulb, LightbulbOff, ChevronRight,
   Lock, Trophy, ShoppingCart, FileText, Eye, Download, ExternalLink,
-  ChevronUp, ChevronDown
+  RefreshCw, ChevronUp, ChevronDown
 } from 'lucide-react';
 
 // ─── Componente de Confetti ────────────────────────────────────────────────────
@@ -69,6 +69,93 @@ const ToastConclusao = ({ visivel, titulo }) => (
     </div>
   </div>
 );
+
+// ─── Leitor de PDF com retry automático ───────────────────────────────────────
+const LeitorPDF = ({ url, titulo }) => {
+  const [tentativa, setTentativa] = useState(0);
+  const [carregando, setCarregando] = useState(true);
+  const [falhou, setFalhou] = useState(false);
+  const iframeRef = useRef(null);
+  const timerRef = useRef(null);
+
+  // Gera URL com cache-bust a cada tentativa
+  const srcViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true&t=${tentativa}`;
+
+  useEffect(() => {
+    setCarregando(true);
+    setFalhou(false);
+
+    // O Google Docs Viewer não dispara onLoad confiável — usamos timeout
+    // Se em 8s ainda não carregou, tenta de novo (máx 3 vezes)
+    timerRef.current = setTimeout(() => {
+      if (carregando) {
+        if (tentativa < 3) {
+          setTentativa(t => t + 1);
+        } else {
+          setFalhou(true);
+          setCarregando(false);
+        }
+      }
+    }, 8000);
+
+    return () => clearTimeout(timerRef.current);
+  }, [tentativa]);
+
+  const retentar = () => {
+    setFalhou(false);
+    setCarregando(true);
+    setTentativa(t => t + 1);
+  };
+
+  return (
+    <div className="relative w-full h-full">
+      {/* Loading overlay */}
+      {carregando && !falhou && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 rounded-2xl gap-3">
+          <Loader2 className="animate-spin text-[#5B2DFF]" size={28} />
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            {tentativa === 0 ? 'Carregando apostila...' : `Tentando novamente... (${tentativa}/3)`}
+          </p>
+        </div>
+      )}
+
+      {/* Falhou após 3 tentativas */}
+      {falhou ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 rounded-2xl gap-4 p-6 text-center">
+          <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center">
+            <FileText size={22} className="text-orange-400" />
+          </div>
+          <div>
+            <p className="font-black text-slate-700 text-sm mb-1">Visualizador indisponível</p>
+            <p className="text-slate-400 text-xs">O Google Docs está lento. Use uma das opções abaixo.</p>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={retentar}
+              className="flex items-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase active:scale-95 transition-all">
+              <RefreshCw size={13} /> Tentar novamente
+            </button>
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-3 bg-[#5B2DFF] text-white rounded-2xl font-black text-[10px] uppercase active:scale-95 transition-all">
+              <ExternalLink size={13} /> Abrir PDF
+            </a>
+          </div>
+        </div>
+      ) : (
+        <iframe
+          ref={iframeRef}
+          key={tentativa}
+          src={srcViewer}
+          className="w-full h-full"
+          title={titulo}
+          onLoad={() => {
+            clearTimeout(timerRef.current);
+            setCarregando(false);
+          }}
+        />
+      )}
+    </div>
+  );
+};
 
 // ─── Componente principal ──────────────────────────────────────────────────────
 const Aulas = () => {
@@ -169,29 +256,17 @@ const Aulas = () => {
       const branco     = rgb(1, 1, 1);
       const cinzaClaro = rgb(0.6, 0.6, 0.6);
 
-      // ── Capa ──────────────────────────────────────────────────────────────────
-      const capaPage = pdfDoc.insertPage(0, [595, 842]); // A4
-
+      const capaPage = pdfDoc.insertPage(0, [595, 842]);
       capaPage.drawRectangle({ x: 0, y: 0,   width: 595, height: 842, color: roxo });
       capaPage.drawRectangle({ x: 0, y: 600, width: 595, height: 242, color: roxoClaro, opacity: 0.3 });
       capaPage.drawRectangle({ x: 0, y: 0,   width: 8,   height: 842, color: branco, opacity: 0.15 });
       capaPage.drawRectangle({ x: 40, y: 260, width: 515, height: 300, color: branco, opacity: 0.06 });
 
-      capaPage.drawText('VERBO', {
-        x: 40, y: 740, size: 52, font: helveticaBold, color: branco,
-      });
-      capaPage.drawText('appverbo.com.br', {
-        x: 40, y: 715, size: 11, font: helvetica, color: rgb(0.8, 0.7, 1.0),
-      });
-      capaPage.drawLine({
-        start: { x: 40, y: 700 }, end: { x: 555, y: 700 },
-        thickness: 1, color: branco, opacity: 0.2,
-      });
-      capaPage.drawText('MATERIAL DE APOIO', {
-        x: 40, y: 650, size: 10, font: helveticaBold, color: rgb(0.8, 0.7, 1.0),
-      });
+      capaPage.drawText('VERBO', { x: 40, y: 740, size: 52, font: helveticaBold, color: branco });
+      capaPage.drawText('appverbo.com.br', { x: 40, y: 715, size: 11, font: helvetica, color: rgb(0.8, 0.7, 1.0) });
+      capaPage.drawLine({ start: { x: 40, y: 700 }, end: { x: 555, y: 700 }, thickness: 1, color: branco, opacity: 0.2 });
+      capaPage.drawText('MATERIAL DE APOIO', { x: 40, y: 650, size: 10, font: helveticaBold, color: rgb(0.8, 0.7, 1.0) });
 
-      // Nome do curso com quebra de linha automática
       const nomeCurso  = dadosCurso?.titulo || 'Curso Ministerial';
       const tituloAula = aulaAtiva?.titulo   || '';
       const palavrasCurso = nomeCurso.split(' ');
@@ -199,12 +274,8 @@ const Aulas = () => {
       let linhasCurso = [];
       for (const palavra of palavrasCurso) {
         const teste = linhaCurso ? `${linhaCurso} ${palavra}` : palavra;
-        if (helveticaBold.widthOfTextAtSize(teste, 32) > 510) {
-          linhasCurso.push(linhaCurso);
-          linhaCurso = palavra;
-        } else {
-          linhaCurso = teste;
-        }
+        if (helveticaBold.widthOfTextAtSize(teste, 32) > 510) { linhasCurso.push(linhaCurso); linhaCurso = palavra; }
+        else { linhaCurso = teste; }
       }
       if (linhaCurso) linhasCurso.push(linhaCurso);
 
@@ -213,57 +284,31 @@ const Aulas = () => {
         capaPage.drawText(linha, { x: 40, y: yCurso, size: 32, font: helveticaBold, color: branco });
         yCurso -= 42;
       }
+      capaPage.drawText(tituloAula, { x: 40, y: yCurso - 16, size: 16, font: helvetica, color: rgb(0.85, 0.78, 1.0), maxWidth: 510 });
+      capaPage.drawText('Verbo — Tecnologia para quem prega', { x: 40, y: 60, size: 10, font: helvetica, color: branco, opacity: 0.5 });
+      capaPage.drawText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, { x: 40, y: 44, size: 9, font: helvetica, color: branco, opacity: 0.35 });
 
-      capaPage.drawText(tituloAula, {
-        x: 40, y: yCurso - 16, size: 16, font: helvetica,
-        color: rgb(0.85, 0.78, 1.0), maxWidth: 510,
-      });
-
-      capaPage.drawText('Verbo — Tecnologia para quem prega', {
-        x: 40, y: 60, size: 10, font: helvetica, color: branco, opacity: 0.5,
-      });
-      capaPage.drawText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, {
-        x: 40, y: 44, size: 9, font: helvetica, color: branco, opacity: 0.35,
-      });
-
-      // ── Rodapé em todas as páginas de conteúdo ────────────────────────────────
       const totalPaginas = pdfDoc.getPageCount();
       for (let i = 1; i < totalPaginas; i++) {
         const page = pdfDoc.getPage(i);
         const { width } = page.getSize();
-
-        page.drawLine({
-          start: { x: 30, y: 28 }, end: { x: width - 30, y: 28 },
-          thickness: 0.8, color: roxo, opacity: 0.4,
-        });
-        page.drawText('VERBO', {
-          x: 30, y: 14, size: 8, font: helveticaBold, color: roxo, opacity: 0.7,
-        });
-        page.drawText('appverbo.com.br', {
-          x: 76, y: 14, size: 8, font: helvetica, color: cinzaClaro, opacity: 0.7,
-        });
-
+        page.drawLine({ start: { x: 30, y: 28 }, end: { x: width - 30, y: 28 }, thickness: 0.8, color: roxo, opacity: 0.4 });
+        page.drawText('VERBO', { x: 30, y: 14, size: 8, font: helveticaBold, color: roxo, opacity: 0.7 });
+        page.drawText('appverbo.com.br', { x: 76, y: 14, size: 8, font: helvetica, color: cinzaClaro, opacity: 0.7 });
         const numPag = `${i} / ${totalPaginas - 1}`;
         const larguraNum = helvetica.widthOfTextAtSize(numPag, 8);
-        page.drawText(numPag, {
-          x: width - 30 - larguraNum, y: 14,
-          size: 8, font: helvetica, color: cinzaClaro, opacity: 0.7,
-        });
+        page.drawText(numPag, { x: width - 30 - larguraNum, y: 14, size: 8, font: helvetica, color: cinzaClaro, opacity: 0.7 });
       }
 
-      // ── Salva e baixa ─────────────────────────────────────────────────────────
       const pdfFinal = await pdfDoc.save();
       const blob = new Blob([pdfFinal], { type: 'application/pdf' });
       const url  = URL.createObjectURL(blob);
       const link = document.createElement('a');
       const nomeArquivo = `Verbo — ${nomeCurso} — ${tituloAula}.pdf`.replace(/[/\\?%*:|"<>]/g, '-');
-      link.href     = url;
-      link.download = nomeArquivo;
-      link.click();
+      link.href = url; link.download = nomeArquivo; link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Erro ao gerar PDF com branding:', err);
-      // Fallback: abre o PDF original
       window.open(aulaAtiva.material_url, '_blank');
     } finally {
       setBaixandoPDF(false);
@@ -451,11 +496,7 @@ const Aulas = () => {
 
                     <div className="p-4 bg-slate-50">
                       <div className="aspect-[1/1.4] md:aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-white">
-                        <iframe
-  src={`https://docs.google.com/viewer?url=${encodeURIComponent(aulaAtiva.material_url)}&embedded=true`}
-  className="w-full h-full"
-  title="Material de Apoio"
-/>
+                        <LeitorPDF url={aulaAtiva.material_url} titulo={aulaAtiva?.titulo} />
                       </div>
                       <div className="mt-4 flex justify-center">
                         <a href={aulaAtiva.material_url} target="_blank"
