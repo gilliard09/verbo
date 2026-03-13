@@ -104,7 +104,7 @@ const Cursos = () => {
     if (apiKey && channelId) {
       try {
         const res = await fetch(
-          `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=10&type=video&videoDuration=medium`
+          `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=10&type=video`
         );
         const data = await res.json();
         if (data.error) throw new Error(data.error.message);
