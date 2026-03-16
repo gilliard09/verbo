@@ -26,6 +26,16 @@ serve(async (req) => {
     const url    = new URL(req.url)
     const hottok = url.searchParams.get('hottok')
 
+    // ── LOG TEMPORÁRIO DE DIAGNÓSTICO — remover após resolver ──────────────
+    console.log("=== DIAGNÓSTICO WEBHOOK ===")
+    console.log("URL completa:", req.url)
+    console.log("Hottok recebido:", hottok)
+    console.log("Hottok esperado:", HOTTOK)
+    console.log("Batem?", hottok === HOTTOK)
+    console.log("Headers:", JSON.stringify(Object.fromEntries(req.headers)))
+    console.log("===========================")
+    // ──────────────────────────────────────────────────────────────────────
+
     if (HOTTOK && hottok !== HOTTOK) {
       console.warn("Hottok inválido recebido:", hottok)
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
@@ -35,9 +45,9 @@ serve(async (req) => {
     const body = await req.json()
     console.log("Evento Hotmart recebido:", body?.event, "| Produto:", body?.data?.product?.id)
 
-    const evento        = body.event
-    const email         = body.data?.buyer?.email?.toLowerCase().trim()
-    const produtoId     = body.data?.product?.id?.toString()
+    const evento         = body.event
+    const email          = body.data?.buyer?.email?.toLowerCase().trim()
+    const produtoId      = body.data?.product?.id?.toString()
     const subscriptionId = body.data?.subscription?.subscriber?.code ?? null
 
     // ── 3. Eventos de compra aprovada ──────────────────────────────────────
@@ -78,7 +88,7 @@ serve(async (req) => {
           .update({
             plano: novoPlano,
             hotmart_subscription_id: subscriptionId,
-            plano_expira_em: null // assinatura ativa não tem expiração
+            plano_expira_em: null
           })
           .eq('id', perfil.id)
 
@@ -169,7 +179,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Erro no processamento:", error.message)
-    // Retorna 200 para evitar retentativas infinitas da Hotmart
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200

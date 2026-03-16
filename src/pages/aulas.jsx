@@ -77,18 +77,19 @@ const LeitorPDF = ({ url, titulo }) => {
   const [falhou, setFalhou] = useState(false);
   const iframeRef = useRef(null);
   const timerRef = useRef(null);
+  // Ref para controlar se o load já foi disparado — evita closure stale
+  const carregouRef = useRef(false);
 
-  // Gera URL com cache-bust a cada tentativa
   const srcViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true&t=${tentativa}`;
 
   useEffect(() => {
+    carregouRef.current = false;
     setCarregando(true);
     setFalhou(false);
 
-    // O Google Docs Viewer não dispara onLoad confiável — usamos timeout
-    // Se em 8s ainda não carregou, tenta de novo (máx 3 vezes)
     timerRef.current = setTimeout(() => {
-      if (carregando) {
+      // Só retenta/falha se o iframe ainda não confirmou carregamento
+      if (!carregouRef.current) {
         if (tentativa < 3) {
           setTentativa(t => t + 1);
         } else {
@@ -96,12 +97,19 @@ const LeitorPDF = ({ url, titulo }) => {
           setCarregando(false);
         }
       }
-    }, 8000);
+    }, 9000);
 
     return () => clearTimeout(timerRef.current);
   }, [tentativa]);
 
+  const handleLoad = () => {
+    carregouRef.current = true;
+    clearTimeout(timerRef.current);
+    setCarregando(false);
+  };
+
   const retentar = () => {
+    carregouRef.current = false;
     setFalhou(false);
     setCarregando(true);
     setTentativa(t => t + 1);
@@ -147,10 +155,7 @@ const LeitorPDF = ({ url, titulo }) => {
           src={srcViewer}
           className="w-full h-full"
           title={titulo}
-          onLoad={() => {
-            clearTimeout(timerRef.current);
-            setCarregando(false);
-          }}
+          onLoad={handleLoad}
         />
       )}
     </div>
@@ -175,6 +180,9 @@ const Aulas = () => {
   const [celebrando, setCelebrando] = useState(false);
   const [toastVisivel, setToastVisivel] = useState(false);
   const [toastTitulo, setToastTitulo] = useState('');
+
+  // Dados do certificado prontos para uso síncrono
+  const dadosCertificadoRef = useRef(null);
 
   const aulaAtivaRef = useRef(null);
   const sidebarRef = useRef(null);
@@ -204,6 +212,14 @@ const Aulas = () => {
       const { data: cursoBD } = await supabase.from('cursos').select('*').eq('id', cursoId).single();
       setDadosCurso(cursoBD);
 
+      // Pré-carrega dados do certificado para uso síncrono no clique
+      const nomeAluno = user.user_metadata?.full_name || user.email.split('@')[0];
+      const nomeCurso = cursoBD?.titulo || 'Curso Ministerial';
+      const dataFormatada = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+      const hash = (user.id || '').slice(0, 4).toUpperCase();
+      const codigoValidacao = `VERBO-${hash}-${new Date().getFullYear()}`;
+      dadosCertificadoRef.current = { nomeAluno, nomeCurso, dataFormatada, codigoValidacao };
+
       const { data: matricula } = await supabase
         .from('matriculas').select('status')
         .eq('user_id', user.id).eq('curso_id', cursoId).maybeSingle();
@@ -229,14 +245,10 @@ const Aulas = () => {
     }
   };
 
-  const handleGerarCertificado = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const nomeAluno = user.user_metadata?.full_name || user.email.split('@')[0];
-    const nomeCurso = dadosCurso?.titulo || 'Curso Ministerial';
-    const dataFormatada = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-    const hash = (user.id || '').slice(0, 4).toUpperCase();
-    const codigoValidacao = `VERBO-${hash}-${new Date().getFullYear()}`;
-    gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoValidacao });
+  // ─── Certificado — chamada síncrona para não bloquear window.open ─────────────
+  const handleGerarCertificado = () => {
+    if (!dadosCertificadoRef.current) return;
+    gerarCertificado(dadosCertificadoRef.current);
   };
 
   // ─── Download com branding Verbo ──────────────────────────────────────────────
@@ -556,8 +568,9 @@ const Aulas = () => {
               <div className="p-6 bg-gradient-to-br from-yellow-400 to-orange-500 m-4 rounded-[32px] text-white text-center shadow-lg">
                 <Trophy size={24} className="mx-auto mb-2" />
                 <h5 className="font-black text-xs uppercase italic tracking-tighter">Parabéns! Curso Concluído!</h5>
-                <button onClick={handleGerarCertificado}
-                  className="mt-3 w-full py-3 bg-white text-orange-500 rounded-2xl font-black text-[10px] uppercase hover:bg-orange-50 transition-colors">
+                <button
+                  onClick={handleGerarCertificado}
+                  className="mt-3 w-full py-3 bg-white text-orange-500 rounded-2xl font-black text-[10px] uppercase hover:bg-orange-50 transition-colors active:scale-95">
                   Emitir Certificado
                 </button>
               </div>

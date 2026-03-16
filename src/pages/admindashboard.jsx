@@ -99,10 +99,10 @@ const AulaItem = ({ aula, index, onDragStart, onDragOver, onDrop, onEditar, onDe
 
 // ─── Card de feedback ─────────────────────────────────────────────────────────
 const tipoConfig = {
-  sugestao: { label: 'Sugestão', icon: Star,         cor: 'yellow' },
-  bug:      { label: 'Bug',      icon: Bug,          cor: 'red'    },
-  elogio:   { label: 'Elogio',   icon: Smile,        cor: 'green'  },
-  outro:    { label: 'Outro',    icon: MessageSquare, cor: 'blue'   },
+  sugestao: { label: 'Sugestão', icon: Star,          cor: 'yellow' },
+  bug:      { label: 'Bug',      icon: Bug,           cor: 'red'    },
+  elogio:   { label: 'Elogio',   icon: Smile,         cor: 'green'  },
+  outro:    { label: 'Outro',    icon: MessageSquare,  cor: 'blue'   },
 };
 
 const FeedbackCard = ({ fb, onMarcarLido, onDeletar }) => {
@@ -120,7 +120,6 @@ const FeedbackCard = ({ fb, onMarcarLido, onDeletar }) => {
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Estrelas */}
           <div className="flex gap-0.5">
             {[1,2,3,4,5].map(n => (
               <Star key={n} size={11} className={n <= fb.estrelas ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200 fill-slate-100'} />
@@ -162,13 +161,13 @@ const AdminDashboard = () => {
 
   // Analytics
   const [stats, setStats] = useState({
-    totalUsuarios: 0, totalSermoes: 0, totalMatriculas: 0, totalProgresso: 0,
-    taxaConclusao: 0, mediaSermoesUsuario: 0, loadingStats: true
+    totalUsuarios: 0, totalSermoes: 0, totalAssinaturas: 0, totalProgresso: 0,
+    taxaConclusao: 0, mr: 0, loadingStats: true
   });
   const [dadosGrafico, setDadosGrafico] = useState([]);
   const [dadosCrescimento, setDadosCrescimento] = useState([]);
   const [matriculasRecentes, setMatriculasRecentes] = useState([]);
-  const metas = { usuarios: 50, sermoes: 100, alunos: 50, sermoesDiarios: 14 };
+  const metas = { usuarios: 50, sermoes: 100, assinaturas: 50, sermoesDiarios: 14 };
 
   // Formulários
   const [novoCurso, setNovoCurso] = useState({ titulo: '', descricao: '', capa_url: '', hotmart_id: '', checkout_url: '' });
@@ -214,18 +213,37 @@ const AdminDashboard = () => {
   const carregarAnalytics = async () => {
     try {
       const [
-        { count: usuarios }, { count: sermoes }, { count: matriculas },
-        { count: progresso }, { count: totalAulas }
+        { count: usuarios },
+        { count: sermoes },
+        { count: assinaturas }, // ← profiles com plano fundador ou plus
+        { count: progresso },
+        { count: totalAulas }
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('sermoes').select('*', { count: 'exact', head: true }),
-        supabase.from('matriculas').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).in('plano', ['fundador', 'plus']),
         supabase.from('progresso_aulas').select('*', { count: 'exact', head: true }),
         supabase.from('aulas').select('*', { count: 'exact', head: true }),
       ]);
-      const taxaConclusao = matriculas > 0 && totalAulas > 0 ? Math.round((progresso / (matriculas * totalAulas)) * 100) : 0;
-      const mediaSermoesUsuario = usuarios > 0 ? (sermoes / usuarios).toFixed(1) : 0;
-      setStats({ totalUsuarios: usuarios || 0, totalSermoes: sermoes || 0, totalMatriculas: matriculas || 0, totalProgresso: progresso || 0, taxaConclusao: Math.min(taxaConclusao, 100), mediaSermoesUsuario, loadingStats: false });
+
+      // Contar fundadores e plus separadamente para calcular MR
+      const [{ count: totalFundadores }, { count: totalPlus }] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('plano', 'fundador'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('plano', 'plus'),
+      ]);
+      const mr = ((totalFundadores || 0) * 9.90) + ((totalPlus || 0) * 47);
+
+      const taxaConclusao = assinaturas > 0 && totalAulas > 0 ? Math.round((progresso / (assinaturas * totalAulas)) * 100) : 0;
+
+      setStats({
+        totalUsuarios: usuarios || 0,
+        totalSermoes: sermoes || 0,
+        totalAssinaturas: assinaturas || 0,
+        totalProgresso: progresso || 0,
+        taxaConclusao: Math.min(taxaConclusao, 100),
+        mr,
+        loadingStats: false
+      });
 
       const hoje = new Date();
       const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -358,7 +376,6 @@ const AdminDashboard = () => {
     });
   };
 
-  // ─── Feedback actions ────────────────────────────────────────────────────────
   const marcarFeedbackLido = async (id, lido) => {
     await supabase.from('feedbacks').update({ lido }).eq('id', id);
     setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, lido } : f));
@@ -375,7 +392,6 @@ const AdminDashboard = () => {
     });
   };
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
   const MetaBar = ({ atual, alvo, label, icon: Icon, color }) => {
     const pct = Math.min((atual / alvo) * 100, 100);
     return (
@@ -395,7 +411,6 @@ const AdminDashboard = () => {
   const maxCrescimento = Math.max(...dadosCrescimento.map(d => d.valor), 1);
   const inputClass = "w-full p-4 bg-slate-50 rounded-2xl text-sm border-none font-bold focus:ring-2 focus:ring-purple-200 outline-none transition-all";
 
-  // Stats dos feedbacks
   const feedbacksNaoLidos = feedbacks.filter(f => !f.lido).length;
   const mediaEstrelas = feedbacks.length > 0 ? (feedbacks.reduce((s, f) => s + f.estrelas, 0) / feedbacks.length).toFixed(1) : '—';
   const feedbacksFiltrados = feedbacks
@@ -452,11 +467,21 @@ const AdminDashboard = () => {
               <TrendingUp className="text-purple-400" size={20} />
               <h2 className="text-white font-black uppercase tracking-tighter text-lg italic">Visão Estratégica</h2>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
-                { icon: Users,   color: 'purple', label: 'Total Usuários',   value: stats.totalUsuarios,   meta: { atual: stats.totalUsuarios,   alvo: metas.usuarios, label: 'Meta Usuários',  icon: Target,    color: 'text-purple-400' } },
-                { icon: PenTool, color: 'blue',   label: 'Sermões Gerados',  value: stats.totalSermoes,    meta: { atual: stats.totalSermoes,    alvo: metas.sermoes,  label: 'Meta Sermões',   icon: BarChart3, color: 'text-blue-400'   } },
-                { icon: Award,   color: 'green',  label: 'Alunos Ativos',    value: stats.totalMatriculas, meta: { atual: stats.totalMatriculas, alvo: metas.alunos,   label: 'Meta Alunos',    icon: ShoppingCart, color: 'text-green-400' } },
+                {
+                  icon: Users,   color: 'purple', label: 'Total Usuários',      value: stats.totalUsuarios,
+                  meta: { atual: stats.totalUsuarios,   alvo: metas.usuarios,     label: 'Meta Usuários',      icon: Target,       color: 'text-purple-400' }
+                },
+                {
+                  icon: PenTool, color: 'blue',   label: 'Sermões Gerados',     value: stats.totalSermoes,
+                  meta: { atual: stats.totalSermoes,    alvo: metas.sermoes,      label: 'Meta Sermões',       icon: BarChart3,    color: 'text-blue-400'   }
+                },
+                {
+                  icon: Award,   color: 'green',  label: 'Assinaturas Ativas',  value: stats.totalAssinaturas,
+                  meta: { atual: stats.totalAssinaturas, alvo: metas.assinaturas, label: 'Meta Assinaturas',   icon: ShoppingCart, color: 'text-green-400'  }
+                },
               ].map(({ icon: Icon, color, label, value, meta }) => (
                 <div key={label} className="bg-white/5 border border-white/10 p-6 rounded-[32px] backdrop-blur-md">
                   <div className={`p-3 bg-${color}-500/20 text-${color}-400 rounded-2xl w-fit mb-4`}><Icon size={24} /></div>
@@ -474,9 +499,11 @@ const AdminDashboard = () => {
                 <p className="text-[9px] text-slate-500 mt-1">aulas concluídas / esperadas</p>
               </div>
               <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]">
-                <div className="flex items-center gap-2 mb-2"><PenTool size={14} className="text-blue-400" /><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sermões/Usuário</span></div>
-                <p className="text-3xl font-black text-white italic">{stats.mediaSermoesUsuario}</p>
-                <p className="text-[9px] text-slate-500 mt-1">média por usuário ativo</p>
+                <div className="flex items-center gap-2 mb-2"><TrendingUp size={14} className="text-green-400" /><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Receita Recorrente</span></div>
+                <p className="text-3xl font-black text-white italic">
+                  {stats.mr.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
+                <p className="text-[9px] text-slate-500 mt-1">MR mensal estimado</p>
               </div>
               <div className="bg-white/5 border border-white/10 p-5 rounded-[24px] col-span-2 md:col-span-1">
                 <div className="flex items-center gap-2 mb-2"><Star size={14} className="text-yellow-400" /><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nota Média</span></div>
@@ -711,14 +738,12 @@ const AdminDashboard = () => {
         {/* ════ ABA FEEDBACKS ════ */}
         {aba === 'feedbacks' && (
           <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-
-            {/* Resumo */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Total',     value: feedbacks.length,                                  cor: 'bg-slate-100 text-slate-600' },
-                { label: 'Não lidos', value: feedbacksNaoLidos,                                 cor: 'bg-yellow-50 text-yellow-600' },
-                { label: 'Nota média',value: `${mediaEstrelas}★`,                              cor: 'bg-green-50 text-green-600' },
-                { label: 'Bugs',      value: feedbacks.filter(f => f.tipo === 'bug').length,    cor: 'bg-red-50 text-red-500' },
+                { label: 'Total',      value: feedbacks.length,                                 cor: 'bg-slate-100 text-slate-600'  },
+                { label: 'Não lidos',  value: feedbacksNaoLidos,                                cor: 'bg-yellow-50 text-yellow-600' },
+                { label: 'Nota média', value: `${mediaEstrelas}★`,                             cor: 'bg-green-50 text-green-600'   },
+                { label: 'Bugs',       value: feedbacks.filter(f => f.tipo === 'bug').length,   cor: 'bg-red-50 text-red-500'       },
               ].map(({ label, value, cor }) => (
                 <div key={label} className={`${cor} rounded-[20px] p-4 text-center`}>
                   <p className="text-2xl font-black">{value}</p>
@@ -727,7 +752,6 @@ const AdminDashboard = () => {
               ))}
             </div>
 
-            {/* Filtros */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex gap-2 flex-wrap">
                 {['todos', 'sugestao', 'bug', 'elogio', 'outro'].map(tipo => (
@@ -743,7 +767,6 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            {/* Lista */}
             {feedbacksFiltrados.length === 0 ? (
               <div className="bg-white rounded-[28px] border border-slate-100 p-16 text-center">
                 <MessageSquare size={36} className="text-slate-200 mx-auto mb-3" />
