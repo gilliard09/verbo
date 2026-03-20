@@ -1,20 +1,24 @@
 {
   "name": "Verbo App",
   "short_name": "Verbo",
+  "description": "O app que todo pregador precisa para preparar mensagens com profundidade e segurança.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "background_color": "#0f0b1e",
   "theme_color": "#5B2DFF",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
