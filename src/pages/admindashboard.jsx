@@ -639,7 +639,7 @@ const AdminDashboard = () => {
           <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center gap-3">
               <TrendingUp className="text-purple-400" size={20} />
-              <h2 className="text-white font-black uppercase tracking-tighter text-lg italic">Visão Estratégica</h2>
+              <h2 className="text-white font-black uppercase tracking-tighter text-lg italic">Analytics</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
