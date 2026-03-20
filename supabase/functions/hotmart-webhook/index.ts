@@ -84,13 +84,14 @@ serve(async (req) => {
 
         // Atualizar plano do usuário
         const { error: errUpdate } = await supabaseClient
-          .from('profiles')
-          .update({
-            plano: novoPlano,
-            hotmart_subscription_id: subscriptionId,
-            plano_expira_em: null
-          })
-          .eq('id', perfil.id)
+  .from('profiles')
+  .update({
+    plano: novoPlano,
+    hotmart_subscription_id: subscriptionId,
+    plano_expira_em: null,
+    plano_atualizado_em: new Date().toISOString()
+  })
+  .eq('id', perfil.id)
 
         if (errUpdate) throw errUpdate
 

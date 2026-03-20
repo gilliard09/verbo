@@ -7,8 +7,83 @@ import {
   FileText, UploadCloud, X, Megaphone, Send, Bell, Sparkles,
   Edit3, Check, GripVertical, AlertTriangle, UserCheck, BookOpen,
   ChevronDown, TrendingDown, Activity, Calendar,
-  MessageSquare, Star, Bug, Smile, Eye, EyeOff
+  MessageSquare, Star, Bug, Smile, Eye, EyeOff, Trophy
 } from 'lucide-react';
+
+// ─── Chave localStorage para metas já celebradas ──────────────────────────────
+const LS_METAS_KEY = 'verbo_admin_metas_celebradas';
+
+const metaJaCelebrada = (chave) => {
+  try {
+    const salvas = JSON.parse(localStorage.getItem(LS_METAS_KEY) || '{}');
+    return !!salvas[chave];
+  } catch { return false; }
+};
+
+const marcarMetaCelebrada = (chave) => {
+  try {
+    const salvas = JSON.parse(localStorage.getItem(LS_METAS_KEY) || '{}');
+    salvas[chave] = true;
+    localStorage.setItem(LS_METAS_KEY, JSON.stringify(salvas));
+  } catch {}
+};
+
+// ─── Animação de celebração de meta ──────────────────────────────────────────
+const CelebracaoMeta = ({ visivel, label, onFim }) => {
+  const [pecas, setPecas] = useState([]);
+
+  useEffect(() => {
+    if (!visivel) return;
+    const cores = ['#5B2DFF', '#FFD700', '#00C896', '#FF3CAC', '#fff', '#a78bfa'];
+    const novas = Array.from({ length: 80 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      width: `${Math.random() * 10 + 4}px`,
+      height: `${Math.random() * 14 + 6}px`,
+      background: cores[Math.floor(Math.random() * cores.length)],
+      animationDelay: `${Math.random() * 0.8}s`,
+      animationDuration: `${Math.random() * 1.5 + 1}s`,
+      transform: `rotate(${Math.random() * 360}deg)`,
+    }));
+    setPecas(novas);
+    const t = setTimeout(() => { setPecas([]); onFim?.(); }, 3500);
+    return () => clearTimeout(t);
+  }, [visivel]);
+
+  if (!visivel && pecas.length === 0) return null;
+
+  return (
+    <>
+      <style>{`
+        @keyframes meta-fall {
+          0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+          80%  { opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .meta-piece { animation: meta-fall linear forwards; }
+        @keyframes meta-badge-in {
+          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+          60%  { transform: translate(-50%, -50%) scale(1.1); }
+          100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .meta-badge { animation: meta-badge-in 0.5s ease forwards; }
+      `}</style>
+      <div className="fixed inset-0 z-[500] pointer-events-none overflow-hidden">
+        {pecas.map(p => (
+          <div key={p.id} className="absolute rounded-sm meta-piece"
+            style={{ left: p.left, top: '-20px', width: p.width, height: p.height, background: p.background, animationDelay: p.animationDelay, animationDuration: p.animationDuration, transform: p.transform }} />
+        ))}
+        <div className="fixed top-1/2 left-1/2 meta-badge pointer-events-none">
+          <div className="bg-[#0f0b1e] border-2 border-purple-400 rounded-[32px] px-10 py-8 text-center shadow-2xl shadow-purple-500/30">
+            <Trophy size={40} className="text-yellow-400 mx-auto mb-3" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-1">Meta Batida! 🎉</p>
+            <p className="text-2xl font-black text-white italic uppercase">{label}</p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
 
 // ─── Modal de confirmação destrutiva ─────────────────────────────────────────
 const ModalConfirmacao = ({ aberto, titulo, descricao, onConfirmar, onCancelar, loading }) => {
@@ -167,7 +242,57 @@ const AdminDashboard = () => {
   const [dadosGrafico, setDadosGrafico] = useState([]);
   const [dadosCrescimento, setDadosCrescimento] = useState([]);
   const [matriculasRecentes, setMatriculasRecentes] = useState([]);
-  const metas = { usuarios: 50, sermoes: 100, assinaturas: 50, sermoesDiarios: 14 };
+
+  // ── Metas editáveis — carregadas do localStorage ───────────────────────────
+  const [metas, setMetas] = useState(() => {
+    try {
+      const salvas = JSON.parse(localStorage.getItem('verbo_admin_metas') || '{}');
+      return {
+        usuarios:       salvas.usuarios       ?? 50,
+        sermoes:        salvas.sermoes        ?? 100,
+        assinaturas:    salvas.assinaturas    ?? 50,
+        sermoesDiarios: salvas.sermoesDiarios ?? 14,
+      };
+    } catch {
+      return { usuarios: 50, sermoes: 100, assinaturas: 50, sermoesDiarios: 14 };
+    }
+  });
+  const [editandoMeta, setEditandoMeta] = useState(null);
+  const [metaTemp, setMetaTemp] = useState('');
+
+  const salvarMeta = (chave) => {
+    const novo = parseInt(metaTemp, 10);
+    if (!isNaN(novo) && novo > 0) {
+      const novasMetas = { ...metas, [chave]: novo };
+      setMetas(novasMetas);
+      localStorage.setItem('verbo_admin_metas', JSON.stringify(novasMetas));
+      try {
+        const salvas = JSON.parse(localStorage.getItem(LS_METAS_KEY) || '{}');
+        delete salvas[chave];
+        localStorage.setItem(LS_METAS_KEY, JSON.stringify(salvas));
+      } catch {}
+    }
+    setEditandoMeta(null);
+    setMetaTemp('');
+  };
+
+  // ── Celebração de meta ─────────────────────────────────────────────────────
+  const [celebracao, setCelebracao] = useState({ visivel: false, label: '' });
+
+  const verificarMetas = useCallback((novoStats, novasMetas) => {
+    const checks = [
+      { chave: 'usuarios',    atual: novoStats.totalUsuarios,    alvo: novasMetas.usuarios,    label: 'Meta de Usuários' },
+      { chave: 'sermoes',     atual: novoStats.totalSermoes,     alvo: novasMetas.sermoes,     label: 'Meta de Sermões' },
+      { chave: 'assinaturas', atual: novoStats.totalAssinaturas, alvo: novasMetas.assinaturas, label: 'Meta de Assinaturas' },
+    ];
+    for (const { chave, atual, alvo, label } of checks) {
+      if (atual >= alvo && !metaJaCelebrada(chave)) {
+        marcarMetaCelebrada(chave);
+        setCelebracao({ visivel: true, label });
+        return;
+      }
+    }
+  }, []);
 
   // Formulários
   const [novoCurso, setNovoCurso] = useState({ titulo: '', descricao: '', capa_url: '', hotmart_id: '', checkout_url: '' });
@@ -195,13 +320,20 @@ const AdminDashboard = () => {
     await Promise.all([carregarCursos(), carregarAnalytics(), carregarNotificacoes(), carregarMatriculasRecentes(), carregarFeedbacks()]);
   };
 
+  // ✅ order por created_at — coluna correta da tabela notificacoes
   const carregarNotificacoes = async () => {
     const { data } = await supabase.from('notificacoes').select('*').order('created_at', { ascending: false }).limit(5);
     if (data) setNotificacoes(data);
   };
 
+  // ✅ order por plano_atualizado_em — nova coluna adicionada em profiles
   const carregarMatriculasRecentes = async () => {
-    const { data } = await supabase.from('matriculas').select('*, profiles(full_name, email), cursos(titulo)').order('created_at', { ascending: false }).limit(8);
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, plano, plano_atualizado_em, created_at')
+      .in('plano', ['fundador', 'plus'])
+      .order('plano_atualizado_em', { ascending: false })
+      .limit(8);
     if (data) setMatriculasRecentes(data);
   };
 
@@ -215,7 +347,7 @@ const AdminDashboard = () => {
       const [
         { count: usuarios },
         { count: sermoes },
-        { count: assinaturas }, // ← profiles com plano fundador ou plus
+        { count: assinaturas },
         { count: progresso },
         { count: totalAulas }
       ] = await Promise.all([
@@ -226,7 +358,6 @@ const AdminDashboard = () => {
         supabase.from('aulas').select('*', { count: 'exact', head: true }),
       ]);
 
-      // Contar fundadores e plus separadamente para calcular MR
       const [{ count: totalFundadores }, { count: totalPlus }] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('plano', 'fundador'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('plano', 'plus'),
@@ -235,7 +366,7 @@ const AdminDashboard = () => {
 
       const taxaConclusao = assinaturas > 0 && totalAulas > 0 ? Math.round((progresso / (assinaturas * totalAulas)) * 100) : 0;
 
-      setStats({
+      const novoStats = {
         totalUsuarios: usuarios || 0,
         totalSermoes: sermoes || 0,
         totalAssinaturas: assinaturas || 0,
@@ -243,10 +374,19 @@ const AdminDashboard = () => {
         taxaConclusao: Math.min(taxaConclusao, 100),
         mr,
         loadingStats: false
+      };
+
+      setStats(novoStats);
+
+      setMetas(metasAtuais => {
+        verificarMetas(novoStats, metasAtuais);
+        return metasAtuais;
       });
 
       const hoje = new Date();
       const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+      // ✅ Gráfico sermões — created_at da tabela sermoes
       const ultimos7 = await Promise.all(Array.from({ length: 7 }, async (_, i) => {
         const d = new Date(); d.setDate(hoje.getDate() - (6 - i));
         const dia = d.toISOString().split('T')[0];
@@ -255,6 +395,7 @@ const AdminDashboard = () => {
       }));
       setDadosGrafico(ultimos7);
 
+      // ✅ Gráfico usuários — created_at da tabela profiles
       const ultimos7Usuarios = await Promise.all(Array.from({ length: 7 }, async (_, i) => {
         const d = new Date(); d.setDate(hoje.getDate() - (6 - i));
         const dia = d.toISOString().split('T')[0];
@@ -265,6 +406,7 @@ const AdminDashboard = () => {
     } catch (err) { console.error(err); }
   };
 
+  // ✅ order por created_at — coluna correta da tabela cursos
   const carregarCursos = async () => {
     setFetching(true);
     const { data } = await supabase.from('cursos').select('*').order('created_at', { ascending: false });
@@ -392,13 +534,39 @@ const AdminDashboard = () => {
     });
   };
 
-  const MetaBar = ({ atual, alvo, label, icon: Icon, color }) => {
+  // ─── MetaBar com botão de edição ─────────────────────────────────────────────
+  const MetaBar = ({ atual, alvo, label, icon: Icon, color, chave }) => {
     const pct = Math.min((atual / alvo) * 100, 100);
+    const estaEditando = editandoMeta === chave;
     return (
       <div className="space-y-2 mt-4">
-        <div className="flex justify-between items-end">
-          <div className="flex items-center gap-2 text-slate-400"><Icon size={12} className={color} /><span className="text-[9px] font-black uppercase tracking-widest">{label}</span></div>
-          <span className="text-[10px] font-bold text-white">{atual}/{alvo}</span>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Icon size={12} className={color} />
+            <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+          </div>
+          {estaEditando ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={metaTemp}
+                onChange={e => setMetaTemp(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') salvarMeta(chave); if (e.key === 'Escape') setEditandoMeta(null); }}
+                className="w-16 bg-white/10 text-white text-[10px] font-black rounded-lg px-2 py-1 border border-purple-400 outline-none text-right"
+                autoFocus
+              />
+              <button onClick={() => salvarMeta(chave)} className="p-1 bg-green-500 rounded-lg"><Check size={10} className="text-white" /></button>
+              <button onClick={() => setEditandoMeta(null)} className="p-1 bg-white/10 rounded-lg"><X size={10} className="text-white" /></button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setEditandoMeta(chave); setMetaTemp(String(alvo)); }}
+              className="flex items-center gap-1 text-[10px] font-bold text-white/60 hover:text-white transition-colors"
+            >
+              {atual}/{alvo}
+              <Edit3 size={9} className="opacity-50" />
+            </button>
+          )}
         </div>
         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/10">
           <div className={`h-full transition-all duration-1000 ${color.replace('text-', 'bg-')}`} style={{ width: `${pct}%`, boxShadow: `0 0 8px ${color === 'text-purple-400' ? '#a78bfa' : '#4ade80'}` }} />
@@ -418,7 +586,13 @@ const AdminDashboard = () => {
     .filter(f => mostrarLidos ? true : !f.lido);
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${aba === 'analytics' ? 'bg-[#0f0b1e]' : 'bg-slate-50'} pb-24`}>
+    <div className={`min-h-screen transition-colors duration-500 ${aba === 'analytics' ? 'bg-[#0f0b1e]' : 'bg-slate-50'} pb-[calc(6rem+env(safe-area-inset-bottom))]`}>
+
+      <CelebracaoMeta
+        visivel={celebracao.visivel}
+        label={celebracao.label}
+        onFim={() => setCelebracao({ visivel: false, label: '' })}
+      />
 
       <ModalConfirmacao aberto={modal.aberto} titulo={modal.titulo} descricao={modal.descricao} onConfirmar={modal.onConfirmar} onCancelar={() => setModal(m => ({ ...m, aberto: false }))} loading={modalLoading} />
 
@@ -472,15 +646,15 @@ const AdminDashboard = () => {
               {[
                 {
                   icon: Users,   color: 'purple', label: 'Total Usuários',      value: stats.totalUsuarios,
-                  meta: { atual: stats.totalUsuarios,   alvo: metas.usuarios,     label: 'Meta Usuários',      icon: Target,       color: 'text-purple-400' }
+                  meta: { atual: stats.totalUsuarios,    alvo: metas.usuarios,    label: 'Meta Usuários',    icon: Target,       color: 'text-purple-400', chave: 'usuarios' }
                 },
                 {
                   icon: PenTool, color: 'blue',   label: 'Sermões Gerados',     value: stats.totalSermoes,
-                  meta: { atual: stats.totalSermoes,    alvo: metas.sermoes,      label: 'Meta Sermões',       icon: BarChart3,    color: 'text-blue-400'   }
+                  meta: { atual: stats.totalSermoes,     alvo: metas.sermoes,     label: 'Meta Sermões',     icon: BarChart3,    color: 'text-blue-400',   chave: 'sermoes' }
                 },
                 {
                   icon: Award,   color: 'green',  label: 'Assinaturas Ativas',  value: stats.totalAssinaturas,
-                  meta: { atual: stats.totalAssinaturas, alvo: metas.assinaturas, label: 'Meta Assinaturas',   icon: ShoppingCart, color: 'text-green-400'  }
+                  meta: { atual: stats.totalAssinaturas, alvo: metas.assinaturas, label: 'Meta Assinaturas', icon: ShoppingCart, color: 'text-green-400',  chave: 'assinaturas' }
                 },
               ].map(({ icon: Icon, color, label, value, meta }) => (
                 <div key={label} className="bg-white/5 border border-white/10 p-6 rounded-[32px] backdrop-blur-md">
@@ -500,7 +674,7 @@ const AdminDashboard = () => {
               </div>
               <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]">
                 <div className="flex items-center gap-2 mb-2"><TrendingUp size={14} className="text-green-400" /><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Receita Recorrente</span></div>
-                <p className="text-3xl font-black text-white italic">
+                <p className="font-black text-white italic leading-tight" style={{ fontSize: 'clamp(1.1rem, 5vw, 1.875rem)' }}>
                   {stats.mr.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 <p className="text-[9px] text-slate-500 mt-1">MR mensal estimado</p>
@@ -541,24 +715,30 @@ const AdminDashboard = () => {
 
             <div className="bg-white/5 border border-white/10 rounded-[32px] overflow-hidden">
               <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                <h4 className="text-white font-bold text-sm flex items-center gap-2"><UserCheck size={16} className="text-orange-400" /> Matrículas Recentes</h4>
+                <h4 className="text-white font-bold text-sm flex items-center gap-2"><UserCheck size={16} className="text-orange-400" /> Assinantes Recentes</h4>
                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{matriculasRecentes.length} registros</span>
               </div>
               <div className="divide-y divide-white/5">
                 {matriculasRecentes.length === 0
-                  ? <p className="p-6 text-center text-slate-500 text-xs">Nenhuma matrícula ainda.</p>
+                  ? <p className="p-6 text-center text-slate-500 text-xs">Nenhum assinante ainda.</p>
                   : matriculasRecentes.map((m, i) => (
                     <div key={i} className="flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-purple-500/20 rounded-2xl flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-black text-purple-400">{(m.profiles?.full_name || m.profiles?.email || '?')[0].toUpperCase()}</span>
+                          <span className="text-[10px] font-black text-purple-400">{(m.full_name || m.email || '?')[0].toUpperCase()}</span>
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-white">{m.profiles?.full_name || m.profiles?.email || 'Usuário'}</p>
-                          <p className="text-[10px] text-slate-500">{m.cursos?.titulo || 'Curso'}</p>
+                          <p className="text-xs font-bold text-white">{m.full_name || m.email || 'Usuário'}</p>
+                          {/* ✅ badge do plano */}
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${m.plano === 'plus' ? 'bg-purple-500/20 text-purple-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                            {m.plano}
+                          </span>
                         </div>
                       </div>
-                      <span className="text-[9px] font-black text-slate-500 uppercase">{new Date(m.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>
+                      {/* ✅ usa plano_atualizado_em com fallback para created_at */}
+                      <span className="text-[9px] font-black text-slate-500 uppercase">
+                        {new Date(m.plano_atualizado_em || m.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                      </span>
                     </div>
                   ))}
               </div>
@@ -725,6 +905,7 @@ const AdminDashboard = () => {
                     <div className="text-left">
                       <h3 className="font-black text-slate-800 text-sm uppercase italic tracking-tighter">{n.titulo}</h3>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">{n.mensagem}</p>
+                      {/* ✅ created_at — coluna correta da tabela notificacoes */}
                       <span className="text-[9px] font-bold text-slate-300 mt-2 block uppercase">{new Date(n.created_at).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </div>
