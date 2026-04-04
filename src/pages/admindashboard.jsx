@@ -7,7 +7,7 @@ import {
   FileText, UploadCloud, X, Megaphone, Send, Bell, Sparkles,
   Edit3, Check, GripVertical, AlertTriangle, UserCheck, BookOpen,
   ChevronDown, TrendingDown, Activity, Calendar,
-  MessageSquare, Star, Bug, Smile, Eye, EyeOff, Trophy
+  MessageSquare, Star, Bug, Smile, Eye, EyeOff, Trophy, Flag
 } from 'lucide-react';
 
 // ─── Chave localStorage para metas já celebradas ──────────────────────────────
@@ -31,41 +31,27 @@ const marcarMetaCelebrada = (chave) => {
 // ─── Animação de celebração de meta ──────────────────────────────────────────
 const CelebracaoMeta = ({ visivel, label, onFim }) => {
   const [pecas, setPecas] = useState([]);
-
   useEffect(() => {
     if (!visivel) return;
     const cores = ['#5B2DFF', '#FFD700', '#00C896', '#FF3CAC', '#fff', '#a78bfa'];
     const novas = Array.from({ length: 80 }, (_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      width: `${Math.random() * 10 + 4}px`,
-      height: `${Math.random() * 14 + 6}px`,
+      id: i, left: `${Math.random() * 100}%`,
+      width: `${Math.random() * 10 + 4}px`, height: `${Math.random() * 14 + 6}px`,
       background: cores[Math.floor(Math.random() * cores.length)],
-      animationDelay: `${Math.random() * 0.8}s`,
-      animationDuration: `${Math.random() * 1.5 + 1}s`,
+      animationDelay: `${Math.random() * 0.8}s`, animationDuration: `${Math.random() * 1.5 + 1}s`,
       transform: `rotate(${Math.random() * 360}deg)`,
     }));
     setPecas(novas);
     const t = setTimeout(() => { setPecas([]); onFim?.(); }, 3500);
     return () => clearTimeout(t);
   }, [visivel]);
-
   if (!visivel && pecas.length === 0) return null;
-
   return (
     <>
       <style>{`
-        @keyframes meta-fall {
-          0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-          80%  { opacity: 1; }
-          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-        }
+        @keyframes meta-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
         .meta-piece { animation: meta-fall linear forwards; }
-        @keyframes meta-badge-in {
-          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-          60%  { transform: translate(-50%, -50%) scale(1.1); }
-          100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        }
+        @keyframes meta-badge-in { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 60% { transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
         .meta-badge { animation: meta-badge-in 0.5s ease forwards; }
       `}</style>
       <div className="fixed inset-0 z-[500] pointer-events-none overflow-hidden">
@@ -98,9 +84,7 @@ const ModalConfirmacao = ({ aberto, titulo, descricao, onConfirmar, onCancelar, 
         <h3 className="font-black text-slate-900 text-center text-lg uppercase tracking-tighter italic mb-2">{titulo}</h3>
         <p className="text-slate-400 text-xs text-center leading-relaxed mb-8">{descricao}</p>
         <div className="flex gap-3">
-          <button onClick={onCancelar} className="flex-1 py-4 rounded-2xl border border-slate-200 font-black text-xs uppercase text-slate-600 hover:bg-slate-50 transition-all">
-            Cancelar
-          </button>
+          <button onClick={onCancelar} className="flex-1 py-4 rounded-2xl border border-slate-200 font-black text-xs uppercase text-slate-600 hover:bg-slate-50 transition-all">Cancelar</button>
           <button onClick={onConfirmar} disabled={loading} className="flex-1 py-4 rounded-2xl bg-red-500 text-white font-black text-xs uppercase hover:bg-red-600 transition-all flex items-center justify-center gap-2">
             {loading ? <Loader2 className="animate-spin" size={14} /> : <><Trash2 size={14} /> Excluir</>}
           </button>
@@ -125,12 +109,9 @@ const PreviewCapa = ({ url }) => {
   if (!url) return null;
   return (
     <div className="mt-2 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 aspect-video flex items-center justify-center">
-      {tentando
-        ? <Loader2 className="animate-spin text-slate-300" size={20} />
-        : valida
-          ? <img src={url} className="w-full h-full object-cover" alt="Preview da capa" />
-          : <div className="flex flex-col items-center gap-1 text-slate-300"><ImageIcon size={24} /><span className="text-[9px] font-bold uppercase">URL inválida</span></div>
-      }
+      {tentando ? <Loader2 className="animate-spin text-slate-300" size={20} />
+        : valida ? <img src={url} className="w-full h-full object-cover" alt="Preview da capa" />
+        : <div className="flex flex-col items-center gap-1 text-slate-300"><ImageIcon size={24} /><span className="text-[9px] font-bold uppercase">URL inválida</span></div>}
     </div>
   );
 };
@@ -139,13 +120,8 @@ const PreviewCapa = ({ url }) => {
 const AulaItem = ({ aula, index, onDragStart, onDragOver, onDrop, onEditar, onDeletar, editando, onSalvarEdicao }) => {
   const [dadosEdicao, setDadosEdicao] = useState({ titulo: aula.titulo, video_url: aula.video_url });
   return (
-    <div
-      draggable
-      onDragStart={() => onDragStart(index)}
-      onDragOver={(e) => { e.preventDefault(); onDragOver(index); }}
-      onDrop={() => onDrop(index)}
-      className={`bg-white p-4 rounded-[20px] border transition-all ${editando ? 'border-[#5B2DFF]/30 shadow-lg shadow-purple-50' : 'border-slate-100 hover:shadow-sm'}`}
-    >
+    <div draggable onDragStart={() => onDragStart(index)} onDragOver={(e) => { e.preventDefault(); onDragOver(index); }} onDrop={() => onDrop(index)}
+      className={`bg-white p-4 rounded-[20px] border transition-all ${editando ? 'border-[#5B2DFF]/30 shadow-lg shadow-purple-50' : 'border-slate-100 hover:shadow-sm'}`}>
       {editando ? (
         <div className="space-y-3">
           <input value={dadosEdicao.titulo} onChange={e => setDadosEdicao(d => ({ ...d, titulo: e.target.value }))} className="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold border-none focus:ring-2 focus:ring-purple-200 outline-none" placeholder="Título da aula" />
@@ -158,9 +134,7 @@ const AulaItem = ({ aula, index, onDragStart, onDragOver, onDrop, onEditar, onDe
       ) : (
         <div className="flex items-center gap-3">
           <div className="cursor-grab active:cursor-grabbing text-slate-200 hover:text-slate-400 transition-colors"><GripVertical size={18} /></div>
-          <div className="w-7 h-7 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-black text-slate-400">{aula.ordem}</span>
-          </div>
+          <div className="w-7 h-7 bg-slate-100 rounded-xl flex items-center justify-center shrink-0"><span className="text-[10px] font-black text-slate-400">{aula.ordem}</span></div>
           <span className="flex-1 text-sm font-bold text-slate-700 truncate text-left">{aula.titulo}</span>
           <div className="flex gap-1.5 shrink-0">
             <button onClick={() => onEditar(aula.id)} className="p-2 bg-purple-50 text-[#5B2DFF] rounded-xl hover:bg-[#5B2DFF] hover:text-white transition-all"><Edit3 size={14} /></button>
@@ -174,10 +148,10 @@ const AulaItem = ({ aula, index, onDragStart, onDragOver, onDrop, onEditar, onDe
 
 // ─── Card de feedback ─────────────────────────────────────────────────────────
 const tipoConfig = {
-  sugestao: { label: 'Sugestão', icon: Star,          cor: 'yellow' },
-  bug:      { label: 'Bug',      icon: Bug,           cor: 'red'    },
-  elogio:   { label: 'Elogio',   icon: Smile,         cor: 'green'  },
-  outro:    { label: 'Outro',    icon: MessageSquare,  cor: 'blue'   },
+  sugestao: { label: 'Sugestão', icon: Star,         cor: 'yellow' },
+  bug:      { label: 'Bug',      icon: Bug,          cor: 'red'    },
+  elogio:   { label: 'Elogio',   icon: Smile,        cor: 'green'  },
+  outro:    { label: 'Outro',    icon: MessageSquare, cor: 'blue'   },
 };
 
 const FeedbackCard = ({ fb, onMarcarLido, onDeletar }) => {
@@ -194,32 +168,58 @@ const FeedbackCard = ({ fb, onMarcarLido, onDeletar }) => {
             <p className="text-[10px] text-slate-400">{fb.email || 'Usuário anônimo'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex gap-0.5">
-            {[1,2,3,4,5].map(n => (
-              <Star key={n} size={11} className={n <= fb.estrelas ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200 fill-slate-100'} />
-            ))}
-          </div>
-        </div>
+        <div className="flex gap-0.5">{[1,2,3,4,5].map(n => <Star key={n} size={11} className={n <= fb.estrelas ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200 fill-slate-100'} />)}</div>
       </div>
       <p className="text-sm text-slate-600 leading-relaxed mb-3">{fb.mensagem}</p>
       <div className="flex items-center justify-between">
-        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-          {new Date(fb.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </span>
+        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{new Date(fb.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
         <div className="flex gap-2">
           <button onClick={() => onMarcarLido(fb.id, !fb.lido)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase transition-all ${fb.lido ? 'bg-slate-100 text-slate-400 hover:bg-slate-200' : 'bg-purple-50 text-[#5B2DFF] hover:bg-purple-100'}`}>
             {fb.lido ? <><EyeOff size={10} /> Reabrir</> : <><Eye size={10} /> Marcar lido</>}
           </button>
-          <button onClick={() => onDeletar(fb.id)} className="p-1.5 text-slate-200 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50">
-            <Trash2 size={14} />
-          </button>
+          <button onClick={() => onDeletar(fb.id)} className="p-1.5 text-slate-200 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50"><Trash2 size={14} /></button>
         </div>
       </div>
     </div>
   );
 };
+
+// ─── Card de post para moderação ─────────────────────────────────────────────
+const PostModeracaoCard = ({ post, onDeletar }) => (
+  <div className="bg-white p-5 rounded-[24px] border border-slate-100 hover:shadow-sm transition-all">
+    <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 bg-purple-50 rounded-2xl flex items-center justify-center shrink-0">
+          <span className="text-[11px] font-black text-[#5B2DFF]">
+            {(post.profiles?.full_name || post.profiles?.email || '?')[0].toUpperCase()}
+          </span>
+        </div>
+        <div>
+          <p className="font-black text-slate-700 text-xs">{post.profiles?.full_name || post.profiles?.email || 'Usuário'}</p>
+          <p className="text-[9px] text-slate-300 uppercase font-bold">
+            {new Date(post.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} · {new Date(post.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {post.total_reports > 0 && (
+          <span className="text-[9px] font-black bg-red-50 text-red-500 px-2 py-1 rounded-full uppercase flex items-center gap-1">
+            <Flag size={9} /> {post.total_reports}
+          </span>
+        )}
+        <button onClick={() => onDeletar(post.id)} className="p-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+    <p className="text-sm text-slate-600 leading-relaxed pl-12 mb-3">{post.conteudo}</p>
+    <div className="flex items-center gap-4 pl-12">
+      <span className="text-[9px] font-bold text-slate-300 uppercase">❤️ {post.total_curtidas || 0}</span>
+      <span className="text-[9px] font-bold text-slate-300 uppercase">💬 {post.total_comentarios || 0}</span>
+    </div>
+  </div>
+);
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 const AdminDashboard = () => {
@@ -234,6 +234,11 @@ const AdminDashboard = () => {
   const [fetching, setFetching] = useState(true);
   const [uploadingPDF, setUploadingPDF] = useState(false);
 
+  // Comunidade
+  const [postsComunidade, setPostsComunidade] = useState([]);
+  const [filtroPosts, setFiltroPosts] = useState('todos'); // 'todos' | 'reportados'
+  const [loadingPosts, setLoadingPosts] = useState(false);
+
   // Analytics
   const [stats, setStats] = useState({
     totalUsuarios: 0, totalSermoes: 0, totalAssinaturas: 0, totalProgresso: 0,
@@ -243,19 +248,12 @@ const AdminDashboard = () => {
   const [dadosCrescimento, setDadosCrescimento] = useState([]);
   const [matriculasRecentes, setMatriculasRecentes] = useState([]);
 
-  // ── Metas editáveis — carregadas do localStorage ───────────────────────────
+  // Metas editáveis
   const [metas, setMetas] = useState(() => {
     try {
       const salvas = JSON.parse(localStorage.getItem('verbo_admin_metas') || '{}');
-      return {
-        usuarios:       salvas.usuarios       ?? 50,
-        sermoes:        salvas.sermoes        ?? 100,
-        assinaturas:    salvas.assinaturas    ?? 50,
-        sermoesDiarios: salvas.sermoesDiarios ?? 14,
-      };
-    } catch {
-      return { usuarios: 50, sermoes: 100, assinaturas: 50, sermoesDiarios: 14 };
-    }
+      return { usuarios: salvas.usuarios ?? 50, sermoes: salvas.sermoes ?? 100, assinaturas: salvas.assinaturas ?? 50, sermoesDiarios: salvas.sermoesDiarios ?? 14 };
+    } catch { return { usuarios: 50, sermoes: 100, assinaturas: 50, sermoesDiarios: 14 }; }
   });
   const [editandoMeta, setEditandoMeta] = useState(null);
   const [metaTemp, setMetaTemp] = useState('');
@@ -266,17 +264,11 @@ const AdminDashboard = () => {
       const novasMetas = { ...metas, [chave]: novo };
       setMetas(novasMetas);
       localStorage.setItem('verbo_admin_metas', JSON.stringify(novasMetas));
-      try {
-        const salvas = JSON.parse(localStorage.getItem(LS_METAS_KEY) || '{}');
-        delete salvas[chave];
-        localStorage.setItem(LS_METAS_KEY, JSON.stringify(salvas));
-      } catch {}
+      try { const s = JSON.parse(localStorage.getItem(LS_METAS_KEY) || '{}'); delete s[chave]; localStorage.setItem(LS_METAS_KEY, JSON.stringify(s)); } catch {}
     }
-    setEditandoMeta(null);
-    setMetaTemp('');
+    setEditandoMeta(null); setMetaTemp('');
   };
 
-  // ── Celebração de meta ─────────────────────────────────────────────────────
   const [celebracao, setCelebracao] = useState({ visivel: false, label: '' });
 
   const verificarMetas = useCallback((novoStats, novasMetas) => {
@@ -286,54 +278,37 @@ const AdminDashboard = () => {
       { chave: 'assinaturas', atual: novoStats.totalAssinaturas, alvo: novasMetas.assinaturas, label: 'Meta de Assinaturas' },
     ];
     for (const { chave, atual, alvo, label } of checks) {
-      if (atual >= alvo && !metaJaCelebrada(chave)) {
-        marcarMetaCelebrada(chave);
-        setCelebracao({ visivel: true, label });
-        return;
-      }
+      if (atual >= alvo && !metaJaCelebrada(chave)) { marcarMetaCelebrada(chave); setCelebracao({ visivel: true, label }); return; }
     }
   }, []);
 
-  // Formulários
   const [novoCurso, setNovoCurso] = useState({ titulo: '', descricao: '', capa_url: '', hotmart_id: '', checkout_url: '' });
   const [novaAula, setNovaAula] = useState({ titulo: '', video_url: '', material_url: '', curso_id: '', ordem: 1 });
   const [novaNotificacao, setNovaNotificacao] = useState({ titulo: '', mensagem: '', tipo: 'sistema', link: '' });
-
-  // Edição de cursos
   const [cursoEditando, setCursoEditando] = useState(null);
   const [dadosEdicaoCurso, setDadosEdicaoCurso] = useState({});
-
-  // Aulas com drag and drop
   const [aulasDoCurso, setAulasDoCurso] = useState([]);
   const [cursoSelecionadoAulas, setCursoSelecionadoAulas] = useState('');
   const [aulaEditando, setAulaEditando] = useState(null);
   const [draggingIndex, setDraggingIndex] = useState(null);
-
-  // Modal
   const [modal, setModal] = useState({ aberto: false, titulo: '', descricao: '', onConfirmar: null });
   const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => { carregarTudo(); }, []);
   useEffect(() => { if (cursoSelecionadoAulas) carregarAulasDoCurso(cursoSelecionadoAulas); }, [cursoSelecionadoAulas]);
+  useEffect(() => { if (aba === 'comunidade') carregarPostsComunidade(); }, [aba]);
 
   const carregarTudo = async () => {
     await Promise.all([carregarCursos(), carregarAnalytics(), carregarNotificacoes(), carregarMatriculasRecentes(), carregarFeedbacks()]);
   };
 
-  // ✅ order por created_at — coluna correta da tabela notificacoes
   const carregarNotificacoes = async () => {
     const { data } = await supabase.from('notificacoes').select('*').order('created_at', { ascending: false }).limit(5);
     if (data) setNotificacoes(data);
   };
 
-  // ✅ order por plano_atualizado_em — nova coluna adicionada em profiles
   const carregarMatriculasRecentes = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, plano, plano_atualizado_em, created_at')
-      .in('plano', ['fundador', 'plus'])
-      .order('plano_atualizado_em', { ascending: false })
-      .limit(8);
+    const { data } = await supabase.from('profiles').select('id, full_name, email, plano, plano_atualizado_em, created_at').in('plano', ['fundador', 'plus']).order('plano_atualizado_em', { ascending: false }).limit(8);
     if (data) setMatriculasRecentes(data);
   };
 
@@ -342,51 +317,56 @@ const AdminDashboard = () => {
     if (data) setFeedbacks(data);
   };
 
+  const carregarPostsComunidade = async () => {
+    setLoadingPosts(true);
+    const { data } = await supabase
+      .from('posts')
+      .select(`*, profiles(full_name, email), total_curtidas:post_curtidas(count), total_comentarios:post_comentarios(count), total_reports:post_reports(count)`)
+      .order('criado_em', { ascending: false })
+      .limit(50);
+    if (data) {
+      setPostsComunidade(data.map(p => ({
+        ...p,
+        total_curtidas:    p.total_curtidas?.[0]?.count    || 0,
+        total_comentarios: p.total_comentarios?.[0]?.count || 0,
+        total_reports:     p.total_reports?.[0]?.count     || 0,
+      })));
+    }
+    setLoadingPosts(false);
+  };
+
+  const deletarPost = (id) => {
+    setModal({
+      aberto: true, titulo: 'Excluir Post', descricao: 'Este post será removido permanentemente da comunidade.',
+      onConfirmar: async () => {
+        setModalLoading(true);
+        await supabase.from('posts').update({ deletado: true }).eq('id', id);
+        setModal(m => ({ ...m, aberto: false })); setModalLoading(false);
+        setPostsComunidade(prev => prev.filter(p => p.id !== id));
+      }
+    });
+  };
+
   const carregarAnalytics = async () => {
     try {
-      const [
-        { count: usuarios },
-        { count: sermoes },
-        { count: assinaturas },
-        { count: progresso },
-        { count: totalAulas }
-      ] = await Promise.all([
+      const [{ count: usuarios }, { count: sermoes }, { count: assinaturas }, { count: progresso }, { count: totalAulas }] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('sermoes').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).in('plano', ['fundador', 'plus']),
         supabase.from('progresso_aulas').select('*', { count: 'exact', head: true }),
         supabase.from('aulas').select('*', { count: 'exact', head: true }),
       ]);
-
       const [{ count: totalFundadores }, { count: totalPlus }] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('plano', 'fundador'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('plano', 'plus'),
       ]);
       const mr = ((totalFundadores || 0) * 9.90) + ((totalPlus || 0) * 47);
-
       const taxaConclusao = assinaturas > 0 && totalAulas > 0 ? Math.round((progresso / (assinaturas * totalAulas)) * 100) : 0;
-
-      const novoStats = {
-        totalUsuarios: usuarios || 0,
-        totalSermoes: sermoes || 0,
-        totalAssinaturas: assinaturas || 0,
-        totalProgresso: progresso || 0,
-        taxaConclusao: Math.min(taxaConclusao, 100),
-        mr,
-        loadingStats: false
-      };
-
+      const novoStats = { totalUsuarios: usuarios || 0, totalSermoes: sermoes || 0, totalAssinaturas: assinaturas || 0, totalProgresso: progresso || 0, taxaConclusao: Math.min(taxaConclusao, 100), mr, loadingStats: false };
       setStats(novoStats);
-
-      setMetas(metasAtuais => {
-        verificarMetas(novoStats, metasAtuais);
-        return metasAtuais;
-      });
-
+      setMetas(metasAtuais => { verificarMetas(novoStats, metasAtuais); return metasAtuais; });
       const hoje = new Date();
       const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-      // ✅ Gráfico sermões — created_at da tabela sermoes
       const ultimos7 = await Promise.all(Array.from({ length: 7 }, async (_, i) => {
         const d = new Date(); d.setDate(hoje.getDate() - (6 - i));
         const dia = d.toISOString().split('T')[0];
@@ -394,8 +374,6 @@ const AdminDashboard = () => {
         return { label: diasSemana[d.getDay()], valor: count || 0 };
       }));
       setDadosGrafico(ultimos7);
-
-      // ✅ Gráfico usuários — created_at da tabela profiles
       const ultimos7Usuarios = await Promise.all(Array.from({ length: 7 }, async (_, i) => {
         const d = new Date(); d.setDate(hoje.getDate() - (6 - i));
         const dia = d.toISOString().split('T')[0];
@@ -406,7 +384,6 @@ const AdminDashboard = () => {
     } catch (err) { console.error(err); }
   };
 
-  // ✅ order por created_at — coluna correta da tabela cursos
   const carregarCursos = async () => {
     setFetching(true);
     const { data } = await supabase.from('cursos').select('*').order('created_at', { ascending: false });
@@ -439,10 +416,7 @@ const AdminDashboard = () => {
     setLoading(false);
   };
 
-  const iniciarEdicaoCurso = (curso) => {
-    setCursoEditando(curso.id);
-    setDadosEdicaoCurso({ titulo: curso.titulo, descricao: curso.descricao, capa_url: curso.capa_url, hotmart_id: curso.hotmart_id, checkout_url: curso.checkout_url });
-  };
+  const iniciarEdicaoCurso = (curso) => { setCursoEditando(curso.id); setDadosEdicaoCurso({ titulo: curso.titulo, descricao: curso.descricao, capa_url: curso.capa_url, hotmart_id: curso.hotmart_id, checkout_url: curso.checkout_url }); };
 
   const salvarEdicaoCurso = async (id) => {
     setLoading(true);
@@ -452,53 +426,36 @@ const AdminDashboard = () => {
   };
 
   const confirmarDeletarCurso = (id) => {
-    setModal({ aberto: true, titulo: 'Excluir Curso', descricao: 'Isso removerá o curso, todas as aulas e matrículas associadas permanentemente. Essa ação não pode ser desfeita.',
-      onConfirmar: async () => {
-        setModalLoading(true);
-        await supabase.from('cursos').delete().eq('id', id);
-        setModal(m => ({ ...m, aberto: false })); setModalLoading(false); carregarCursos();
-      }
+    setModal({ aberto: true, titulo: 'Excluir Curso', descricao: 'Isso removerá o curso, todas as aulas e matrículas associadas permanentemente.',
+      onConfirmar: async () => { setModalLoading(true); await supabase.from('cursos').delete().eq('id', id); setModal(m => ({ ...m, aberto: false })); setModalLoading(false); carregarCursos(); }
     });
   };
 
   const salvarAula = async (e) => {
     e.preventDefault(); setLoading(true);
     const { error } = await supabase.from('aulas').insert([novaAula]);
-    if (!error) {
-      setNovaAula(a => ({ ...a, titulo: '', video_url: '', material_url: '', ordem: Number(a.ordem) + 1 }));
-      if (cursoSelecionadoAulas === novaAula.curso_id) carregarAulasDoCurso(novaAula.curso_id);
-      carregarAnalytics();
-    }
+    if (!error) { setNovaAula(a => ({ ...a, titulo: '', video_url: '', material_url: '', ordem: Number(a.ordem) + 1 })); if (cursoSelecionadoAulas === novaAula.curso_id) carregarAulasDoCurso(novaAula.curso_id); carregarAnalytics(); }
     setLoading(false);
   };
 
-  const salvarEdicaoAula = async (id, dados) => {
-    await supabase.from('aulas').update(dados).eq('id', id);
-    setAulaEditando(null); carregarAulasDoCurso(cursoSelecionadoAulas);
-  };
+  const salvarEdicaoAula = async (id, dados) => { await supabase.from('aulas').update(dados).eq('id', id); setAulaEditando(null); carregarAulasDoCurso(cursoSelecionadoAulas); };
 
   const confirmarDeletarAula = (id) => {
     setModal({ aberto: true, titulo: 'Excluir Aula', descricao: 'O progresso dos alunos nesta aula também será removido.',
-      onConfirmar: async () => {
-        setModalLoading(true);
-        await supabase.from('aulas').delete().eq('id', id);
-        setModal(m => ({ ...m, aberto: false })); setModalLoading(false); carregarAulasDoCurso(cursoSelecionadoAulas);
-      }
+      onConfirmar: async () => { setModalLoading(true); await supabase.from('aulas').delete().eq('id', id); setModal(m => ({ ...m, aberto: false })); setModalLoading(false); carregarAulasDoCurso(cursoSelecionadoAulas); }
     });
   };
 
   const handleDragStart = (index) => setDraggingIndex(index);
   const handleDragOver = (index) => {
     if (draggingIndex === null || draggingIndex === index) return;
-    const novas = [...aulasDoCurso];
-    const [item] = novas.splice(draggingIndex, 1);
-    novas.splice(index, 0, item);
+    const novas = [...aulasDoCurso]; const [item] = novas.splice(draggingIndex, 1); novas.splice(index, 0, item);
     setAulasDoCurso(novas); setDraggingIndex(index);
   };
   const handleDrop = async () => {
     setDraggingIndex(null);
-    const updates = aulasDoCurso.map((aula, i) => supabase.from('aulas').update({ ordem: i + 1 }).eq('id', aula.id));
-    await Promise.all(updates); carregarAulasDoCurso(cursoSelecionadoAulas);
+    await Promise.all(aulasDoCurso.map((aula, i) => supabase.from('aulas').update({ ordem: i + 1 }).eq('id', aula.id)));
+    carregarAulasDoCurso(cursoSelecionadoAulas);
   };
 
   const salvarNotificacao = async (e) => {
@@ -510,61 +467,35 @@ const AdminDashboard = () => {
 
   const confirmarDeletarNotificacao = (id) => {
     setModal({ aberto: true, titulo: 'Remover Comunicado', descricao: 'Este comunicado será removido permanentemente.',
-      onConfirmar: async () => {
-        setModalLoading(true);
-        await supabase.from('notificacoes').delete().eq('id', id);
-        setModal(m => ({ ...m, aberto: false })); setModalLoading(false); carregarNotificacoes();
-      }
+      onConfirmar: async () => { setModalLoading(true); await supabase.from('notificacoes').delete().eq('id', id); setModal(m => ({ ...m, aberto: false })); setModalLoading(false); carregarNotificacoes(); }
     });
   };
 
-  const marcarFeedbackLido = async (id, lido) => {
-    await supabase.from('feedbacks').update({ lido }).eq('id', id);
-    setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, lido } : f));
-  };
+  const marcarFeedbackLido = async (id, lido) => { await supabase.from('feedbacks').update({ lido }).eq('id', id); setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, lido } : f)); };
 
   const confirmarDeletarFeedback = (id) => {
     setModal({ aberto: true, titulo: 'Excluir Feedback', descricao: 'Este feedback será removido permanentemente.',
-      onConfirmar: async () => {
-        setModalLoading(true);
-        await supabase.from('feedbacks').delete().eq('id', id);
-        setModal(m => ({ ...m, aberto: false })); setModalLoading(false);
-        setFeedbacks(prev => prev.filter(f => f.id !== id));
-      }
+      onConfirmar: async () => { setModalLoading(true); await supabase.from('feedbacks').delete().eq('id', id); setModal(m => ({ ...m, aberto: false })); setModalLoading(false); setFeedbacks(prev => prev.filter(f => f.id !== id)); }
     });
   };
 
-  // ─── MetaBar com botão de edição ─────────────────────────────────────────────
   const MetaBar = ({ atual, alvo, label, icon: Icon, color, chave }) => {
     const pct = Math.min((atual / alvo) * 100, 100);
     const estaEditando = editandoMeta === chave;
     return (
       <div className="space-y-2 mt-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2 text-slate-400">
-            <Icon size={12} className={color} />
-            <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
-          </div>
+          <div className="flex items-center gap-2 text-slate-400"><Icon size={12} className={color} /><span className="text-[9px] font-black uppercase tracking-widest">{label}</span></div>
           {estaEditando ? (
             <div className="flex items-center gap-1">
-              <input
-                type="number"
-                value={metaTemp}
-                onChange={e => setMetaTemp(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') salvarMeta(chave); if (e.key === 'Escape') setEditandoMeta(null); }}
-                className="w-16 bg-white/10 text-white text-[10px] font-black rounded-lg px-2 py-1 border border-purple-400 outline-none text-right"
-                autoFocus
-              />
+              <input type="number" value={metaTemp} onChange={e => setMetaTemp(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') salvarMeta(chave); if (e.key === 'Escape') setEditandoMeta(null); }}
+                className="w-16 bg-white/10 text-white text-[10px] font-black rounded-lg px-2 py-1 border border-purple-400 outline-none text-right" autoFocus />
               <button onClick={() => salvarMeta(chave)} className="p-1 bg-green-500 rounded-lg"><Check size={10} className="text-white" /></button>
               <button onClick={() => setEditandoMeta(null)} className="p-1 bg-white/10 rounded-lg"><X size={10} className="text-white" /></button>
             </div>
           ) : (
-            <button
-              onClick={() => { setEditandoMeta(chave); setMetaTemp(String(alvo)); }}
-              className="flex items-center gap-1 text-[10px] font-bold text-white/60 hover:text-white transition-colors"
-            >
-              {atual}/{alvo}
-              <Edit3 size={9} className="opacity-50" />
+            <button onClick={() => { setEditandoMeta(chave); setMetaTemp(String(alvo)); }} className="flex items-center gap-1 text-[10px] font-bold text-white/60 hover:text-white transition-colors">
+              {atual}/{alvo}<Edit3 size={9} className="opacity-50" />
             </button>
           )}
         </div>
@@ -575,25 +506,19 @@ const AdminDashboard = () => {
     );
   };
 
-  const maxGrafico = Math.max(...dadosGrafico.map(d => d.valor), 1);
+  const maxGrafico    = Math.max(...dadosGrafico.map(d => d.valor), 1);
   const maxCrescimento = Math.max(...dadosCrescimento.map(d => d.valor), 1);
-  const inputClass = "w-full p-4 bg-slate-50 rounded-2xl text-sm border-none font-bold focus:ring-2 focus:ring-purple-200 outline-none transition-all";
-
+  const inputClass    = "w-full p-4 bg-slate-50 rounded-2xl text-sm border-none font-bold focus:ring-2 focus:ring-purple-200 outline-none transition-all";
   const feedbacksNaoLidos = feedbacks.filter(f => !f.lido).length;
   const mediaEstrelas = feedbacks.length > 0 ? (feedbacks.reduce((s, f) => s + f.estrelas, 0) / feedbacks.length).toFixed(1) : '—';
-  const feedbacksFiltrados = feedbacks
-    .filter(f => filtroFeedback === 'todos' || f.tipo === filtroFeedback)
-    .filter(f => mostrarLidos ? true : !f.lido);
+  const feedbacksFiltrados = feedbacks.filter(f => filtroFeedback === 'todos' || f.tipo === filtroFeedback).filter(f => mostrarLidos ? true : !f.lido);
+  const postsReportados = postsComunidade.filter(p => p.total_reports > 0);
+  const postsFiltrados = filtroPosts === 'reportados' ? postsReportados : postsComunidade;
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${aba === 'analytics' ? 'bg-[#0f0b1e]' : 'bg-slate-50'} pb-[calc(6rem+env(safe-area-inset-bottom))]`}>
 
-      <CelebracaoMeta
-        visivel={celebracao.visivel}
-        label={celebracao.label}
-        onFim={() => setCelebracao({ visivel: false, label: '' })}
-      />
-
+      <CelebracaoMeta visivel={celebracao.visivel} label={celebracao.label} onFim={() => setCelebracao({ visivel: false, label: '' })} />
       <ModalConfirmacao aberto={modal.aberto} titulo={modal.titulo} descricao={modal.descricao} onConfirmar={modal.onConfirmar} onCancelar={() => setModal(m => ({ ...m, aberto: false }))} loading={modalLoading} />
 
       {/* Header */}
@@ -608,7 +533,6 @@ const AdminDashboard = () => {
               <h1 className={`font-black text-lg uppercase italic hidden sm:block ${aba === 'analytics' ? 'text-white' : 'text-slate-800'}`}>Gestão Verbo</h1>
             </div>
           </div>
-
           <div className={`flex p-1 rounded-2xl gap-1 overflow-x-auto ${aba === 'analytics' ? 'bg-white/5 border border-white/10' : 'bg-slate-100'}`}>
             {[
               { id: 'analytics',   label: 'Analytics' },
@@ -616,14 +540,15 @@ const AdminDashboard = () => {
               { id: 'aulas',       label: 'Aulas' },
               { id: 'comunicados', label: 'Avisos' },
               { id: 'feedbacks',   label: feedbacksNaoLidos > 0 ? `Feedbacks (${feedbacksNaoLidos})` : 'Feedbacks' },
+              { id: 'comunidade',  label: postsReportados.length > 0 ? `Comunidade (${postsReportados.length})` : 'Comunidade' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setAba(tab.id)}
                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap transition-all ${
                   aba === tab.id
                     ? aba === 'analytics' ? 'bg-purple-600 text-white' : 'bg-white text-[#5B2DFF] shadow-sm'
-                    : tab.id === 'feedbacks' && feedbacksNaoLidos > 0
-                      ? 'text-yellow-500 hover:text-yellow-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                    : tab.id === 'feedbacks' && feedbacksNaoLidos > 0 ? 'text-yellow-500 hover:text-yellow-600'
+                    : tab.id === 'comunidade' && postsReportados.length > 0 ? 'text-red-500 hover:text-red-600'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}>
                 {tab.label}
               </button>
@@ -637,25 +562,12 @@ const AdminDashboard = () => {
         {/* ════ ABA ANALYTICS ════ */}
         {aba === 'analytics' && (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="text-purple-400" size={20} />
-              <h2 className="text-white font-black uppercase tracking-tighter text-lg italic">Analytics</h2>
-            </div>
-
+            <div className="flex items-center gap-3"><TrendingUp className="text-purple-400" size={20} /><h2 className="text-white font-black uppercase tracking-tighter text-lg italic">Visão Estratégica</h2></div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
-                {
-                  icon: Users,   color: 'purple', label: 'Total Usuários',      value: stats.totalUsuarios,
-                  meta: { atual: stats.totalUsuarios,    alvo: metas.usuarios,    label: 'Meta Usuários',    icon: Target,       color: 'text-purple-400', chave: 'usuarios' }
-                },
-                {
-                  icon: PenTool, color: 'blue',   label: 'Sermões Gerados',     value: stats.totalSermoes,
-                  meta: { atual: stats.totalSermoes,     alvo: metas.sermoes,     label: 'Meta Sermões',     icon: BarChart3,    color: 'text-blue-400',   chave: 'sermoes' }
-                },
-                {
-                  icon: Award,   color: 'green',  label: 'Assinaturas Ativas',  value: stats.totalAssinaturas,
-                  meta: { atual: stats.totalAssinaturas, alvo: metas.assinaturas, label: 'Meta Assinaturas', icon: ShoppingCart, color: 'text-green-400',  chave: 'assinaturas' }
-                },
+                { icon: Users,   color: 'purple', label: 'Total Usuários',     value: stats.totalUsuarios,    meta: { atual: stats.totalUsuarios,    alvo: metas.usuarios,    label: 'Meta Usuários',    icon: Target,       color: 'text-purple-400', chave: 'usuarios' } },
+                { icon: PenTool, color: 'blue',   label: 'Sermões Gerados',    value: stats.totalSermoes,     meta: { atual: stats.totalSermoes,     alvo: metas.sermoes,     label: 'Meta Sermões',     icon: BarChart3,    color: 'text-blue-400',   chave: 'sermoes' } },
+                { icon: Award,   color: 'green',  label: 'Assinaturas Ativas', value: stats.totalAssinaturas, meta: { atual: stats.totalAssinaturas, alvo: metas.assinaturas, label: 'Meta Assinaturas', icon: ShoppingCart, color: 'text-green-400',  chave: 'assinaturas' } },
               ].map(({ icon: Icon, color, label, value, meta }) => (
                 <div key={label} className="bg-white/5 border border-white/10 p-6 rounded-[32px] backdrop-blur-md">
                   <div className={`p-3 bg-${color}-500/20 text-${color}-400 rounded-2xl w-fit mb-4`}><Icon size={24} /></div>
@@ -665,7 +577,6 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
-
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]">
                 <div className="flex items-center gap-2 mb-2"><Activity size={14} className="text-orange-400" /><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Taxa Conclusão</span></div>
@@ -674,9 +585,7 @@ const AdminDashboard = () => {
               </div>
               <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]">
                 <div className="flex items-center gap-2 mb-2"><TrendingUp size={14} className="text-green-400" /><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Receita Recorrente</span></div>
-                <p className="font-black text-white italic leading-tight" style={{ fontSize: 'clamp(1.1rem, 5vw, 1.875rem)' }}>
-                  {stats.mr.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </p>
+                <p className="font-black text-white italic leading-tight" style={{ fontSize: 'clamp(1.1rem, 5vw, 1.875rem)' }}>{stats.mr.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                 <p className="text-[9px] text-slate-500 mt-1">MR mensal estimado</p>
               </div>
               <div className="bg-white/5 border border-white/10 p-5 rounded-[24px] col-span-2 md:col-span-1">
@@ -685,7 +594,6 @@ const AdminDashboard = () => {
                 <p className="text-[9px] text-slate-500 mt-1">{feedbacks.length} feedbacks recebidos</p>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]">
                 <h4 className="text-white font-bold text-sm mb-5 flex items-center gap-2"><PenTool size={16} className="text-purple-400" /> Sermões — 7 dias</h4>
@@ -712,7 +620,6 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
-
             <div className="bg-white/5 border border-white/10 rounded-[32px] overflow-hidden">
               <div className="p-6 border-b border-white/5 flex items-center justify-between">
                 <h4 className="text-white font-bold text-sm flex items-center gap-2"><UserCheck size={16} className="text-orange-400" /> Assinantes Recentes</h4>
@@ -729,16 +636,10 @@ const AdminDashboard = () => {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-white">{m.full_name || m.email || 'Usuário'}</p>
-                          {/* ✅ badge do plano */}
-                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${m.plano === 'plus' ? 'bg-purple-500/20 text-purple-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                            {m.plano}
-                          </span>
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${m.plano === 'plus' ? 'bg-purple-500/20 text-purple-400' : 'bg-amber-500/20 text-amber-400'}`}>{m.plano}</span>
                         </div>
                       </div>
-                      {/* ✅ usa plano_atualizado_em com fallback para created_at */}
-                      <span className="text-[9px] font-black text-slate-500 uppercase">
-                        {new Date(m.plano_atualizado_em || m.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                      </span>
+                      <span className="text-[9px] font-black text-slate-500 uppercase">{new Date(m.plano_atualizado_em || m.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>
                     </div>
                   ))}
               </div>
@@ -784,10 +685,7 @@ const AdminDashboard = () => {
                         <input value={dadosEdicaoCurso.hotmart_id} onChange={e => setDadosEdicaoCurso(d => ({ ...d, hotmart_id: e.target.value }))} className={`${inputClass} text-[#5B2DFF] bg-purple-50`} placeholder="ID Hotmart" />
                         <input value={dadosEdicaoCurso.checkout_url} onChange={e => setDadosEdicaoCurso(d => ({ ...d, checkout_url: e.target.value }))} className={`${inputClass} text-orange-600 bg-orange-50`} placeholder="Checkout URL" />
                       </div>
-                      <div>
-                        <input value={dadosEdicaoCurso.capa_url} onChange={e => setDadosEdicaoCurso(d => ({ ...d, capa_url: e.target.value }))} className={inputClass} placeholder="URL da Capa" />
-                        <PreviewCapa url={dadosEdicaoCurso.capa_url} />
-                      </div>
+                      <div><input value={dadosEdicaoCurso.capa_url} onChange={e => setDadosEdicaoCurso(d => ({ ...d, capa_url: e.target.value }))} className={inputClass} placeholder="URL da Capa" /><PreviewCapa url={dadosEdicaoCurso.capa_url} /></div>
                       <div className="flex gap-2 pt-1">
                         <button onClick={() => salvarEdicaoCurso(curso.id)} disabled={loading} className="flex-1 py-3 bg-[#5B2DFF] text-white rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-1.5">
                           {loading ? <Loader2 className="animate-spin" size={14} /> : <><Check size={14} /> Salvar</>}
@@ -807,9 +705,9 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
-                        <button onClick={() => { setAba('aulas'); setNovaAula(a => ({ ...a, curso_id: curso.id })); setCursoSelecionadoAulas(curso.id); }} className="p-2.5 bg-purple-50 text-[#5B2DFF] rounded-xl hover:bg-[#5B2DFF] hover:text-white transition-all" title="Adicionar aula"><Plus size={16} /></button>
-                        <button onClick={() => iniciarEdicaoCurso(curso)} className="p-2.5 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all" title="Editar curso"><Edit3 size={16} /></button>
-                        <button onClick={() => confirmarDeletarCurso(curso.id)} className="p-2.5 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all" title="Excluir curso"><Trash2 size={16} /></button>
+                        <button onClick={() => { setAba('aulas'); setNovaAula(a => ({ ...a, curso_id: curso.id })); setCursoSelecionadoAulas(curso.id); }} className="p-2.5 bg-purple-50 text-[#5B2DFF] rounded-xl hover:bg-[#5B2DFF] hover:text-white transition-all"><Plus size={16} /></button>
+                        <button onClick={() => iniciarEdicaoCurso(curso)} className="p-2.5 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all"><Edit3 size={16} /></button>
+                        <button onClick={() => confirmarDeletarCurso(curso.id)} className="p-2.5 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
                       </div>
                     </div>
                   )}
@@ -858,7 +756,7 @@ const AdminDashboard = () => {
                 {cursoSelecionadoAulas && <span className="text-[9px] text-slate-300 font-bold flex items-center gap-1"><GripVertical size={10} /> Arraste para reordenar</span>}
               </div>
               {!cursoSelecionadoAulas ? (
-                <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center"><BookOpen size={32} className="text-slate-200 mx-auto mb-3" /><p className="text-slate-400 text-sm font-bold">Selecione um curso no formulário ao lado para gerenciar suas aulas.</p></div>
+                <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center"><BookOpen size={32} className="text-slate-200 mx-auto mb-3" /><p className="text-slate-400 text-sm font-bold">Selecione um curso no formulário ao lado.</p></div>
               ) : aulasDoCurso.length === 0 ? (
                 <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center"><p className="text-slate-400 text-sm font-bold">Nenhuma aula neste curso ainda.</p></div>
               ) : (
@@ -905,7 +803,6 @@ const AdminDashboard = () => {
                     <div className="text-left">
                       <h3 className="font-black text-slate-800 text-sm uppercase italic tracking-tighter">{n.titulo}</h3>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">{n.mensagem}</p>
-                      {/* ✅ created_at — coluna correta da tabela notificacoes */}
                       <span className="text-[9px] font-bold text-slate-300 mt-2 block uppercase">{new Date(n.created_at).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </div>
@@ -921,10 +818,10 @@ const AdminDashboard = () => {
           <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Total',      value: feedbacks.length,                                 cor: 'bg-slate-100 text-slate-600'  },
-                { label: 'Não lidos',  value: feedbacksNaoLidos,                                cor: 'bg-yellow-50 text-yellow-600' },
-                { label: 'Nota média', value: `${mediaEstrelas}★`,                             cor: 'bg-green-50 text-green-600'   },
-                { label: 'Bugs',       value: feedbacks.filter(f => f.tipo === 'bug').length,   cor: 'bg-red-50 text-red-500'       },
+                { label: 'Total',      value: feedbacks.length,                               cor: 'bg-slate-100 text-slate-600'  },
+                { label: 'Não lidos',  value: feedbacksNaoLidos,                              cor: 'bg-yellow-50 text-yellow-600' },
+                { label: 'Nota média', value: `${mediaEstrelas}★`,                           cor: 'bg-green-50 text-green-600'   },
+                { label: 'Bugs',       value: feedbacks.filter(f => f.tipo === 'bug').length, cor: 'bg-red-50 text-red-500'       },
               ].map(({ label, value, cor }) => (
                 <div key={label} className={`${cor} rounded-[20px] p-4 text-center`}>
                   <p className="text-2xl font-black">{value}</p>
@@ -932,7 +829,6 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
-
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex gap-2 flex-wrap">
                 {['todos', 'sugestao', 'bug', 'elogio', 'outro'].map(tipo => (
@@ -947,23 +843,67 @@ const AdminDashboard = () => {
                 {mostrarLidos ? <><EyeOff size={12} /> Ocultar lidos</> : <><Eye size={12} /> Mostrar lidos</>}
               </button>
             </div>
-
             {feedbacksFiltrados.length === 0 ? (
               <div className="bg-white rounded-[28px] border border-slate-100 p-16 text-center">
                 <MessageSquare size={36} className="text-slate-200 mx-auto mb-3" />
-                <p className="text-slate-400 text-sm font-bold">
-                  {feedbacks.length === 0 ? 'Nenhum feedback recebido ainda.' : 'Nenhum feedback neste filtro.'}
-                </p>
+                <p className="text-slate-400 text-sm font-bold">{feedbacks.length === 0 ? 'Nenhum feedback recebido ainda.' : 'Nenhum feedback neste filtro.'}</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {feedbacksFiltrados.map(fb => (
-                  <FeedbackCard key={fb.id} fb={fb} onMarcarLido={marcarFeedbackLido} onDeletar={confirmarDeletarFeedback} />
-                ))}
+                {feedbacksFiltrados.map(fb => <FeedbackCard key={fb.id} fb={fb} onMarcarLido={marcarFeedbackLido} onDeletar={confirmarDeletarFeedback} />)}
               </div>
             )}
           </div>
         )}
+
+        {/* ════ ABA COMUNIDADE ════ */}
+        {aba === 'comunidade' && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+            {/* Cards de resumo */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {[
+                { label: 'Total posts',  value: postsComunidade.length,  cor: 'bg-slate-100 text-slate-600' },
+                { label: 'Reportados',   value: postsReportados.length,   cor: postsReportados.length > 0 ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-400' },
+                { label: 'Total curtidas', value: postsComunidade.reduce((s, p) => s + (p.total_curtidas || 0), 0), cor: 'bg-purple-50 text-[#5B2DFF]' },
+              ].map(({ label, value, cor }) => (
+                <div key={label} className={`${cor} rounded-[20px] p-4 text-center`}>
+                  <p className="text-2xl font-black">{value}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-70">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Filtros */}
+            <div className="flex items-center gap-3">
+              {['todos', 'reportados'].map(f => (
+                <button key={f} onClick={() => setFiltroPosts(f)}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${filtroPosts === f ? 'bg-[#5B2DFF] text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-[#5B2DFF] hover:text-[#5B2DFF]'}`}>
+                  {f === 'todos' ? 'Todos os posts' : `Reportados (${postsReportados.length})`}
+                </button>
+              ))}
+              <button onClick={carregarPostsComunidade} className="ml-auto px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-white border border-slate-200 text-slate-500 hover:border-slate-400 transition-all flex items-center gap-1.5">
+                {loadingPosts ? <Loader2 size={12} className="animate-spin" /> : '↻'} Atualizar
+              </button>
+            </div>
+
+            {/* Lista de posts */}
+            {loadingPosts ? (
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#5B2DFF]" size={28} /></div>
+            ) : postsFiltrados.length === 0 ? (
+              <div className="bg-white rounded-[28px] border border-slate-100 p-16 text-center">
+                <MessageSquare size={36} className="text-slate-200 mx-auto mb-3" />
+                <p className="text-slate-400 text-sm font-bold">
+                  {filtroPosts === 'reportados' ? 'Nenhum post reportado. Tudo certo!' : 'Nenhum post na comunidade ainda.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {postsFiltrados.map(post => <PostModeracaoCard key={post.id} post={post} onDeletar={deletarPost} />)}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );

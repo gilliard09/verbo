@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { QRCodeCanvas } from 'qrcode.react';
 import html2canvas from 'html2canvas';
@@ -12,8 +12,140 @@ import {
   MessageSquare, Star, Bug, Smile,
   LayoutDashboard, Mail, Lock, Eye, EyeOff,
   PenTool, BookOpen, TrendingUp, Award, AlertTriangle,
-  Crown, Zap
+  Crown, Zap, Book, ZoomIn, ZoomOut, Check
 } from 'lucide-react';
+
+// ─── Modal de crop de avatar ──────────────────────────────────────────────────
+const ModalCropAvatar = ({ imagemSrc, onConfirmar, onCancelar, uploading }) => {
+  const canvasRef = useRef(null);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef(null);
+  const imgRef = useRef(new window.Image());
+  const [imgPronta, setImgPronta] = useState(false);
+
+  const SIZE = 280; // tamanho do canvas
+
+  useEffect(() => {
+    const img = imgRef.current;
+    img.onload = () => { setImgPronta(true); setOffset({ x: 0, y: 0 }); setZoom(1); };
+    img.src = imagemSrc;
+  }, [imagemSrc]);
+
+  const desenhar = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imgPronta) return;
+    const ctx = canvas.getContext('2d');
+    const img = imgRef.current;
+
+    // Escala base para cobrir o canvas
+    const escala = Math.max(SIZE / img.width, SIZE / img.height) * zoom;
+    const w = img.width * escala;
+    const h = img.height * escala;
+    const x = (SIZE - w) / 2 + offset.x;
+    const y = (SIZE - h) / 2 + offset.y;
+
+    ctx.clearRect(0, 0, SIZE, SIZE);
+
+    // Máscara circular
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(img, x, y, w, h);
+    ctx.restore();
+
+    // Borda roxa
+    ctx.beginPath();
+    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2 - 2, 0, Math.PI * 2);
+    ctx.strokeStyle = '#5B2DFF';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }, [imgPronta, zoom, offset]);
+
+  useEffect(() => { desenhar(); }, [desenhar]);
+
+  // Drag para reposicionar
+  const onMouseDown = (e) => {
+    setDragging(true);
+    dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+  };
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+    setOffset({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
+  };
+  const onMouseUp = () => setDragging(false);
+
+  // Touch para reposicionar
+  const onTouchStart = (e) => {
+    const t = e.touches[0];
+    setDragging(true);
+    dragStart.current = { x: t.clientX - offset.x, y: t.clientY - offset.y };
+  };
+  const onTouchMove = (e) => {
+    if (!dragging) return;
+    const t = e.touches[0];
+    setOffset({ x: t.clientX - dragStart.current.x, y: t.clientY - dragStart.current.y });
+  };
+
+  const confirmar = () => {
+    const canvas = canvasRef.current;
+    canvas.toBlob(blob => onConfirmar(blob), 'image/jpeg', 0.92);
+  };
+
+  if (!imagemSrc) return null;
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm">
+      <div className="bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+        <h3 className="font-black text-slate-800 text-center uppercase tracking-tight mb-1">Ajustar Foto</h3>
+        <p className="text-slate-400 text-xs text-center mb-5">Arraste para reposicionar • Use o zoom para ajustar</p>
+
+        {/* Canvas de crop */}
+        <div className="flex justify-center mb-5">
+          <canvas
+            ref={canvasRef}
+            width={SIZE}
+            height={SIZE}
+            style={{ width: SIZE, height: SIZE, cursor: dragging ? 'grabbing' : 'grab', borderRadius: '50%', touchAction: 'none' }}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onMouseUp}
+          />
+        </div>
+
+        {/* Slider de zoom */}
+        <div className="flex items-center gap-3 mb-6 px-2">
+          <ZoomOut size={16} className="text-slate-400 shrink-0" />
+          <input
+            type="range" min={1} max={3} step={0.01}
+            value={zoom}
+            onChange={e => setZoom(Number(e.target.value))}
+            className="flex-1 accent-[#5B2DFF]"
+          />
+          <ZoomIn size={16} className="text-slate-400 shrink-0" />
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onCancelar}
+            className="flex-1 py-3 rounded-2xl border border-slate-200 font-bold text-sm text-slate-500">
+            Cancelar
+          </button>
+          <button onClick={confirmar} disabled={uploading}
+            className="flex-1 py-3 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2"
+            style={{ background: '#5B2DFF' }}>
+            {uploading ? <Loader2 size={16} className="animate-spin" /> : <><Check size={16} /> Usar foto</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── Modal de confirmação de logout ──────────────────────────────────────────
 const ModalLogout = ({ aberto, onConfirmar, onCancelar, loading }) => {
@@ -74,7 +206,7 @@ const BadgePlano = ({ plano }) => {
 };
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-const Perfil = () => {
+const Perfil = ({ onOpenBiblia }) => {
   const cardRef = useRef(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
@@ -92,6 +224,9 @@ const Perfil = () => {
   const [success, setSuccess] = useState(false);
   const [erro, setErro] = useState('');
   const [modalLogout, setModalLogout] = useState(false);
+
+  // Crop
+  const [imagemCropSrc, setImagemCropSrc] = useState(null);
 
   const [perfil, setPerfil] = useState({
     nome: '', email: '', telefone: '', avatar_url: '', role: 'user'
@@ -148,24 +283,37 @@ const Perfil = () => {
     }
   }
 
-  const handleAvatarUpload = async (e) => {
+  // ── Seleção de arquivo → abre modal de crop ────────────────────────────────
+  const handleAvatarSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { setErro('Envie apenas imagens.'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagemCropSrc(ev.target.result);
+    reader.readAsDataURL(file);
+    // Reseta o input para permitir selecionar o mesmo arquivo novamente
+    e.target.value = '';
+  };
+
+  // ── Confirma crop → faz upload ─────────────────────────────────────────────
+  const handleCropConfirmar = async (blob) => {
     setUploadingAvatar(true);
     setErro('');
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const ext = file.name.split('.').pop();
-      const path = `avatars/${user.id}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      const path = `avatars/${user.id}.jpg`;
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
       if (upErr) throw upErr;
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       const avatarUrl = `${data.publicUrl}?t=${Date.now()}`;
       await supabase.auth.updateUser({ data: { avatar_url: avatarUrl } });
+      // Também salva em profiles para a Comunidade ler
+      await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', user.id);
       setPerfil(p => ({ ...p, avatar_url: avatarUrl }));
+      setImagemCropSrc(null);
     } catch (err) {
       setErro('Erro ao enviar imagem: ' + err.message);
+      setImagemCropSrc(null);
     } finally {
       setUploadingAvatar(false);
     }
@@ -245,6 +393,14 @@ const Perfil = () => {
   return (
     <div className="min-h-screen bg-[#FDFDFF] p-6 pb-32">
 
+      {/* Modal de crop */}
+      <ModalCropAvatar
+        imagemSrc={imagemCropSrc}
+        onConfirmar={handleCropConfirmar}
+        onCancelar={() => setImagemCropSrc(null)}
+        uploading={uploadingAvatar}
+      />
+
       <ModalLogout aberto={modalLogout} onConfirmar={handleLogout} onCancelar={() => setModalLogout(false)} loading={logoutLoading} />
 
       {/* ── Header com avatar ── */}
@@ -260,12 +416,11 @@ const Perfil = () => {
             className="absolute -bottom-2 -right-2 w-9 h-9 bg-[#5B2DFF] text-white rounded-2xl flex items-center justify-center shadow-lg hover:bg-[#4a22e0] active:scale-95 transition-all border-2 border-white">
             {uploadingAvatar ? <Loader2 className="animate-spin" size={14} /> : <Camera size={14} />}
           </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
         </div>
 
         <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">{perfil.nome || 'Pregador'}</h2>
 
-        {/* Badge do plano + role admin */}
         <div className="flex items-center justify-center gap-2 mt-2">
           <BadgePlano plano={plano} />
           {perfil.role === 'admin' && (
@@ -288,16 +443,12 @@ const Perfil = () => {
             </div>
           )}
 
-          {/* Banner de upgrade — visível para gratuito e fundador */}
           {!isPlus && (
-            <button
-              onClick={() => navigate('/upgrade')}
+            <button onClick={() => navigate('/upgrade')}
               className={`w-full p-5 rounded-[28px] flex items-center justify-between active:scale-[0.98] transition-all ${
-                isFundador
-                  ? 'bg-gradient-to-r from-amber-400 to-orange-400 shadow-lg shadow-amber-100'
-                  : 'bg-gradient-to-r from-[#5B2DFF] to-[#7c4fff] shadow-lg shadow-purple-200'
-              }`}
-            >
+                isFundador ? 'bg-gradient-to-r from-amber-400 to-orange-400 shadow-lg shadow-amber-100'
+                           : 'bg-gradient-to-r from-[#5B2DFF] to-[#7c4fff] shadow-lg shadow-purple-200'
+              }`}>
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-white/20 rounded-2xl">
                   {isFundador ? <Crown size={18} className="text-white" /> : <Sparkles size={18} className="text-white" />}
@@ -358,6 +509,17 @@ const Perfil = () => {
               </div>
             </div>
             <ChevronRight size={16} className="text-gray-300" />
+          </button>
+
+          <button onClick={onOpenBiblia} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-50 text-amber-500 rounded-2xl"><Book size={20} /></div>
+              <div className="text-left">
+                <span className="font-bold text-slate-700 text-sm block">Bíblia Rápida</span>
+                <span className="text-[10px] text-gray-400">Consulta rápida durante a preparação</span>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-gray-300" />
           </button>
 
           <button onClick={() => setView('sobre')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">

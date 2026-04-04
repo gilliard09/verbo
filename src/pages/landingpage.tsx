@@ -3,17 +3,73 @@ import { useNavigate } from 'react-router-dom';
 import {
   PenTool, BookOpen, Mic2, BookMarked, Brain, WifiOff,
   CheckCircle2, ChevronRight, AlertCircle, ShieldCheck,
-  Users, Star, Quote, Sparkles, ArrowRight, Crown, Zap, Gift
+  Users, Star, Quote, Sparkles, ArrowRight, Crown, Zap, Gift,
+  ChevronDown, Monitor, Smartphone, Sun, Moon, Type, MessageCircle
 } from 'lucide-react';
 
 // ─── Dados ───────────────────────────────────────────────────────────────────
 const FEATURES = [
-  { icon: PenTool,    titulo: 'Editor de Sermões',  desc: 'Escreva, formate e organize seus esboços com negrito, citações e destaques. Auto-save automático.' },
-  { icon: Mic2,       titulo: 'Modo Púlpito',        desc: 'Leitura em tela cheia com fonte ajustável, temas claro/sépia/escuro e tela que não apaga.' },
-  { icon: BookMarked, titulo: 'Bíblia Integrada',    desc: 'Acesse as Escrituras sem sair do app. Consulte referências direto na lateral enquanto escreve.' },
-  { icon: BookOpen,   titulo: 'Academia Verbo',      desc: 'Cursos de teologia e pregação com progresso salvo. Formação ministerial descomplicada.' },
-  { icon: WifiOff,    titulo: 'Acesso Offline',      desc: 'Salve seus sermões para pregar sem internet. Funciona mesmo em locais sem sinal.' },
-  { icon: Brain,      titulo: 'Organização Total',   desc: 'Todos os seus sermões em um só lugar, com título, referência bíblica e histórico de versões.' },
+  { icon: PenTool,         titulo: 'Editor de Sermões',  desc: 'Escreva, formate e organize seus esboços com negrito, citações e destaques. Auto-save automático.' },
+  { icon: Mic2,            titulo: 'Modo Púlpito',        desc: 'Leitura em tela cheia com fonte ajustável, temas claro/sépia/escuro e tela que não apaga.' },
+  { icon: BookMarked,      titulo: 'Bíblia Integrada',    desc: 'Acesse as Escrituras sem sair do app. Consulte referências direto na lateral enquanto escreve.' },
+  { icon: BookOpen,        titulo: 'Academia Verbo',      desc: 'Cursos de teologia e pregação com progresso salvo. Formação ministerial descomplicada.' },
+  { icon: WifiOff,         titulo: 'Acesso Offline',      desc: 'Salve seus sermões para pregar sem internet. Funciona mesmo em locais sem sinal.' },
+  { icon: Brain,           titulo: 'Organização Total',   desc: 'Todos os seus sermões em um só lugar, com título, referência bíblica e histórico de versões.' },
+  { icon: MessageCircle,   titulo: 'Comunidade',          desc: 'Feed estilo Threads dentro do app. Compartilhe sermões, troque experiências e cresça com outros pregadores.', novo: true },
+];
+
+const SCREENSHOTS = [
+  {
+    src: '/screenshot-editor.png',
+    alt: 'Editor de Sermões',
+    titulo: 'Editor de Sermões',
+    desc: 'Escreva, formate e organize seus esboços com auto-save automático.',
+    icon: PenTool,
+    badge: 'Editor',
+  },
+  {
+    src: '/screenshot-dashboard.png',
+    alt: 'Dashboard com sermões salvos',
+    titulo: 'Todos os seus sermões organizados',
+    desc: 'Acesse qualquer sermão salvo, com título, referência bíblica e histórico.',
+    icon: BookOpen,
+    badge: 'Dashboard',
+  },
+  {
+    src: '/screenshot-pulpito-temas.png',
+    alt: 'Modo Púlpito com temas e fontes',
+    titulo: 'Modo Púlpito completo',
+    desc: 'Temas claro, sépia e escuro. Fonte ajustável. Tela que não apaga.',
+    icon: Sun,
+    badge: 'Modo Púlpito',
+  },
+  {
+    src: '/screenshot-pulpito-limpo.png',
+    alt: 'Modo Púlpito com barra escondida',
+    titulo: 'Foco total na mensagem',
+    desc: 'Esconda a barra e pregue sem distração. Apenas a Palavra na tela.',
+    icon: Smartphone,
+    badge: 'Tela Limpa',
+  },
+];
+
+const FAQ = [
+  {
+    pergunta: 'Funciona offline mesmo?',
+    resposta: 'Sim! Seus sermões ficam salvos localmente no dispositivo. Você pode escrever, editar e pregar mesmo sem internet — perfeito para locais sem sinal.',
+  },
+  {
+    pergunta: 'Meus sermões ficam salvos se eu trocar de celular?',
+    resposta: 'Sim. Tudo fica vinculado à sua conta Verbo. Basta fazer login no novo aparelho e todos os seus sermões estarão lá, exatamente como você deixou.',
+  },
+  {
+    pergunta: 'É seguro guardar meus estudos aqui?',
+    resposta: 'Totalmente. Seus dados são armazenados com criptografia e backup automático na nuvem. Seus esboços e anotações estão protegidos.',
+  },
+  {
+    pergunta: 'Os cursos têm certificados?',
+    resposta: 'Sim! Ao concluir qualquer curso da Academia Verbo você recebe um certificado de conclusão que pode ser baixado e compartilhado.',
+  },
 ];
 
 const PLANOS = [
@@ -110,12 +166,50 @@ const DORES = [
   'Deixar o sermão para a última hora',
 ];
 
-// ─── Componente ───────────────────────────────────────────────────────────────
+// ─── Componente FAQ Item ──────────────────────────────────────────────────────
+const FaqItem = ({ pergunta, resposta, delay, visivel }: { pergunta: string; resposta: string; delay: number; visivel: boolean }) => {
+  const [aberto, setAberto] = useState(false);
+
+  return (
+    <div
+      style={{
+        opacity: visivel ? 1 : 0,
+        transform: visivel ? 'translateY(0)' : 'translateY(28px)',
+        transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
+      }}
+      className="border border-slate-100 rounded-[20px] overflow-hidden bg-white shadow-sm"
+    >
+      <button
+        onClick={() => setAberto(!aberto)}
+        className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-slate-50 transition-colors"
+      >
+        <span className="font-black text-slate-800 text-sm leading-snug">{pergunta}</span>
+        <ChevronDown
+          size={18}
+          className="text-[#4C1D95] shrink-0 transition-transform duration-300"
+          style={{ transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+      <div
+        style={{
+          maxHeight: aberto ? '200px' : '0px',
+          transition: 'max-height 0.35s ease',
+          overflow: 'hidden',
+        }}
+      >
+        <p className="px-6 pb-5 text-gray-500 text-sm leading-relaxed font-medium">{resposta}</p>
+      </div>
+    </div>
+  );
+};
+
+// ─── Componente Principal ─────────────────────────────────────────────────────
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [visivel, setVisivel] = useState({});
+  const [visivel, setVisivel] = useState<Record<string, boolean>>({});
+  const [screenshotAtivo, setScreenshotAtivo] = useState(0);
 
-  const handleNavigation = (path) => {
+  const handleNavigation = (path: string) => {
     try { navigate(path); }
     catch { window.location.href = path; }
   };
@@ -124,7 +218,7 @@ const LandingPage = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach(e => {
-          if (e.isIntersecting) setVisivel(prev => ({ ...prev, [e.target.dataset.section]: true }));
+          if (e.isIntersecting) setVisivel(prev => ({ ...prev, [(e.target as HTMLElement).dataset.section!]: true }));
         });
       },
       { threshold: 0.1 }
@@ -133,7 +227,7 @@ const LandingPage = () => {
     return () => observer.disconnect();
   }, []);
 
-  const anim = (key, delay = 0) => ({
+  const anim = (key: string, delay = 0) => ({
     style: {
       opacity: visivel[key] ? 1 : 0,
       transform: visivel[key] ? 'translateY(0)' : 'translateY(28px)',
@@ -155,13 +249,14 @@ const LandingPage = () => {
         .pulse-ring::after { content:''; position:absolute; inset:-6px; border-radius:50%; border:2px solid #4C1D95; animation:pulse-ring 2s ease-out infinite; }
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
         .shimmer { background: linear-gradient(90deg, #4C1D95 0%, #7C3AED 50%, #4C1D95 100%); background-size: 200% 100%; animation: shimmer 3s linear infinite; }
+        .screenshot-frame { box-shadow: 0 40px 80px rgba(76,29,149,0.18), 0 8px 24px rgba(0,0,0,0.08); }
       `}</style>
 
       {/* ── NAV ── */}
       <nav className="flex justify-between items-center px-6 py-5 max-w-5xl mx-auto">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="Verbo" className="w-9 h-9 object-contain rounded-xl"
-            onError={e => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=V&background=4C1D95&color=fff"; }} />
+            onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=V&background=4C1D95&color=fff"; }} />
           <span className="font-black tracking-tighter text-xl text-[#4C1D95] uppercase">Verbo</span>
         </div>
         <button onClick={() => handleNavigation('/login')}
@@ -232,7 +327,12 @@ const LandingPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f, i) => (
             <div key={i} {...anim('features', 100 + i * 80)}
-              className="card-hover bg-white border border-slate-100 rounded-[28px] p-6 shadow-sm">
+              className={`card-hover bg-white border rounded-[28px] p-6 shadow-sm relative ${(f as any).novo ? 'border-[#4C1D95]/30 ring-2 ring-[#4C1D95]/10' : 'border-slate-100'}`}>
+              {(f as any).novo && (
+                <div className="absolute -top-2.5 left-5 bg-[#4C1D95] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                  <Sparkles size={9} className="text-yellow-300" /> Novo
+                </div>
+              )}
               <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-4">
                 <f.icon size={22} className="text-[#4C1D95]" />
               </div>
@@ -240,6 +340,105 @@ const LandingPage = () => {
               <p className="text-gray-400 text-xs leading-relaxed">{f.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── SCREENSHOTS DO APP ── */}
+      <section className="px-6 py-24 bg-white" data-section="screenshots">
+        <div className="max-w-5xl mx-auto">
+          <div {...anim('screenshots', 0)} className="text-center mb-14">
+            <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em] mb-3 block">Veja o app por dentro</span>
+            <h2 className="text-4xl font-black tracking-tighter">Feito para quem prega.<br />Simples de usar.</h2>
+          </div>
+
+          {/* Tabs de seleção */}
+          <div {...anim('screenshots', 100)} className="flex flex-wrap justify-center gap-2 mb-10">
+            {SCREENSHOTS.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setScreenshotAtivo(i)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-black uppercase tracking-wide transition-all ${
+                    screenshotAtivo === i
+                      ? 'bg-[#4C1D95] text-white shadow-lg shadow-purple-200'
+                      : 'bg-slate-100 text-slate-500 hover:bg-purple-50 hover:text-[#4C1D95]'
+                  }`}
+                >
+                  <Icon size={13} />
+                  {s.badge}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Screenshot ativo */}
+          <div {...anim('screenshots', 200)}>
+            {SCREENSHOTS.map((s, i) => (
+              <div
+                key={i}
+                className="transition-all duration-500"
+                style={{
+                  display: screenshotAtivo === i ? 'block' : 'none',
+                }}
+              >
+                <div className="relative max-w-xs mx-auto">
+                  {/* Frame do celular/tela */}
+                  <div className="screenshot-frame rounded-[40px] overflow-hidden border-4 border-white bg-slate-100 aspect-[9/16] flex items-center justify-center relative">
+                    <img
+                      src={s.src}
+                      alt={s.alt}
+                      className="w-full h-full object-cover"
+                      onError={e => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent && !parent.querySelector('.placeholder-content')) {
+                          const placeholder = document.createElement('div');
+                          placeholder.className = 'placeholder-content flex flex-col items-center justify-center w-full h-full gap-4';
+                          placeholder.innerHTML = `
+                            <div style="width:64px;height:64px;background:#EDE9FE;border-radius:16px;display:flex;align-items:center;justify-content:center;">
+                              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4C1D95" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                            </div>
+                            <div style="text-align:center;">
+                              <p style="font-weight:800;color:#1e293b;font-size:14px;margin:0 0 4px">${s.titulo}</p>
+                              <p style="color:#94a3b8;font-size:12px;margin:0">Coloque o arquivo: <strong>${s.src}</strong></p>
+                            </div>
+                          `;
+                          parent.appendChild(placeholder);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Badge flutuante */}
+                  <div className="absolute -top-3 -right-3 bg-[#4C1D95] text-white px-3 py-1.5 rounded-xl shadow-lg">
+                    <p className="text-[9px] font-black uppercase tracking-widest">{s.badge}</p>
+                  </div>
+                </div>
+
+                {/* Descrição abaixo */}
+                <div className="text-center mt-8 max-w-lg mx-auto">
+                  <h3 className="font-black text-slate-800 text-lg mb-2">{s.titulo}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Dots de navegação */}
+          <div className="flex justify-center gap-2 mt-8">
+            {SCREENSHOTS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setScreenshotAtivo(i)}
+                className={`transition-all duration-300 rounded-full ${
+                  screenshotAtivo === i ? 'w-6 h-2 bg-[#4C1D95]' : 'w-2 h-2 bg-slate-200 hover:bg-purple-200'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -346,7 +545,7 @@ const LandingPage = () => {
               <div className="w-64 h-80 rounded-[40px] overflow-hidden shadow-2xl border-4 border-white ring-4 ring-purple-100 float">
                 <img src="/pastor-jeferson.jpg" alt="Pastor Jeferson Rocha"
                   className="w-full h-full object-cover object-top"
-                  onError={e => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=JR&background=4C1D95&color=fff&size=256"; }} />
+                  onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=JR&background=4C1D95&color=fff&size=256"; }} />
               </div>
               <div className="absolute -bottom-4 -right-4 bg-[#4C1D95] text-white px-4 py-2 rounded-2xl shadow-xl">
                 <p className="text-[9px] font-bold uppercase tracking-widest">Pastor & Professor</p>
@@ -399,7 +598,7 @@ const LandingPage = () => {
                     <div className="w-10 h-10 rounded-full bg-purple-100 overflow-hidden">
                       <img src={d.img} alt={d.nome}
                         className="w-full h-full object-cover"
-                        onError={e => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${d.nome}&background=EDE9FE&color=4C1D95`; }} />
+                        onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${d.nome}&background=EDE9FE&color=4C1D95`; }} />
                     </div>
                   </div>
                   <div>
@@ -413,8 +612,29 @@ const LandingPage = () => {
           <div {...anim('depoimentos', 500)} className="text-center">
             <div className="inline-flex items-center gap-3 bg-purple-50 border border-purple-100 px-6 py-4 rounded-[20px]">
               <Users size={18} className="text-[#4C1D95]" />
-              <p className="font-black text-[#4C1D95] text-sm uppercase tracking-tight">+500 acessos nos últimos 7 dias</p>
+              <p className="font-black text-[#4C1D95] text-sm uppercase tracking-tight">60+ pregadores usam o Verbo</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section className="px-6 py-24" data-section="faq">
+        <div className="max-w-2xl mx-auto">
+          <div {...anim('faq', 0)} className="text-center mb-12">
+            <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em] mb-3 block">Dúvidas frequentes</span>
+            <h2 className="text-4xl font-black tracking-tighter">Perguntas<br />e respostas.</h2>
+          </div>
+          <div className="space-y-3">
+            {FAQ.map((item, i) => (
+              <FaqItem
+                key={i}
+                pergunta={item.pergunta}
+                resposta={item.resposta}
+                delay={100 + i * 80}
+                visivel={!!visivel['faq']}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -438,7 +658,7 @@ const LandingPage = () => {
             <div className="flex justify-center gap-5 mt-6 text-[10px] font-black text-purple-300 uppercase tracking-widest">
               <span className="flex items-center gap-1"><CheckCircle2 size={11} /> Gratuito</span>
               <span className="flex items-center gap-1"><CheckCircle2 size={11} /> Sem cartão</span>
-              <span className="flex items-center gap-1"><CheckCircle2 size={11} /> Seguro</span>
+              <span className="flex items-center gap-1"><CheckCircle2 size={11} /> 100% Seguro</span>
             </div>
           </div>
         </div>

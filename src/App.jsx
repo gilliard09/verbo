@@ -15,20 +15,22 @@ import Cursos from './pages/cursos';
 import Aulas from './pages/aulas';
 import AdminDashboard from './pages/admindashboard';
 import Upgrade from './pages/upgrade';
+import Comunidade from './pages/Comunidade';
 
 // --- COMPONENTES ---
 import BibliaSidebar from './components/BibliaSidebar';
 import RotaAdmin from './components/RotaAdmin';
-import { Home, PenTool, User, Book, PlayCircle } from 'lucide-react';
+import { Home, PenTool, User, Users, PlayCircle } from 'lucide-react';
 
-const Navbar = ({ onOpenBiblia, session }) => {
+// ─── Navbar ───────────────────────────────────────────────────────────────────
+const Navbar = ({ session, onOpenBiblia }) => {
   const location = useLocation();
 
-  const isPublicPage  = location.pathname === '/login' || location.pathname === '/landing';
-  const isReading     = location.pathname.startsWith('/leitura');
-  const isAdminPage   = location.pathname.startsWith('/admin');
-  const isEditor      = location.pathname.startsWith('/editor');
-  const isUpgrade     = location.pathname.startsWith('/upgrade');
+  const isPublicPage = location.pathname === '/login' || location.pathname === '/landing';
+  const isReading    = location.pathname.startsWith('/leitura');
+  const isAdminPage  = location.pathname.startsWith('/admin');
+  const isEditor     = location.pathname.startsWith('/editor');
+  const isUpgrade    = location.pathname.startsWith('/upgrade');
 
   if (!session || isPublicPage || isReading || isAdminPage || isEditor || isUpgrade) return null;
 
@@ -42,18 +44,17 @@ const Navbar = ({ onOpenBiblia, session }) => {
         <PlayCircle size={22} /><span className="text-[10px] font-bold mt-1">Academia</span>
       </Link>
 
+      {/* Botão central — Editor */}
       <Link to="/editor" className="flex flex-col items-center -mt-10">
         <div className="bg-[#5B2DFF] p-4 rounded-full text-white shadow-lg shadow-purple-200 hover:scale-105 active:scale-95 transition-all">
           <PenTool size={24} />
         </div>
       </Link>
 
-      <button
-        onClick={onOpenBiblia}
-        className="flex flex-col items-center text-gray-400 hover:text-[#5B2DFF] transition-colors cursor-pointer"
-      >
-        <Book size={22} /><span className="text-[10px] font-bold mt-1">Bíblia</span>
-      </button>
+      {/* Comunidade — substituiu Bíblia */}
+      <Link to="/comunidade" className={`flex flex-col items-center ${location.pathname.startsWith('/comunidade') ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+        <Users size={22} /><span className="text-[10px] font-bold mt-1">Comunidade</span>
+      </Link>
 
       <Link to="/perfil" className={`flex flex-col items-center ${location.pathname === '/perfil' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <User size={22} /><span className="text-[10px] font-bold mt-1">Perfil</span>
@@ -62,6 +63,7 @@ const Navbar = ({ onOpenBiblia, session }) => {
   );
 };
 
+// ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
   const [session, setSession] = useState(null);
   const [bibliaAberta, setBibliaAberta] = useState(false);
@@ -111,8 +113,9 @@ function App() {
             <Route path="/editor"          element={session ? <Editor />        : <Navigate to="/login" replace />} />
             <Route path="/editor/:id"      element={session ? <Editor />        : <Navigate to="/login" replace />} />
             <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
-            <Route path="/perfil"          element={session ? <Perfil />        : <Navigate to="/login" replace />} />
+            <Route path="/perfil"          element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
             <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
+            <Route path="/comunidade"      element={session ? <Comunidade />    : <Navigate to="/login" replace />} />
             <Route path="*"                element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -120,6 +123,7 @@ function App() {
         <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
         <Analytics />
 
+        {/* BibliaSidebar mantida — acessível pelo botão no Perfil */}
         {session && (
           <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
         )}

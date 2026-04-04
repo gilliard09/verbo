@@ -5,61 +5,75 @@ import {
   Save, ArrowLeft, Book, Loader2,
   Bold, Italic, Quote, Highlighter, CheckCircle2,
   Clock, AlignLeft, RotateCcw, Maximize2, Minimize2,
-  AlertTriangle, X, Lock
+  AlertTriangle, X, Lock, WifiOff,
 } from 'lucide-react';
 
+// ── Offline layer ──────────────────────────────────────────────────────────────
+import { getSermaoLocal, upsertSermaoLocal, enqueueOp } from '../lib/db';
+import { gerarIdLocal } from '../lib/sync';
+import { useOfflineSync } from '../hooks/useOfflineSync';
+
 const PALAVRAS_POR_MINUTO = 120;
-const AUTO_SAVE_DELAY = 30000;
-const RASCUNHO_KEY = (id) => `verbo_rascunho_${id || 'novo'}`;
+const AUTO_SAVE_DELAY     = 30000;
+const RASCUNHO_KEY  = (id) => `verbo_rascunho_${id  || 'novo'}`;
 const HISTORICO_KEY = (id) => `verbo_historico_${id || 'novo'}`;
 
+// ─── Toast ────────────────────────────────────────────────────────────────────
 const Toast = ({ visivel, tipo, mensagem, onFechar }) => (
   <div className={`fixed top-6 left-1/2 z-[200] transition-all duration-400 ${visivel ? '-translate-x-1/2 translate-y-0 opacity-100 scale-100' : '-translate-x-1/2 -translate-y-4 opacity-0 scale-95 pointer-events-none'}`}>
     <div className={`flex items-center gap-3 px-5 py-3.5 rounded-[20px] shadow-2xl border ${tipo === 'sucesso' ? 'bg-green-500 border-green-400 text-white' : tipo === 'erro' ? 'bg-red-500 border-red-400 text-white' : 'bg-slate-900 border-white/10 text-white'}`}>
       {tipo === 'sucesso' && <CheckCircle2 size={16} />}
-      {tipo === 'erro' && <AlertTriangle size={16} />}
+      {tipo === 'erro'    && <AlertTriangle size={16} />}
+      {tipo === 'offline' && <WifiOff size={16} />}
       <span className="text-xs font-black uppercase tracking-wide">{mensagem}</span>
       <button onClick={onFechar} className="ml-1 opacity-60 hover:opacity-100"><X size={14} /></button>
     </div>
   </div>
 );
 
+// ─── Editor ───────────────────────────────────────────────────────────────────
 const Editor = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id }      = useParams();
+  const navigate    = useNavigate();
   const textAreaRef = useRef(null);
-  // TODO: ativar quando implementar planos
+
   const podeCreiarSermao = true;
   const sermoesRestantes = null;
-  const isPlus = true;
-  const percentualUso = 0;
+  const isPlus           = true;
+  const percentualUso    = 0;
 
-  const [titulo, setTitulo] = useState('');
-  const [conteudo, setConteudo] = useState('');
+  const [titulo,     setTitulo]     = useState('');
+  const [conteudo,   setConteudo]   = useState('');
   const [referencia, setReferencia] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [telaCheia, setTelaCheia] = useState(true);
+  const [loading,    setLoading]    = useState(false);
+  const [telaCheia,  setTelaCheia]  = useState(true);
   const [autoSaveAtivo, setAutoSaveAtivo] = useState(false);
   const autoSaveRef = useRef(null);
-  const [historico, setHistorico] = useState([]);
+  const [historico,       setHistorico]       = useState([]);
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [toast, setToast] = useState({ visivel: false, tipo: 'info', mensagem: '' });
 
+  // Id local para sermões criados offline
+  const localIdRef = useRef(id || null);
+
+  const { isOnline, atualizarPendentes } = useOfflineSync();
+
   const metricas = useMemo(() => {
     const palavras = conteudo.trim() ? conteudo.trim().split(/\s+/).length : 0;
-    const minutos = Math.ceil(palavras / PALAVRAS_POR_MINUTO);
-    return { palavras, minutos };
+    return { palavras, minutos: Math.ceil(palavras / PALAVRAS_POR_MINUTO) };
   }, [conteudo]);
 
-  const mostrarToast = useCallback((mensagem, tipo = 'info', duracao = 3000) => {
+  const mostrarToast = useCallback((mensagem, tipo = 'info', duracao = 3500) => {
     setToast({ visivel: true, tipo, mensagem });
     setTimeout(() => setToast(t => ({ ...t, visivel: false })), duracao);
   }, []);
 
+  // ── Carregamento inicial ────────────────────────────────────────────────────
   useEffect(() => {
     if (id) {
-      fetchSermao();
+      carregarSermao(id);
     } else {
+      // Sermão novo: tenta rascunho do localStorage
       const rascunho = localStorage.getItem(RASCUNHO_KEY(null));
       if (rascunho) {
         try {
@@ -67,29 +81,49 @@ const Editor = () => {
           setTitulo(t || ''); setConteudo(c || ''); setReferencia(r || '');
           const tempo = new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           mostrarToast(`Rascunho recuperado das ${tempo}`, 'info');
-        } catch (e) {}
+        } catch { /* silencioso */ }
       }
     }
     try {
       const hist = JSON.parse(localStorage.getItem(HISTORICO_KEY(id)) || '[]');
       setHistorico(hist);
-    } catch (e) {}
+    } catch { /* silencioso */ }
   }, [id]);
 
-  async function fetchSermao() {
+  async function carregarSermao(sermoId) {
+    // 1. Carrega do IndexedDB imediatamente (sem esperar rede)
+    const local = await getSermaoLocal(sermoId);
+    if (local) {
+      setTitulo(local.titulo || '');
+      setConteudo(local.conteudo || '');
+      setReferencia(local.referencia_biblica || '');
+    }
+
+    // 2. Tenta buscar versão mais recente do Supabase
+    // Se falhar por qualquer motivo (offline real ou simulado), usa o local
     try {
-      const { data, error } = await supabase.from('sermoes').select('*').eq('id', id).single();
+      const { data, error } = await supabase
+        .from('sermoes').select('*').eq('id', sermoId).single();
       if (error) throw error;
       if (data) {
-        setTitulo(data.titulo || '');
-        setConteudo(data.conteudo || '');
-        setReferencia(data.referencia_biblica || '');
+        const localAt  = local ? new Date(local.updated_at || local.created_at || 0) : new Date(0);
+        const remotoAt = new Date(data.updated_at || data.created_at || 0);
+        if (remotoAt >= localAt) {
+          setTitulo(data.titulo || '');
+          setConteudo(data.conteudo || '');
+          setReferencia(data.referencia_biblica || '');
+          await upsertSermaoLocal({ ...data, _synced: true });
+        }
       }
-    } catch (error) {
-      mostrarToast('Erro ao carregar sermão', 'erro');
+    } catch {
+      if (!local) {
+        mostrarToast('Offline e sem cache local para este sermão', 'erro');
+      }
+      // Se tem local, já está carregado — não faz nada
     }
   }
 
+  // ── Auto-save no localStorage (rascunho) ───────────────────────────────────
   useEffect(() => {
     if (!conteudo && !titulo) return;
     clearTimeout(autoSaveRef.current);
@@ -103,13 +137,13 @@ const Editor = () => {
     return () => clearTimeout(autoSaveRef.current);
   }, [titulo, conteudo, referencia, id]);
 
+  // ── Formatação de texto ────────────────────────────────────────────────────
   const aplicarFormatacao = useCallback((prefixo, sufixo) => {
     const el = textAreaRef.current;
     if (!el) return;
     const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const selecionado = conteudo.substring(start, end);
-    const novo = conteudo.substring(0, start) + prefixo + selecionado + sufixo + conteudo.substring(end);
+    const end   = el.selectionEnd;
+    const novo  = conteudo.substring(0, start) + prefixo + conteudo.substring(start, end) + sufixo + conteudo.substring(end);
     setConteudo(novo);
     setTimeout(() => {
       el.focus();
@@ -117,30 +151,89 @@ const Editor = () => {
     }, 10);
   }, [conteudo]);
 
+  // ── Salvar ─────────────────────────────────────────────────────────────────
   async function salvar() {
     if (!titulo.trim()) { mostrarToast('Insira um título para salvar.', 'erro'); return; }
     setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const dadosSermao = { titulo, conteudo, referencia_biblica: referencia, user_id: user.id };
 
+    try {
+      // getSession lê do cache local — funciona offline sem request de rede
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Sessão não encontrada');
+      const agora = new Date().toISOString();
+
+      // Histórico de versões (localStorage)
       if (id && conteudo.trim()) {
         const novoHistorico = [
-          { conteudo, titulo, referencia, savedAt: new Date().toISOString() },
-          ...historico.slice(0, 4)
+          { conteudo, titulo, referencia, savedAt: agora },
+          ...historico.slice(0, 4),
         ];
         localStorage.setItem(HISTORICO_KEY(id), JSON.stringify(novoHistorico));
         setHistorico(novoHistorico);
       }
 
-      const res = id
-        ? await supabase.from('sermoes').update(dadosSermao).eq('id', id)
-        : await supabase.from('sermoes').insert([dadosSermao]);
+      const dadosSermao = {
+        titulo,
+        conteudo,
+        referencia_biblica: referencia,
+        user_id: user.id,
+        // updated_at gerenciado pelo Supabase — não enviar no payload
+      };
 
-      if (res.error) throw res.error;
-      localStorage.removeItem(RASCUNHO_KEY(id));
-      mostrarToast('Sermão salvo com sucesso!', 'sucesso');
-      setTimeout(() => navigate('/'), 1200);
+      // Tenta salvar no Supabase — se falhar, salva offline automaticamente
+      let salvouOnline = false;
+      try {
+        const res = id
+          ? await supabase.from('sermoes').update(dadosSermao).eq('id', id)
+          : await supabase.from('sermoes').insert([dadosSermao]).select().single();
+
+        if (!res.error) {
+          const idFinal = id || res.data?.id;
+          if (idFinal) {
+            await upsertSermaoLocal({
+              ...dadosSermao,
+              id: idFinal,
+              created_at: res.data?.created_at || agora,
+              _synced: true,
+            });
+          }
+          salvouOnline = true;
+          localStorage.removeItem(RASCUNHO_KEY(id));
+          mostrarToast('Sermão salvo com sucesso!', 'sucesso');
+          setTimeout(() => navigate('/'), 1200);
+        }
+      } catch {
+        // Rede indisponível — salva offline abaixo
+      }
+
+      if (!salvouOnline) {
+        // ── Offline: salva no IndexedDB e enfileira ────────────────────────
+        if (id) {
+          const local = await getSermaoLocal(id) || {};
+          const atualizado = { ...local, ...dadosSermao, id, _synced: false };
+          await upsertSermaoLocal(atualizado);
+          await enqueueOp('update', id, atualizado);
+        } else {
+          if (!localIdRef.current || !localIdRef.current.startsWith('local_')) {
+            localIdRef.current = gerarIdLocal();
+          }
+          const novoLocal = {
+            ...dadosSermao,
+            id: localIdRef.current,
+            created_at: agora,
+            local_temp_id: localIdRef.current,
+            _synced: false,
+          };
+          await upsertSermaoLocal(novoLocal);
+          await enqueueOp('create', localIdRef.current, novoLocal);
+        }
+        await atualizarPendentes();
+        localStorage.removeItem(RASCUNHO_KEY(id));
+        mostrarToast('Salvo offline — sincronizará quando conectar', 'offline');
+        setTimeout(() => navigate('/'), 1500);
+      }
+
     } catch (error) {
       mostrarToast('Erro ao salvar: ' + error.message, 'erro');
     } finally {
@@ -156,9 +249,10 @@ const Editor = () => {
     mostrarToast('Versão anterior restaurada!', 'info');
   };
 
-  const formatarHora = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const formatarHora = (iso) =>
+    new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-  // Bloqueio para novo sermão sem id (criação) quando limite atingido
+  // ── Bloqueio de criação no limite ──────────────────────────────────────────
   if (!id && !podeCreiarSermao) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center gap-5">
@@ -171,10 +265,8 @@ const Editor = () => {
             O plano gratuito permite até 50 sermões salvos. Faça upgrade para ter sermões ilimitados.
           </p>
         </div>
-        <button
-          onClick={() => navigate('/upgrade?motivo=limite_sermoes')}
-          className="bg-[#5B2DFF] text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-[#4a22e0] active:scale-95 transition-all"
-        >
+        <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')}
+          className="bg-[#5B2DFF] text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-[#4a22e0] active:scale-95 transition-all">
           Ver planos
         </button>
         <button onClick={() => navigate(-1)} className="text-slate-400 text-sm font-bold">Voltar</button>
@@ -185,22 +277,34 @@ const Editor = () => {
   return (
     <div className={`bg-white flex flex-col transition-all duration-300 ${telaCheia ? 'fixed inset-0 z-[150]' : 'min-h-screen'}`}>
 
-      <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem} onFechar={() => setToast(t => ({ ...t, visivel: false }))} />
+      <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem}
+        onFechar={() => setToast(t => ({ ...t, visivel: false }))} />
 
       {/* Header */}
       <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
         <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-slate-700 transition-colors p-1">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="text-sm font-black bg-gradient-to-r from-[#5B2DFF] to-[#3A1DB8] bg-clip-text text-transparent uppercase tracking-widest">
-          {id ? 'Editar Mensagem' : 'Novo Sermão'}
-        </h1>
+
+        <div className="flex flex-col items-center gap-1">
+          <h1 className="text-sm font-black bg-gradient-to-r from-[#5B2DFF] to-[#3A1DB8] bg-clip-text text-transparent uppercase tracking-widest">
+            {id ? 'Editar Mensagem' : 'Novo Sermão'}
+          </h1>
+          {/* Indicador offline no header */}
+          {!isOnline && (
+            <div className="flex items-center gap-1 text-amber-500">
+              <WifiOff size={10} />
+              <span className="text-[9px] font-black uppercase tracking-widest">Offline</span>
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center gap-2">
           <button onClick={() => setTelaCheia(t => !t)} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
             {telaCheia ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
           </button>
           {historico.length > 0 && (
-            <button onClick={() => setMostrarHistorico(true)} className="p-2 text-slate-300 hover:text-[#5B2DFF] transition-colors" title="Histórico de versões">
+            <button onClick={() => setMostrarHistorico(true)} className="p-2 text-slate-300 hover:text-[#5B2DFF] transition-colors">
               <RotateCcw size={18} />
             </button>
           )}
@@ -213,41 +317,29 @@ const Editor = () => {
 
       {/* Título e referência */}
       <div className="px-6 pt-5 shrink-0">
-        <input
-          type="text"
-          placeholder="Título da pregação..."
+        <input type="text" placeholder="Título da pregação..."
           className="w-full text-2xl font-black border-none outline-none mb-3 placeholder:text-gray-200 focus:ring-0 text-slate-800"
-          value={titulo}
-          onChange={e => setTitulo(e.target.value)}
-        />
+          value={titulo} onChange={e => setTitulo(e.target.value)} />
         <div className="flex items-center gap-2 mb-4 text-[#5B2DFF] bg-purple-50 p-3 rounded-2xl">
           <Book size={16} />
-          <input
-            type="text"
-            placeholder="Referência Bíblica (ex: João 3:16)"
+          <input type="text" placeholder="Referência Bíblica (ex: João 3:16)"
             className="text-sm font-bold border-none outline-none w-full bg-transparent focus:ring-0"
-            value={referencia}
-            onChange={e => setReferencia(e.target.value)}
-          />
+            value={referencia} onChange={e => setReferencia(e.target.value)} />
         </div>
         <div className="flex items-center gap-1 mb-3 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit">
           <button onClick={() => aplicarFormatacao('**', '**')} className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Negrito"><Bold size={16} /></button>
-          <button onClick={() => aplicarFormatacao('*', '*')} className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Itálico"><Italic size={16} /></button>
-          <button onClick={() => aplicarFormatacao('> ', '')} className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Citação"><Quote size={16} /></button>
+          <button onClick={() => aplicarFormatacao('*', '*')}   className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Itálico"><Italic size={16} /></button>
+          <button onClick={() => aplicarFormatacao('> ', '')}   className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Citação"><Quote size={16} /></button>
           <button onClick={() => aplicarFormatacao('==', '==')} className="p-2 hover:bg-purple-100 text-purple-500 rounded-lg transition-all" title="Destaque"><Highlighter size={16} /></button>
         </div>
       </div>
 
       {/* Textarea */}
       <div className="flex-1 px-6 overflow-hidden">
-        <textarea
-          ref={textAreaRef}
-          placeholder="Escreva a mensagem aqui..."
+        <textarea ref={textAreaRef} placeholder="Escreva a mensagem aqui..."
           className="w-full h-full border-none outline-none resize-none text-slate-700 leading-relaxed text-base focus:ring-0 pb-4"
           style={{ minHeight: telaCheia ? 'calc(100vh - 280px)' : '45vh' }}
-          value={conteudo}
-          onChange={e => setConteudo(e.target.value)}
-        />
+          value={conteudo} onChange={e => setConteudo(e.target.value)} />
       </div>
 
       {/* Rodapé */}
@@ -262,18 +354,13 @@ const Editor = () => {
             <span className="text-[10px] font-black uppercase tracking-widest">~{metricas.minutos} min</span>
           </div>
         </div>
-        {/* Sermões restantes no plano gratuito */}
+
         {!isPlus && sermoesRestantes !== null && sermoesRestantes <= 10 && (
-          <button
-            onClick={() => navigate('/upgrade?motivo=limite_sermoes')}
-            className="flex items-center gap-1.5 text-amber-500"
-          >
+          <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')} className="flex items-center gap-1.5 text-amber-500">
             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-amber-400 rounded-full" style={{ width: `${percentualUso}%` }} />
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest">
-              {sermoesRestantes} restantes
-            </span>
+            <span className="text-[9px] font-black uppercase tracking-widest">{sermoesRestantes} restantes</span>
           </button>
         )}
 
@@ -283,7 +370,7 @@ const Editor = () => {
         </div>
       </div>
 
-      {/* Modal histórico */}
+      {/* Modal histórico — inalterado */}
       {mostrarHistorico && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMostrarHistorico(false)} />
