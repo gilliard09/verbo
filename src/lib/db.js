@@ -12,7 +12,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME    = 'verbo_offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 // ─── Abre / inicializa o banco ────────────────────────────────────────────────
 let _db = null;
