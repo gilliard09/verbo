@@ -5,7 +5,7 @@ import { Analytics } from '@vercel/analytics/react';
 
 // --- IMPORTAÇÕES ---
 import Dashboard from './pages/dashboard';
-import NovoSermao from './pages/NovoSermao';
+import NovoSermao from './pages/novosermao';
 import Login from './pages/login';
 import Editor from './pages/editor';
 import Leitura from './pages/leitura';
