@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import {
   Save, ArrowLeft, Book, Loader2,
@@ -35,7 +35,12 @@ const Toast = ({ visivel, tipo, mensagem, onFechar }) => (
 const Editor = () => {
   const { id }      = useParams();
   const navigate    = useNavigate();
+  const location    = useLocation();                          // ← NOVO
   const textAreaRef = useRef(null);
+
+  // ── Tipo via URL ─────────────────────────────────────────────────────────
+  const params = new URLSearchParams(location.search);       // ← NOVO
+  const tipo   = params.get('tipo');                         // ← NOVO
 
   const podeCreiarSermao = true;
   const sermoesRestantes = null;
@@ -68,9 +73,83 @@ const Editor = () => {
     setTimeout(() => setToast(t => ({ ...t, visivel: false })), duracao);
   }, []);
 
+  // ── Estrutura guiada pelo tipo ────────────────────────────────────────────
+  useEffect(() => {                                          // ← NOVO
+    if (!id && !conteudo.trim() && tipo) {
+      if (tipo === 'expositivo') {
+        setConteudo(
+`*Use esse exemplo como base ou adapte com seu próprio conteúdo*
+
+Texto base: João 3:16
+
+Introdução: Deus não apenas falou sobre amor, Ele demonstrou.
+
+Contexto: Jesus está conversando com Nicodemos, explicando sobre o novo nascimento e a salvação.
+
+Ponto 1: “Deus amou o mundo”
+ O amor de Deus é universal e alcança todos.
+
+Ponto 2: “Deu o seu Filho unigênito”
+ O amor de Deus é sacrificial.
+
+Ponto 3: “Para que todo aquele que nele crê…”
+ A salvação é pela fé, não por mérito.
+
+Conclusão: O maior amor da história foi revelado em Cristo.
+
+Aplicação: Você já respondeu a esse amor? Crer não é só saber, é confiar e viver isso.`
+        );
+      }
+      if (tipo === 'tematico') {
+        setConteudo(
+`*Use esse exemplo como base ou adapte com seu próprio conteúdo*
+
+Tema: O Amor de Deus
+
+Texto base: João 3:16
+
+Introdução: O amor é falado em todo lugar, mas poucos entendem o verdadeiro amor.
+
+Ponto 1: O amor de Deus é incondicional
+ Ele amou primeiro.
+
+Ponto 2: O amor de Deus é sacrificial
+ Ele entregou seu Filho.
+
+Ponto 3: O amor de Deus oferece vida eterna
+ Não é temporário, é eterno.
+
+Conclusão: O amor de Deus não é teoria, é ação.
+
+Aplicação: Receba esse amor e comece a viver de forma diferente hoje.`
+        );
+      }
+      if (tipo === 'devocional') {
+        setConteudo(
+`*Use esse exemplo como base ou adapte com seu próprio conteúdo*
+
+Versículo: João 3:16
+
+Reflexão: Deus não apenas declarou amor, Ele provou. Muitas vezes nos sentimos esquecidos ou insuficientes, mas esse versículo nos lembra que fomos amados primeiro, antes de qualquer esforço nosso.
+
+Aplicação prática: Hoje, pare por um momento e lembre-se: você é amado por Deus. Viva o seu dia com essa consciência — isso muda a forma como você pensa, fala e age.
+
+Oração: Senhor, obrigado pelo teu amor que me alcançou. Me ajuda a viver hoje consciente desse amor e a refletir isso nas minhas atitudes. Amém.`
+        );
+      }
+    }
+  }, [id, tipo]);                                          // ← NOVO
+
+  // ── Foco automático no mobile ────────────────────────────────────────────
+  useEffect(() => {                                          // ← NOVO
+    setTimeout(() => {
+      textAreaRef.current?.focus();
+    }, 300);
+  }, []);
+
   // ── Carregamento inicial ────────────────────────────────────────────────────
   useEffect(() => {
-    if (id) {
+  if (!id && tipo) {
       carregarSermao(id);
     } else {
       // Sermão novo: tenta rascunho do localStorage
@@ -100,7 +179,6 @@ const Editor = () => {
     }
 
     // 2. Tenta buscar versão mais recente do Supabase
-    // Se falhar por qualquer motivo (offline real ou simulado), usa o local
     try {
       const { data, error } = await supabase
         .from('sermoes').select('*').eq('id', sermoId).single();
@@ -119,7 +197,6 @@ const Editor = () => {
       if (!local) {
         mostrarToast('Offline e sem cache local para este sermão', 'erro');
       }
-      // Se tem local, já está carregado — não faz nada
     }
   }
 
@@ -157,13 +234,11 @@ const Editor = () => {
     setLoading(true);
 
     try {
-      // getSession lê do cache local — funciona offline sem request de rede
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
       if (!user) throw new Error('Sessão não encontrada');
       const agora = new Date().toISOString();
 
-      // Histórico de versões (localStorage)
       if (id && conteudo.trim()) {
         const novoHistorico = [
           { conteudo, titulo, referencia, savedAt: agora },
@@ -178,10 +253,8 @@ const Editor = () => {
         conteudo,
         referencia_biblica: referencia,
         user_id: user.id,
-        // updated_at gerenciado pelo Supabase — não enviar no payload
       };
 
-      // Tenta salvar no Supabase — se falhar, salva offline automaticamente
       let salvouOnline = false;
       try {
         const res = id
@@ -208,7 +281,6 @@ const Editor = () => {
       }
 
       if (!salvouOnline) {
-        // ── Offline: salva no IndexedDB e enfileira ────────────────────────
         if (id) {
           const local = await getSermaoLocal(id) || {};
           const atualizado = { ...local, ...dadosSermao, id, _synced: false };
@@ -290,7 +362,6 @@ const Editor = () => {
           <h1 className="text-sm font-black bg-gradient-to-r from-[#5B2DFF] to-[#3A1DB8] bg-clip-text text-transparent uppercase tracking-widest">
             {id ? 'Editar Mensagem' : 'Novo Sermão'}
           </h1>
-          {/* Indicador offline no header */}
           {!isOnline && (
             <div className="flex items-center gap-1 text-amber-500">
               <WifiOff size={10} />
@@ -320,6 +391,17 @@ const Editor = () => {
         <input type="text" placeholder="Título da pregação..."
           className="w-full text-2xl font-black border-none outline-none mb-3 placeholder:text-gray-200 focus:ring-0 text-slate-800"
           value={titulo} onChange={e => setTitulo(e.target.value)} />
+
+        {/* ── Indicador de tipo guiado ── */}
+        {tipo && !id && (                                    // ← NOVO
+          <p className="text-[11px] text-[#5B2DFF] font-bold mb-2">
+            Estrutura pronta para{' '}
+            {tipo === 'expositivo' ? 'sermão expositivo'
+              : tipo === 'tematico' ? 'sermão temático'
+              : 'devocional'}
+          </p>
+        )}
+
         <div className="flex items-center gap-2 mb-4 text-[#5B2DFF] bg-purple-50 p-3 rounded-2xl">
           <Book size={16} />
           <input type="text" placeholder="Referência Bíblica (ex: João 3:16)"
@@ -336,9 +418,18 @@ const Editor = () => {
 
       {/* Textarea */}
       <div className="flex-1 px-6 overflow-hidden">
-        <textarea ref={textAreaRef} placeholder="Escreva a mensagem aqui..."
+        <textarea ref={textAreaRef}
+          placeholder={                                      // ← NOVO placeholder inteligente
+            tipo === 'expositivo'
+              ? 'Desenvolva o texto bíblico aqui...'
+              : tipo === 'tematico'
+              ? 'Desenvolva o tema aqui...'
+              : tipo === 'devocional'
+              ? 'Escreva sua reflexão...'
+              : 'Escreva a mensagem aqui...'
+          }
           className="w-full h-full border-none outline-none resize-none text-slate-700 leading-relaxed text-base focus:ring-0 pb-4"
-          style={{ minHeight: telaCheia ? 'calc(100vh - 280px)' : '45vh' }}
+          style={{ height: '100%', minHeight: 'calc(100vh - 240px)' }}                    // ← NOVO altura dinâmica melhor para iOS
           value={conteudo} onChange={e => setConteudo(e.target.value)} />
       </div>
 

@@ -157,7 +157,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-2 mt-1">
             <p className="text-gray-400 font-medium text-sm">
               {sermoes.length === 0
-                ? 'Nenhuma mensagem preparada.'
+                ? 'Você ainda não criou nenhum sermão... Que tal começar agora?'
                 : `Você tem ${sermoes.length} mensagens salvas.`}
             </p>
             {/* Badge de sync inline */}
@@ -273,11 +273,32 @@ const Dashboard = () => {
               </div>
             ))
           ) : (
-            <div className="text-center py-10">
-              <p className="text-gray-400 text-sm italic">
-                {isOnline ? 'Comece a criar sua primeira pregação!' : 'Nenhum sermão disponível offline.'}
-              </p>
-            </div>
+            <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+
+    {/* Headline forte */}
+    <h2 className="text-2xl font-black text-slate-800 leading-tight mb-3">
+      Vamos criar seu primeiro sermão em 3 minutos
+    </h2>
+
+    {/* Subtexto que remove objeção */}
+    <p className="text-gray-400 text-sm mb-8 max-w-xs">
+      Mesmo que você nunca tenha pregado antes, o Verbo te guia passo a passo.
+    </p>
+
+    {/* Botão principal (AÇÃO) */}
+    <button
+      onClick={() => navigate('/NovoSermao')}
+      className="w-full max-w-xs bg-[#5B2DFF] text-white font-bold py-4 rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
+    >
+      Criar meu primeiro sermão
+    </button>
+
+    {/* Micro reforço */}
+    <p className="text-[11px] text-gray-300 mt-4">
+      Leva menos de 3 minutos
+    </p>
+
+  </div>
           )}
         </div>
       </section>

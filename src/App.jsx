@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/react';
 
 // --- IMPORTAÇÕES ---
 import Dashboard from './pages/dashboard';
+import NovoSermao from './pages/NovoSermao';
 import Login from './pages/login';
 import Editor from './pages/editor';
 import Leitura from './pages/leitura';
@@ -104,6 +105,7 @@ function App() {
         <main className={session ? "pb-24" : ""}>
           <Routes>
             <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
+            <Route path="/novosermao" element={session ? <NovoSermao /> : <Navigate to="/login" replace />} />
             <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
             <Route path="/landing"         element={<LandingPage />} />
             <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
