@@ -450,7 +450,7 @@ const LandingPage = () => {
         </div>
         <div {...anim('video', 150)} className="relative rounded-[32px] overflow-hidden shadow-2xl border-4 border-white bg-slate-900 aspect-video">
           <iframe className="w-full h-full"
-            src="https://www.youtube.com/embed/6NoH4hnYtFM"
+            src="https://www.youtube.com/embed/2oNM9jAXOFU"
             title="Apresentação O Verbo"
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
