@@ -75,70 +75,58 @@ const Editor = () => {
 
   // ── Estrutura guiada pelo tipo ────────────────────────────────────────────
   useEffect(() => {                                          // ← NOVO
-    if (!id && !conteudo.trim() && tipo) {
+    if (!id && !conteudo && tipo) {
       if (tipo === 'expositivo') {
         setConteudo(
-`*Use esse exemplo como base ou adapte com seu próprio conteúdo*
+`Texto base:
 
-Texto base: João 3:16
+Introdução:
 
-Introdução: Deus não apenas falou sobre amor, Ele demonstrou.
+Contexto:
 
-Contexto: Jesus está conversando com Nicodemos, explicando sobre o novo nascimento e a salvação.
+Ponto 1:
 
-Ponto 1: “Deus amou o mundo”
- O amor de Deus é universal e alcança todos.
+Ponto 2:
 
-Ponto 2: “Deu o seu Filho unigênito”
- O amor de Deus é sacrificial.
+Ponto 3:
 
-Ponto 3: “Para que todo aquele que nele crê…”
- A salvação é pela fé, não por mérito.
+Conclusão:
 
-Conclusão: O maior amor da história foi revelado em Cristo.
-
-Aplicação: Você já respondeu a esse amor? Crer não é só saber, é confiar e viver isso.`
+Aplicação:`
         );
       }
       if (tipo === 'tematico') {
         setConteudo(
-`*Use esse exemplo como base ou adapte com seu próprio conteúdo*
+`Tema:
 
-Tema: O Amor de Deus
+Texto base:
 
-Texto base: João 3:16
+Introdução:
 
-Introdução: O amor é falado em todo lugar, mas poucos entendem o verdadeiro amor.
+Ponto 1:
 
-Ponto 1: O amor de Deus é incondicional
- Ele amou primeiro.
+Ponto 2:
 
-Ponto 2: O amor de Deus é sacrificial
- Ele entregou seu Filho.
+Ponto 3:
 
-Ponto 3: O amor de Deus oferece vida eterna
- Não é temporário, é eterno.
+Conclusão:
 
-Conclusão: O amor de Deus não é teoria, é ação.
-
-Aplicação: Receba esse amor e comece a viver de forma diferente hoje.`
+Aplicação:`
         );
       }
       if (tipo === 'devocional') {
         setConteudo(
-`*Use esse exemplo como base ou adapte com seu próprio conteúdo*
+`Versículo:
 
-Versículo: João 3:16
+Reflexão:
 
-Reflexão: Deus não apenas declarou amor, Ele provou. Muitas vezes nos sentimos esquecidos ou insuficientes, mas esse versículo nos lembra que fomos amados primeiro, antes de qualquer esforço nosso.
+Aplicação prática:
 
-Aplicação prática: Hoje, pare por um momento e lembre-se: você é amado por Deus. Viva o seu dia com essa consciência — isso muda a forma como você pensa, fala e age.
-
-Oração: Senhor, obrigado pelo teu amor que me alcançou. Me ajuda a viver hoje consciente desse amor e a refletir isso nas minhas atitudes. Amém.`
+Oração:`
         );
       }
     }
-  }, [id, tipo]);                                          // ← NOVO
+  }, [tipo, id]);                                            // ← NOVO
 
   // ── Foco automático no mobile ────────────────────────────────────────────
   useEffect(() => {                                          // ← NOVO
@@ -149,25 +137,27 @@ Oração: Senhor, obrigado pelo teu amor que me alcançou. Me ajuda a viver hoje
 
   // ── Carregamento inicial ────────────────────────────────────────────────────
   useEffect(() => {
-  if (!id && tipo) {
+    if (id) {
       carregarSermao(id);
     } else {
-      // Sermão novo: tenta rascunho do localStorage
-      const rascunho = localStorage.getItem(RASCUNHO_KEY(null));
-      if (rascunho) {
-        try {
-          const { titulo: t, conteudo: c, referencia: r, savedAt } = JSON.parse(rascunho);
-          setTitulo(t || ''); setConteudo(c || ''); setReferencia(r || '');
-          const tempo = new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-          mostrarToast(`Rascunho recuperado das ${tempo}`, 'info');
-        } catch { /* silencioso */ }
+      // Sermão novo: tenta rascunho do localStorage (só se não veio com tipo guiado)
+      if (!tipo) {
+        const rascunho = localStorage.getItem(RASCUNHO_KEY(null));
+        if (rascunho) {
+          try {
+            const { titulo: t, conteudo: c, referencia: r, savedAt } = JSON.parse(rascunho);
+            setTitulo(t || ''); setConteudo(c || ''); setReferencia(r || '');
+            const tempo = new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            mostrarToast(`Rascunho recuperado das ${tempo}`, 'info');
+          } catch { /* silencioso */ }
+        }
       }
     }
     try {
       const hist = JSON.parse(localStorage.getItem(HISTORICO_KEY(id)) || '[]');
       setHistorico(hist);
     } catch { /* silencioso */ }
-  }, [id]);
+  }, [id, tipo]);
 
   async function carregarSermao(sermoId) {
     // 1. Carrega do IndexedDB imediatamente (sem esperar rede)
@@ -429,7 +419,7 @@ Oração: Senhor, obrigado pelo teu amor que me alcançou. Me ajuda a viver hoje
               : 'Escreva a mensagem aqui...'
           }
           className="w-full h-full border-none outline-none resize-none text-slate-700 leading-relaxed text-base focus:ring-0 pb-4"
-          style={{ height: '100%', minHeight: 'calc(100vh - 240px)' }}                    // ← NOVO altura dinâmica melhor para iOS
+          style={{ minHeight: '60vh' }}                     // ← NOVO altura dinâmica melhor para iOS
           value={conteudo} onChange={e => setConteudo(e.target.value)} />
       </div>
 
