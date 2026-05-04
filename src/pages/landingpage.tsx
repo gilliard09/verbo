@@ -4,7 +4,8 @@ import {
   PenTool, BookOpen, Mic2, BookMarked, Brain, WifiOff,
   CheckCircle2, ChevronRight, AlertCircle, ShieldCheck,
   Users, Star, Quote, Sparkles, ArrowRight, Crown, Zap, Gift,
-  ChevronDown, Monitor, Smartphone, Sun, Moon, Type, MessageCircle
+  ChevronDown, Monitor, Smartphone, Sun, Moon, Type, MessageCircle,
+  TrendingUp, Clock, Heart, Target
 } from 'lucide-react';
 
 // ─── Dados ───────────────────────────────────────────────────────────────────
@@ -16,6 +17,13 @@ const FEATURES = [
   { icon: WifiOff,         titulo: 'Acesso Offline',      desc: 'Salve seus sermões para pregar sem internet. Funciona mesmo em locais sem sinal.' },
   { icon: Brain,           titulo: 'Organização Total',   desc: 'Todos os seus sermões em um só lugar, com título, referência bíblica e histórico de versões.' },
   { icon: MessageCircle,   titulo: 'Comunidade',          desc: 'Feed estilo Threads dentro do app. Compartilhe sermões, troque experiências e cresça com outros pregadores.', novo: true },
+];
+
+const BENEFICIOS = [
+  { icon: Clock, titulo: 'Poupe 5h por semana', desc: 'Menos tempo perdido organizando, mais tempo estudando a Palavra.' },
+  { icon: Target, titulo: 'Mensagens mais claras', desc: 'Estrutura que guia seu raciocínio do início ao fim do sermão.' },
+  { icon: Heart, titulo: 'Pregue com confiança', desc: 'Nunca mais esqueça pontos importantes no púlpito.' },
+  { icon: TrendingUp, titulo: 'Evolua continuamente', desc: 'Academia com cursos que aprofundam sua formação ministerial.' },
 ];
 
 const SCREENSHOTS = [
@@ -70,6 +78,10 @@ const FAQ = [
     pergunta: 'Os cursos têm certificados?',
     resposta: 'Sim! Ao concluir qualquer curso da Academia Verbo você recebe um certificado de conclusão que pode ser baixado e compartilhado.',
   },
+  {
+    pergunta: 'Posso cancelar quando quiser?',
+    resposta: 'Sim, sem burocracia. Cancele a qualquer momento direto no app. Nada de taxas escondidas ou multas.',
+  },
 ];
 
 const PLANOS = [
@@ -101,12 +113,13 @@ const PLANOS = [
     icon: Crown,
     cor: 'purple',
     destaque: true,
-    badge: '🔥 Vagas limitadas',
+    badge: '🔥 Preço vitalício — encerrando em breve',
     itens: [
       'Sermões ilimitados',
       'Curso para Pregadores — incluso',
       'Modo púlpito sem restrições',
       'Acesso offline ilimitado',
+      'Preço garantido para sempre',
     ],
     bloqueados: [],
     cta: 'Quero ser Fundador',
@@ -177,7 +190,7 @@ const FaqItem = ({ pergunta, resposta, delay, visivel }: { pergunta: string; res
         transform: visivel ? 'translateY(0)' : 'translateY(28px)',
         transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
       }}
-      className="border border-slate-100 rounded-[20px] overflow-hidden bg-white shadow-sm"
+      className="border border-slate-100 rounded-[20px] overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
     >
       <button
         onClick={() => setAberto(!aberto)}
@@ -204,7 +217,7 @@ const FaqItem = ({ pergunta, resposta, delay, visivel }: { pergunta: string; res
 };
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
-const LandingPage = () => {
+const LandingPageOptimized = () => {
   const navigate = useNavigate();
   const [visivel, setVisivel] = useState<Record<string, boolean>>({});
   const [screenshotAtivo, setScreenshotAtivo] = useState(0);
@@ -240,54 +253,177 @@ const LandingPage = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&display=swap');
         * { font-family: 'Poppins', sans-serif; }
-        .hero-glow { background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(76,29,149,0.12) 0%, transparent 70%); }
-        .card-hover { transition: transform 0.25s ease, box-shadow 0.25s ease; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(76,29,149,0.10); }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        .float { animation: float 4s ease-in-out infinite; }
-        @keyframes pulse-ring { 0%{transform:scale(1);opacity:0.6} 100%{transform:scale(1.5);opacity:0} }
-        .pulse-ring::after { content:''; position:absolute; inset:-6px; border-radius:50%; border:2px solid #4C1D95; animation:pulse-ring 2s ease-out infinite; }
-        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        .shimmer { background: linear-gradient(90deg, #4C1D95 0%, #7C3AED 50%, #4C1D95 100%); background-size: 200% 100%; animation: shimmer 3s linear infinite; }
-        .screenshot-frame { box-shadow: 0 40px 80px rgba(76,29,149,0.18), 0 8px 24px rgba(0,0,0,0.08); }
+        
+        .hero-glow { 
+          background: 
+            radial-gradient(ellipse 100% 60% at 50% -20%, rgba(76,29,149,0.08) 0%, transparent 70%),
+            radial-gradient(ellipse 80% 50% at 20% 80%, rgba(124,58,237,0.04) 0%, transparent 60%);
+        }
+        
+        .card-hover { 
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                      border-color 0.3s ease;
+        }
+        .card-hover:hover { 
+          transform: translateY(-6px); 
+          box-shadow: 0 24px 48px rgba(76,29,149,0.12), 0 8px 16px rgba(76,29,149,0.06);
+          border-color: rgba(76,29,149,0.2);
+        }
+        
+        @keyframes float { 
+          0%,100%{transform:translateY(0)} 
+          50%{transform:translateY(-12px)} 
+        }
+        .float { animation: float 5s ease-in-out infinite; }
+        
+        @keyframes pulse-ring { 
+          0%{transform:scale(1);opacity:0.6} 
+          100%{transform:scale(1.6);opacity:0} 
+        }
+        .pulse-ring::after { 
+          content:''; 
+          position:absolute; 
+          inset:-6px; 
+          border-radius:50%; 
+          border:2px solid #4C1D95; 
+          animation:pulse-ring 2.5s ease-out infinite; 
+        }
+        
+        @keyframes shimmer { 
+          0%{background-position:-200% 0} 
+          100%{background-position:200% 0} 
+        }
+        .shimmer { 
+          background: linear-gradient(90deg, #4C1D95 0%, #7C3AED 50%, #4C1D95 100%); 
+          background-size: 200% 100%; 
+          animation: shimmer 3s linear infinite; 
+        }
+        
+        .screenshot-frame { 
+          box-shadow: 
+            0 50px 100px rgba(76,29,149,0.20), 
+            0 12px 30px rgba(0,0,0,0.10),
+            inset 0 1px 0 rgba(255,255,255,0.6);
+        }
+        
+        .gradient-text {
+          background: linear-gradient(135deg, #4C1D95 0%, #7C3AED 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        
+        .btn-primary {
+          background: linear-gradient(135deg, #4C1D95 0%, #5B21B6 100%);
+          box-shadow: 0 10px 30px rgba(76,29,149,0.3), 0 4px 10px rgba(76,29,149,0.2);
+        }
+        .btn-primary:hover {
+          box-shadow: 0 14px 40px rgba(76,29,149,0.4), 0 6px 14px rgba(76,29,149,0.25);
+        }
+        
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-slide-up {
+          animation: slide-up 0.6s ease-out forwards;
+        }
       `}</style>
 
       {/* ── NAV ── */}
-      <nav className="flex justify-between items-center px-6 py-5 max-w-5xl mx-auto">
+      <nav className="flex justify-between items-center px-6 py-5 max-w-6xl mx-auto sticky top-0 bg-[#FAFAFA]/80 backdrop-blur-lg z-50 border-b border-slate-100/50">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="Verbo" className="w-9 h-9 object-contain rounded-xl"
             onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=V&background=4C1D95&color=fff"; }} />
           <span className="font-black tracking-tighter text-xl text-[#4C1D95] uppercase">Verbo</span>
         </div>
-        <button onClick={() => handleNavigation('/login')}
-          className="text-sm font-bold text-[#4C1D95] border border-purple-200 px-5 py-2 rounded-full hover:bg-purple-50 transition-all">
-          Entrar
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => handleNavigation('/login')}
+            className="text-sm font-bold text-[#4C1D95] px-5 py-2 rounded-full hover:bg-purple-50 transition-all">
+            Entrar
+          </button>
+          <button onClick={() => handleNavigation('/login')}
+            className="text-sm font-bold text-white bg-[#4C1D95] px-5 py-2.5 rounded-full hover:bg-[#5B21B6] transition-all shadow-md hover:shadow-lg">
+            Criar conta
+          </button>
+        </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section className="hero-glow px-6 pt-10 pb-20 max-w-5xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 bg-purple-50 border border-purple-100 px-4 py-2 rounded-full mb-8">
-          <Sparkles size={13} className="text-[#4C1D95]" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#4C1D95]">Tecnologia que serve à Palavra</span>
+      <section className="hero-glow px-6 pt-12 pb-24 max-w-6xl mx-auto text-center relative">
+        {/* Background decorativo sutil */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-br from-purple-100/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10">
+          {/* Badge de prova social no topo */}
+          <div className="inline-flex items-center gap-2 bg-white border border-purple-100 px-4 py-2 rounded-full mb-6 shadow-sm animate-slide-up">
+            <Users size={13} className="text-[#4C1D95]" />
+            <span className="text-[11px] font-black text-slate-700">Mais de <span className="text-[#4C1D95]">100 pregadores</span> já usam o Verbo</span>
+          </div>
+
+          <div className="inline-flex items-center gap-2 bg-purple-50 border border-purple-100 px-4 py-2 rounded-full mb-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
+            <Sparkles size={13} className="text-[#4C1D95]" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#4C1D95]">Tecnologia que serve à Palavra</span>
+          </div>
+
+          <h1 className="font-black tracking-tighter leading-[0.95] mb-6 text-slate-900 animate-slide-up"
+            style={{ fontSize: 'clamp(2.5rem, 8.5vw, 5.5rem)', animationDelay: '200ms' }}>
+            Pregue com <span className="gradient-text italic">clareza</span><br />
+            <span className="text-slate-900">e autoridade.</span>
+          </h1>
+
+          <p className="text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed font-semibold animate-slide-up"
+            style={{ fontSize: 'clamp(1.05rem, 2.5vw, 1.25rem)', animationDelay: '300ms' }}>
+            Nunca mais trave na hora de pregar. Tenha seus sermões organizados, claros e sempre à mão — até mesmo offline.
+          
+          </p>
+
+          <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '400ms' }}>
+            <button onClick={() => handleNavigation('/login')}
+              className="btn-primary w-full max-w-md text-white px-8 py-5 rounded-[24px] font-black hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 text-base">
+              Criar meu primeiro sermão agora <ChevronRight size={20} />
+            </button>
+            
+            <div className="flex flex-wrap justify-center gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-green-500" /> Gratuito</span>
+              <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-green-500" /> Sem cartão</span>
+              <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-green-500" /> Início em 1 min</span>
+            </div>
+          </div>
+
+          {/* Mini prova social adicional */}
+          <div className="mt-8 flex items-center justify-center gap-2 text-xs text-gray-400 font-medium animate-slide-up" style={{ animationDelay: '500ms' }}>
+            <div className="flex -space-x-2">
+              <div className="w-7 h-7 rounded-full bg-purple-100 border-2 border-white" />
+              <div className="w-7 h-7 rounded-full bg-purple-200 border-2 border-white" />
+              <div className="w-7 h-7 rounded-full bg-purple-300 border-2 border-white" />
+            </div>
+            <span className="font-bold text-slate-600">Mais de <span className="text-[#4C1D95]">70 sermões</span> já criados</span>
+          </div>
         </div>
-        <h1 className="font-black tracking-tighter leading-[1.0] mb-6 text-slate-900"
-          style={{ fontSize: 'clamp(2.4rem, 8vw, 5.5rem)' }}>
-          Pare de improvisar<br />seus <span className="text-[#4C1D95] italic">sermões.</span>
-        </h1>
-        <p className="text-gray-500 max-w-xl mx-auto mb-10 leading-relaxed font-medium"
-          style={{ fontSize: 'clamp(1rem, 2.5vw, 1.2rem)' }}>
-          Organize, estruture e pregue com clareza — em um só lugar. O app que todo pregador precisa para preparar mensagens com profundidade e segurança.
-        </p>
-        <div className="flex flex-col items-center gap-4">
-          <button onClick={() => handleNavigation('/login')}
-            className="w-full max-w-sm bg-[#4C1D95] text-white px-8 py-5 rounded-[24px] font-black shadow-xl shadow-purple-200 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 text-base">
-            CRIAR MINHA CONTA GRÁTIS <ChevronRight size={20} />
-          </button>
-          <div className="flex flex-wrap justify-center gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-            <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-green-500" /> Gratuito</span>
-            <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-green-500" /> Sem cartão</span>
-            <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-green-500" /> Início em 1 min</span>
+      </section>
+
+      {/* ── BENEFÍCIOS RÁPIDOS ── */}
+      <section className="px-6 py-16 bg-gradient-to-b from-white to-slate-50" data-section="beneficios">
+        <div className="max-w-5xl mx-auto">
+          <div {...anim('beneficios', 0)} className="text-center mb-12">
+            <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em] mb-3 block">Por que usar o Verbo</span>
+            <h2 className="text-4xl font-black tracking-tighter">Resultados que você vai sentir<br />desde a primeira semana.</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {BENEFICIOS.map((b, i) => (
+              <div key={i} {...anim('beneficios', 100 + i * 80)}
+                className="bg-white border border-slate-100 rounded-[24px] p-6 text-center card-hover">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <b.icon size={24} className="text-[#4C1D95]" />
+                </div>
+                <h3 className="font-black text-slate-800 mb-2 text-base">{b.titulo}</h3>
+                <p className="text-gray-500 text-xs leading-relaxed">{b.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -301,17 +437,17 @@ const LandingPage = () => {
           </div>
           <div className="grid md:grid-cols-2 gap-4 mb-12">
             {DORES.map((item, i) => (
-              <div key={i} {...anim('dor', 100 + i * 80)} className="flex items-start gap-3 p-4 bg-red-50/60 border border-red-100 rounded-2xl">
+              <div key={i} {...anim('dor', 100 + i * 80)} className="flex items-start gap-3 p-5 bg-red-50/60 border border-red-100 rounded-2xl hover:border-red-200 transition-colors">
                 <AlertCircle className="text-red-400 shrink-0 mt-0.5" size={18} />
                 <p className="font-semibold text-slate-700 text-sm">{item}</p>
               </div>
             ))}
           </div>
           <div {...anim('dor', 500)} className="text-center">
-            <div className="inline-block bg-[#4C1D95] text-white px-8 py-4 rounded-3xl font-black text-xl shadow-xl shadow-purple-100">
-              O VERBO RESOLVE ISSO.
+            <div className="inline-block bg-gradient-to-r from-[#4C1D95] to-[#5B21B6] text-white px-10 py-5 rounded-3xl font-black text-xl shadow-2xl shadow-purple-200">
+              Você nunca mais vai subir no púlpito sem saber o que dizer.
             </div>
-            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mt-5">
+            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mt-6">
               Simplicidade para quem prega. Tecnologia para quem ensina.
             </p>
           </div>
@@ -324,27 +460,27 @@ const LandingPage = () => {
           <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em] mb-3 block">O que você encontra no app</span>
           <h2 className="text-4xl font-black tracking-tighter">Tudo que você precisa<br />para pregar bem.</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map((f, i) => (
             <div key={i} {...anim('features', 100 + i * 80)}
               className={`card-hover bg-white border rounded-[28px] p-6 shadow-sm relative ${(f as any).novo ? 'border-[#4C1D95]/30 ring-2 ring-[#4C1D95]/10' : 'border-slate-100'}`}>
               {(f as any).novo && (
-                <div className="absolute -top-2.5 left-5 bg-[#4C1D95] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                <div className="absolute -top-2.5 left-5 bg-gradient-to-r from-[#4C1D95] to-[#5B21B6] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg">
                   <Sparkles size={9} className="text-yellow-300" /> Novo
                 </div>
               )}
-              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
                 <f.icon size={22} className="text-[#4C1D95]" />
               </div>
               <h3 className="font-black text-slate-800 mb-2 text-sm tracking-tight">{f.titulo}</h3>
-              <p className="text-gray-400 text-xs leading-relaxed">{f.desc}</p>
+              <p className="text-gray-500 text-xs leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── SCREENSHOTS DO APP ── */}
-      <section className="px-6 py-24 bg-white" data-section="screenshots">
+      <section className="px-6 py-24 bg-gradient-to-b from-white to-slate-50" data-section="screenshots">
         <div className="max-w-5xl mx-auto">
           <div {...anim('screenshots', 0)} className="text-center mb-14">
             <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em] mb-3 block">Veja o app por dentro</span>
@@ -361,8 +497,8 @@ const LandingPage = () => {
                   onClick={() => setScreenshotAtivo(i)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-black uppercase tracking-wide transition-all ${
                     screenshotAtivo === i
-                      ? 'bg-[#4C1D95] text-white shadow-lg shadow-purple-200'
-                      : 'bg-slate-100 text-slate-500 hover:bg-purple-50 hover:text-[#4C1D95]'
+                      ? 'bg-gradient-to-r from-[#4C1D95] to-[#5B21B6] text-white shadow-lg shadow-purple-200'
+                      : 'bg-white border border-slate-200 text-slate-500 hover:bg-purple-50 hover:text-[#4C1D95] hover:border-purple-200'
                   }`}
                 >
                   <Icon size={13} />
@@ -384,7 +520,7 @@ const LandingPage = () => {
               >
                 <div className="relative max-w-xs mx-auto">
                   {/* Frame do celular/tela */}
-                  <div className="screenshot-frame rounded-[40px] overflow-hidden border-4 border-white bg-slate-100 aspect-[9/16] flex items-center justify-center relative">
+                  <div className="screenshot-frame rounded-[40px] overflow-hidden border-8 border-white bg-slate-100 aspect-[9/16] flex items-center justify-center relative">
                     <img
                       src={s.src}
                       alt={s.alt}
@@ -396,14 +532,14 @@ const LandingPage = () => {
                         const parent = target.parentElement;
                         if (parent && !parent.querySelector('.placeholder-content')) {
                           const placeholder = document.createElement('div');
-                          placeholder.className = 'placeholder-content flex flex-col items-center justify-center w-full h-full gap-4';
+                          placeholder.className = 'placeholder-content flex flex-col items-center justify-center w-full h-full gap-4 p-8';
                           placeholder.innerHTML = `
-                            <div style="width:64px;height:64px;background:#EDE9FE;border-radius:16px;display:flex;align-items:center;justify-content:center;">
+                            <div style="width:64px;height:64px;background:linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);border-radius:16px;display:flex;align-items:center;justify-content:center;">
                               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4C1D95" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                             </div>
                             <div style="text-align:center;">
                               <p style="font-weight:800;color:#1e293b;font-size:14px;margin:0 0 4px">${s.titulo}</p>
-                              <p style="color:#94a3b8;font-size:12px;margin:0">Coloque o arquivo: <strong>${s.src}</strong></p>
+                              <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.4">Adicione o arquivo: <br/><strong>${s.src}</strong></p>
                             </div>
                           `;
                           parent.appendChild(placeholder);
@@ -413,7 +549,7 @@ const LandingPage = () => {
                   </div>
 
                   {/* Badge flutuante */}
-                  <div className="absolute -top-3 -right-3 bg-[#4C1D95] text-white px-3 py-1.5 rounded-xl shadow-lg">
+                  <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#4C1D95] to-[#5B21B6] text-white px-3 py-1.5 rounded-xl shadow-xl">
                     <p className="text-[9px] font-black uppercase tracking-widest">{s.badge}</p>
                   </div>
                 </div>
@@ -434,7 +570,7 @@ const LandingPage = () => {
                 key={i}
                 onClick={() => setScreenshotAtivo(i)}
                 className={`transition-all duration-300 rounded-full ${
-                  screenshotAtivo === i ? 'w-6 h-2 bg-[#4C1D95]' : 'w-2 h-2 bg-slate-200 hover:bg-purple-200'
+                  screenshotAtivo === i ? 'w-8 h-2 bg-[#4C1D95]' : 'w-2 h-2 bg-slate-300 hover:bg-purple-300'
                 }`}
               />
             ))}
@@ -443,12 +579,12 @@ const LandingPage = () => {
       </section>
 
       {/* ── VÍDEO ── */}
-      <section className="px-6 pb-24 max-w-4xl mx-auto" data-section="video">
+      <section className="px-6 py-24 max-w-4xl mx-auto bg-white" data-section="video">
         <div {...anim('video', 0)} className="text-center mb-8">
           <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em]">Veja como funciona</span>
           <h2 className="text-3xl font-black tracking-tight mt-2">Em alguns minutos você entende tudo.</h2>
         </div>
-        <div {...anim('video', 150)} className="relative rounded-[32px] overflow-hidden shadow-2xl border-4 border-white bg-slate-900 aspect-video">
+        <div {...anim('video', 150)} className="relative rounded-[32px] overflow-hidden shadow-2xl border-8 border-white bg-slate-900 aspect-video">
           <iframe className="w-full h-full"
             src="https://www.youtube.com/embed/2oNM9jAXOFU"
             title="Apresentação O Verbo"
@@ -459,12 +595,12 @@ const LandingPage = () => {
       </section>
 
       {/* ── PLANOS ── */}
-      <section className="px-6 py-24 bg-white" data-section="planos">
+      <section className="px-6 py-24 bg-gradient-to-b from-slate-50 to-white" data-section="planos">
         <div className="max-w-5xl mx-auto">
           <div {...anim('planos', 0)} className="text-center mb-14">
             <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em] mb-3 block">Planos</span>
             <h2 className="text-4xl font-black tracking-tighter mb-3">Comece grátis.<br />Evolua quando quiser.</h2>
-            <p className="text-gray-400 text-sm font-medium max-w-md mx-auto">Sem taxas escondidas. Cancele quando quiser. O plano Fundador é por tempo limitado.</p>
+            <p className="text-gray-500 text-sm font-medium max-w-md mx-auto">Sem taxas escondidas. Cancele quando quiser. O plano Fundador é por tempo limitado.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -475,18 +611,18 @@ const LandingPage = () => {
                 <div key={plano.id} {...anim('planos', 100 + i * 100)}
                   className={`relative rounded-[32px] p-7 flex flex-col transition-all duration-300 ${
                     isFundador
-                      ? 'bg-[#4C1D95] text-white shadow-2xl shadow-purple-300 scale-[1.03] border-0'
-                      : 'bg-white border border-slate-100 shadow-sm card-hover'
+                      ? 'bg-gradient-to-br from-[#4C1D95] to-[#5B21B6] text-white shadow-2xl shadow-purple-300/50 scale-[1.04] border-0 ring-4 ring-purple-200'
+                      : 'bg-white border border-slate-100 shadow-md card-hover'
                   }`}>
 
                   {plano.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest whitespace-nowrap shadow-lg">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-400 text-yellow-900 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest whitespace-nowrap shadow-xl">
                       {plano.badge}
                     </div>
                   )}
 
                   <div className="flex items-center gap-3 mb-5">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isFundador ? 'bg-white/20' : 'bg-purple-50'}`}>
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isFundador ? 'bg-white/20' : 'bg-gradient-to-br from-purple-50 to-purple-100'}`}>
                       <Icon size={20} className={isFundador ? 'text-yellow-300' : 'text-[#4C1D95]'} />
                     </div>
                     <div>
@@ -515,11 +651,11 @@ const LandingPage = () => {
 
                   <button
                     onClick={() => handleNavigation(plano.href)}
-                    className={`w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-95 hover:scale-105 ${
+                    className={`w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-95 hover:scale-[1.02] ${
                       isFundador
-                        ? 'bg-white text-[#4C1D95] shadow-lg hover:shadow-xl'
+                        ? 'bg-white text-[#4C1D95] shadow-xl hover:shadow-2xl'
                         : plano.id === 'plus'
-                          ? 'bg-[#4C1D95] text-white shadow-md shadow-purple-100'
+                          ? 'bg-gradient-to-r from-[#4C1D95] to-[#5B21B6] text-white shadow-lg shadow-purple-100'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}>
                     {plano.cta}
@@ -529,27 +665,30 @@ const LandingPage = () => {
             })}
           </div>
 
-          <div {...anim('planos', 500)} className="text-center mt-8">
-            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
-              O plano Fundador é exclusivo para os primeiros assinantes • Preço fixo para sempre
-            </p>
+          <div {...anim('planos', 500)} className="text-center mt-10">
+            <div className="inline-flex items-center gap-2 bg-yellow-50 border border-yellow-200 px-5 py-3 rounded-full">
+              <Crown size={14} className="text-yellow-600" />
+              <p className="text-[10px] text-yellow-700 font-black uppercase tracking-widest">
+                Plano Fundador exclusivo para os primeiros assinantes • Preço fixo para sempre
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── AUTORIDADE com foto real ── */}
-      <section className="px-6 py-24" data-section="autor">
+      <section className="px-6 py-24 bg-white" data-section="autor">
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div {...anim('autor', 0)} className="flex justify-center">
             <div className="relative">
-              <div className="w-64 h-80 rounded-[40px] overflow-hidden shadow-2xl border-4 border-white ring-4 ring-purple-100 float">
+              <div className="w-64 h-80 rounded-[40px] overflow-hidden shadow-2xl border-8 border-white ring-4 ring-purple-100 float">
                 <img src="/pastor-jeferson.jpg" alt="Pastor Jeferson Rocha"
                   className="w-full h-full object-cover object-top"
                   onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=JR&background=4C1D95&color=fff&size=256"; }} />
               </div>
-              <div className="absolute -bottom-4 -right-4 bg-[#4C1D95] text-white px-4 py-2 rounded-2xl shadow-xl">
+              <div className="absolute -bottom-4 -right-4 bg-gradient-to-br from-[#4C1D95] to-[#5B21B6] text-white px-5 py-3 rounded-2xl shadow-xl">
                 <p className="text-[9px] font-bold uppercase tracking-widest">Pastor & Professor</p>
-                <p className="text-xs font-bold">Jeferson Rocha</p>
+                <p className="text-sm font-black">Jeferson Rocha</p>
               </div>
             </div>
           </div>
@@ -562,11 +701,11 @@ const LandingPage = () => {
               Jeferson Rocha é Pastor, Professor de Teologia e Diretor da Tecnologge Cursos. O Verbo nasceu da necessidade real de quem prepara mensagens toda semana, unindo formação ministerial e tecnologia de ponta.
             </p>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-white border border-purple-100 rounded-2xl hover:border-purple-200 transition-colors">
                 <Users size={18} className="text-[#4C1D95] shrink-0" />
                 <p className="font-semibold text-sm text-slate-700">Ecossistema integrado com turmas e formação</p>
               </div>
-              <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-white border border-purple-100 rounded-2xl hover:border-purple-200 transition-colors">
                 <ShieldCheck size={18} className="text-[#4C1D95] shrink-0" />
                 <p className="font-semibold text-sm text-slate-700">Segurança total para seus esboços e estudos</p>
               </div>
@@ -576,7 +715,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── DEPOIMENTOS REAIS ── */}
-      <section className="px-6 py-24 bg-white" data-section="depoimentos">
+      <section className="px-6 py-24 bg-gradient-to-b from-slate-50 to-white" data-section="depoimentos">
         <div className="max-w-5xl mx-auto">
           <div {...anim('depoimentos', 0)} className="text-center mb-14">
             <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em] mb-3 block">Prova Social</span>
@@ -585,17 +724,17 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             {DEPOIMENTOS.map((d, i) => (
               <div key={i} {...anim('depoimentos', 150 + i * 120)}
-                className="card-hover bg-[#FAFAFA] border border-slate-100 rounded-[32px] p-7 shadow-sm relative flex flex-col">
-                <Quote size={28} className="text-purple-100 absolute top-6 right-7" />
+                className="card-hover bg-white border border-slate-100 rounded-[32px] p-7 shadow-md relative flex flex-col">
+                <Quote size={32} className="text-purple-100 absolute top-6 right-7" />
                 <div className="flex gap-1 mb-4">
                   {Array(d.stars).fill(0).map((_, j) => (
-                    <Star key={j} size={13} className="text-yellow-400 fill-yellow-400" />
+                    <Star key={j} size={14} className="text-yellow-400 fill-yellow-400" />
                   ))}
                 </div>
                 <p className="text-slate-700 text-sm leading-relaxed mb-6 font-medium flex-1">"{d.texto}"</p>
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
                   <div className="relative pulse-ring">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 overflow-hidden">
+                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-100 to-purple-200 overflow-hidden">
                       <img src={d.img} alt={d.nome}
                         className="w-full h-full object-cover"
                         onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${d.nome}&background=EDE9FE&color=4C1D95`; }} />
@@ -610,16 +749,16 @@ const LandingPage = () => {
             ))}
           </div>
           <div {...anim('depoimentos', 500)} className="text-center">
-            <div className="inline-flex items-center gap-3 bg-purple-50 border border-purple-100 px-6 py-4 rounded-[20px]">
+            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-50 to-white border border-purple-100 px-6 py-4 rounded-[20px] shadow-sm">
               <Users size={18} className="text-[#4C1D95]" />
-              <p className="font-black text-[#4C1D95] text-sm uppercase tracking-tight">60+ pregadores usam o Verbo</p>
+              <p className="font-black text-[#4C1D95] text-sm">100+ pregadores • 70+ sermões criados</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── FAQ ── */}
-      <section className="px-6 py-24" data-section="faq">
+      <section className="px-6 py-24 bg-white" data-section="faq">
         <div className="max-w-2xl mx-auto">
           <div {...anim('faq', 0)} className="text-center mb-12">
             <span className="text-[#4C1D95] font-black text-[10px] uppercase tracking-[0.2em] mb-3 block">Dúvidas frequentes</span>
@@ -641,18 +780,19 @@ const LandingPage = () => {
 
       {/* ── CTA FINAL ── */}
       <section className="px-6 py-20" data-section="cta">
-        <div {...anim('cta', 0)} className="max-w-3xl mx-auto bg-[#4C1D95] rounded-[48px] p-12 text-center relative overflow-hidden shadow-2xl">
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white opacity-5 blur-[80px] rounded-full pointer-events-none" />
-          <div className="absolute top-0 right-0 w-48 h-48 bg-purple-300 opacity-10 blur-[60px] rounded-full pointer-events-none" />
+        <div {...anim('cta', 0)} className="max-w-3xl mx-auto bg-gradient-to-br from-[#4C1D95] via-[#5B21B6] to-[#6D28D9] rounded-[48px] p-12 text-center relative overflow-hidden shadow-2xl">
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white opacity-10 blur-[100px] rounded-full pointer-events-none" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-purple-300 opacity-15 blur-[80px] rounded-full pointer-events-none" />
           <div className="relative z-10">
-            <Sparkles size={28} className="text-yellow-400 mx-auto mb-6" />
-            <h2 className="text-white font-black tracking-tighter mb-4 leading-tight italic"
-              style={{ fontSize: 'clamp(1.8rem, 5vw, 3rem)' }}>
-              O app que todo pregador<br />precisa.
+            <Sparkles size={32} className="text-yellow-300 mx-auto mb-6" />
+            <h2 className="text-white font-black tracking-tighter mb-4 leading-tight"
+              style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)' }}>
+              O app que todo pregador<br />
+              <span className="italic">precisa.</span>
             </h2>
-            <p className="text-purple-200 text-sm mb-8 font-medium">Comece agora. É gratuito, sem cartão de crédito.</p>
+            <p className="text-purple-200 text-base mb-8 font-semibold max-w-md mx-auto">Crie seu primeiro sermão agora. É gratuito e leva menos de 1 minuto!</p>
             <button onClick={() => handleNavigation('/login')}
-              className="bg-white text-[#4C1D95] px-10 py-5 rounded-3xl font-black hover:scale-105 active:scale-95 transition-all text-base shadow-xl inline-flex items-center gap-2">
+              className="bg-white text-[#4C1D95] px-10 py-5 rounded-3xl font-black hover:scale-[1.02] active:scale-95 transition-all text-base shadow-2xl inline-flex items-center gap-2">
               QUERO COMEÇAR AGORA <ArrowRight size={18} />
             </button>
             <div className="flex justify-center gap-5 mt-6 text-[10px] font-black text-purple-300 uppercase tracking-widest">
@@ -665,13 +805,23 @@ const LandingPage = () => {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="py-10 text-center border-t border-gray-100">
-        <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em]">
-          © 2026 O VERBO • Pr. Jeferson Rocha
-        </p>
+      <footer className="py-12 text-center border-t border-gray-100 bg-white">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <img src="/logo.png" alt="Verbo" className="w-8 h-8 object-contain rounded-lg"
+              onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=V&background=4C1D95&color=fff&size=32"; }} />
+            <span className="font-black tracking-tighter text-lg text-[#4C1D95] uppercase">Verbo</span>
+          </div>
+          <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mb-3">
+            © 2026 O VERBO • Pr. Jeferson Rocha
+          </p>
+          <p className="text-gray-400 text-xs font-medium">
+            Tecnologia que serve à Palavra • Joinville, SC
+          </p>
+        </div>
       </footer>
     </div>
   );
 };
 
-export default LandingPage;
+export default LandingPageOptimized;
