@@ -16,7 +16,7 @@ const FEATURES = [
   { icon: BookOpen,        titulo: 'Academia Verbo',      desc: 'Cursos de teologia e pregação com progresso salvo. Formação ministerial descomplicada.' },
   { icon: WifiOff,         titulo: 'Acesso Offline',      desc: 'Salve seus sermões para pregar sem internet. Funciona mesmo em locais sem sinal.' },
   { icon: Brain,           titulo: 'Organização Total',   desc: 'Todos os seus sermões em um só lugar, com título, referência bíblica e histórico de versões.' },
-  { icon: MessageCircle,   titulo: 'Comunidade',          desc: 'Feed estilo Threads dentro do app. Compartilhe sermões, troque experiências e cresça com outros pregadores.', novo: true },
+  { icon: MessageCircle,   titulo: 'Devocionais',          desc: 'Devocionais diários para refletir e crescer espiritualmente.', novo: true },
 ];
 
 const BENEFICIOS = [

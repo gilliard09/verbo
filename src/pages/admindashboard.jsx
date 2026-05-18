@@ -7,7 +7,7 @@ import {
   FileText, UploadCloud, X, Megaphone, Send, Bell, Sparkles,
   Edit3, Check, GripVertical, AlertTriangle, UserCheck, BookOpen,
   Activity, MessageSquare, Star, Bug, Smile, Eye, EyeOff, Trophy, Flag,
-  Zap, RefreshCw, DollarSign, Percent, TrendingDown,
+  Zap, RefreshCw, DollarSign, Percent, TrendingDown, Calendar, List,
 } from 'lucide-react';
 
 const LS_METAS_KEY = 'verbo_admin_metas_celebradas';
@@ -52,9 +52,114 @@ const FeedbackCard = ({ fb, onMarcarLido, onDeletar }) => {
   return (<div className={`bg-white p-5 rounded-[24px] border transition-all hover:shadow-sm ${fb.lido?'border-slate-100 opacity-60':'border-[#5B2DFF]/20 shadow-sm shadow-purple-50'}`}><div className="flex items-start justify-between gap-3 mb-3"><div className="flex items-center gap-3"><div className={`p-2.5 rounded-2xl shrink-0 ${corMap[cfg.cor]}`}><Icon size={16}/></div><div><p className="font-black text-slate-700 text-xs uppercase tracking-widest">{cfg.label}</p><p className="text-[10px] text-slate-400">{fb.email||'Usuário anônimo'}</p></div></div><div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} size={11} className={n<=fb.estrelas?'text-yellow-400 fill-yellow-400':'text-slate-200 fill-slate-100'}/>)}</div></div><p className="text-sm text-slate-600 leading-relaxed mb-3">{fb.mensagem}</p><div className="flex items-center justify-between"><span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{new Date(fb.criado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}</span><div className="flex gap-2"><button onClick={()=>onMarcarLido(fb.id,!fb.lido)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase transition-all ${fb.lido?'bg-slate-100 text-slate-400 hover:bg-slate-200':'bg-purple-50 text-[#5B2DFF] hover:bg-purple-100'}`}>{fb.lido?<><EyeOff size={10}/>Reabrir</>:<><Eye size={10}/>Marcar lido</>}</button><button onClick={()=>onDeletar(fb.id)} className="p-1.5 text-slate-200 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50"><Trash2 size={14}/></button></div></div></div>);
 };
 
-const PostModeracaoCard = ({ post, onDeletar }) => (
-  <div className="bg-white p-5 rounded-[24px] border border-slate-100 hover:shadow-sm transition-all"><div className="flex items-start justify-between gap-3 mb-3"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-purple-50 rounded-2xl flex items-center justify-center shrink-0"><span className="text-[11px] font-black text-[#5B2DFF]">{(post.profiles?.full_name||post.profiles?.email||'?')[0].toUpperCase()}</span></div><div><p className="font-black text-slate-700 text-xs">{post.profiles?.full_name||post.profiles?.email||'Usuário'}</p><p className="text-[9px] text-slate-300 uppercase font-bold">{new Date(post.criado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} · {new Date(post.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</p></div></div><div className="flex items-center gap-2 shrink-0">{post.total_reports>0&&(<span className="text-[9px] font-black bg-red-50 text-red-500 px-2 py-1 rounded-full uppercase flex items-center gap-1"><Flag size={9}/>{post.total_reports}</span>)}<button onClick={()=>onDeletar(post.id)} className="p-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14}/></button></div></div><p className="text-sm text-slate-600 leading-relaxed pl-12 mb-3">{post.conteudo}</p><div className="flex items-center gap-4 pl-12"><span className="text-[9px] font-bold text-slate-300 uppercase">❤️ {post.total_curtidas||0}</span><span className="text-[9px] font-bold text-slate-300 uppercase">💬 {post.total_comentarios||0}</span></div></div>
-);
+// ── Componente de Card de Devocional ──────────────────────────────────────────
+const DevocionalCard = ({ devocional, onEditar, onDeletar, editando, onSalvarEdicao }) => {
+  const [dadosEdicao, setDadosEdicao] = useState({
+    titulo: devocional.titulo,
+    versiculo_chave: devocional.versiculo_chave,
+    conteudo: devocional.conteudo,
+    reflexao: devocional.reflexao || '',
+    data_publicacao: devocional.data_publicacao?.split('T')[0] || new Date().toISOString().split('T')[0]
+  });
+
+  return (
+    <div className={`bg-white p-5 rounded-[24px] border transition-all ${editando ? 'border-[#5B2DFF]/30 shadow-lg shadow-purple-50' : 'border-slate-100 hover:shadow-sm'}`}>
+      {editando ? (
+        <div className="space-y-3">
+          <input
+            value={dadosEdicao.titulo}
+            onChange={e => setDadosEdicao(d => ({ ...d, titulo: e.target.value }))}
+            className="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold border-none focus:ring-2 focus:ring-purple-200 outline-none"
+            placeholder="Título do devocional"
+          />
+          <input
+            value={dadosEdicao.versiculo_chave}
+            onChange={e => setDadosEdicao(d => ({ ...d, versiculo_chave: e.target.value }))}
+            className="w-full p-3 bg-slate-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-purple-200 outline-none"
+            placeholder="Versículo-chave (ex: João 3:16)"
+          />
+          <textarea
+            value={dadosEdicao.conteudo}
+            onChange={e => setDadosEdicao(d => ({ ...d, conteudo: e.target.value }))}
+            rows={5}
+            className="w-full p-3 bg-slate-50 rounded-xl text-sm resize-none border-none focus:ring-2 focus:ring-purple-200 outline-none"
+            placeholder="Conteúdo do devocional..."
+          />
+          <textarea
+            value={dadosEdicao.reflexao}
+            onChange={e => setDadosEdicao(d => ({ ...d, reflexao: e.target.value }))}
+            rows={3}
+            className="w-full p-3 bg-slate-50 rounded-xl text-sm resize-none border-none focus:ring-2 focus:ring-purple-200 outline-none"
+            placeholder="Pergunta para reflexão (opcional)"
+          />
+          <input
+            type="date"
+            value={dadosEdicao.data_publicacao}
+            onChange={e => setDadosEdicao(d => ({ ...d, data_publicacao: e.target.value }))}
+            className="w-full p-3 bg-slate-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-purple-200 outline-none"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => onSalvarEdicao(devocional.id, dadosEdicao)}
+              className="flex-1 py-2.5 bg-[#5B2DFF] text-white rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-1.5"
+            >
+              <Check size={12} />Salvar
+            </button>
+            <button
+              onClick={() => onEditar(null)}
+              className="px-4 py-2.5 border border-slate-200 rounded-xl font-black text-[10px] uppercase text-slate-500"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar size={12} className="text-purple-400" />
+                <span className="text-[9px] font-bold text-slate-400 uppercase">
+                  {new Date(devocional.data_publicacao).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-800 text-sm mb-1">{devocional.titulo}</h3>
+              <p className="text-[11px] font-medium text-purple-600 mb-2">{devocional.versiculo_chave}</p>
+              <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{devocional.conteudo}</p>
+              {devocional.reflexao && (
+                <div className="mt-2 p-2 bg-purple-50 rounded-lg">
+                  <p className="text-[10px] font-bold text-purple-700 flex items-center gap-1">
+                    <BookOpen size={10} />
+                    Para refletir:
+                  </p>
+                  <p className="text-[10px] text-slate-600 mt-0.5 line-clamp-1">{devocional.reflexao}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <button
+                onClick={() => onEditar(devocional.id)}
+                className="p-2 bg-purple-50 text-[#5B2DFF] rounded-xl hover:bg-[#5B2DFF] hover:text-white transition-all"
+              >
+                <Edit3 size={14} />
+              </button>
+              <button
+                onClick={() => onDeletar(devocional.id)}
+                className="p-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ── Novos componentes de analytics ────────────────────────────────────────────
 
@@ -229,9 +334,19 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [uploadingPDF, setUploadingPDF] = useState(false);
-  const [postsComunidade, setPostsComunidade] = useState([]);
-  const [filtroPosts, setFiltroPosts] = useState('todos');
-  const [loadingPosts, setLoadingPosts] = useState(false);
+  
+  // Estados para devocionais
+  const [devocionais, setDevocionais] = useState([]);
+  const [loadingDevocionais, setLoadingDevocionais] = useState(false);
+  const [devocionalEditando, setDevocionalEditando] = useState(null);
+  const [novoDevocional, setNovoDevocional] = useState({
+    titulo: '',
+    versiculo_chave: '',
+    conteudo: '',
+    reflexao: '',
+    data_publicacao: new Date().toISOString().split('T')[0]
+  });
+  
   const [stats, setStats] = useState({totalUsuarios:0,totalSermoes:0,totalAssinaturas:0,totalProgresso:0,taxaConclusao:0,mr:0,loadingStats:true});
   const [dadosGrafico, setDadosGrafico] = useState([]);
   const [dadosCrescimento, setDadosCrescimento] = useState([]);
@@ -261,14 +376,105 @@ const AdminDashboard = () => {
 
   useEffect(()=>{carregarTudo();},[]);
   useEffect(()=>{if(cursoSelecionadoAulas)carregarAulasDoCurso(cursoSelecionadoAulas);},[cursoSelecionadoAulas]);
-  useEffect(()=>{if(aba==='comunidade')carregarPostsComunidade();},[aba]);
+  useEffect(()=>{if(aba==='devocionais')carregarDevocionais();},[aba]);
 
   const carregarTudo = async () => await Promise.all([carregarCursos(),carregarAnalytics(),carregarNotificacoes(),carregarMatriculasRecentes(),carregarFeedbacks()]);
   const carregarNotificacoes = async () => { const{data}=await supabase.from('notificacoes').select('*').order('created_at',{ascending:false}).limit(5); if(data)setNotificacoes(data); };
   const carregarMatriculasRecentes = async () => { const{data}=await supabase.from('profiles').select('id,full_name,email,plano,plano_atualizado_em,created_at').in('plano',['fundador','plus']).order('plano_atualizado_em',{ascending:false}).limit(8); if(data)setMatriculasRecentes(data); };
   const carregarFeedbacks = async () => { const{data}=await supabase.from('feedbacks').select('*').order('criado_em',{ascending:false}); if(data)setFeedbacks(data); };
-  const carregarPostsComunidade = async () => { setLoadingPosts(true); const{data}=await supabase.from('posts').select(`*,profiles(full_name,email),total_curtidas:post_curtidas(count),total_comentarios:post_comentarios(count),total_reports:post_reports(count)`).order('criado_em',{ascending:false}).limit(50); if(data)setPostsComunidade(data.map(p=>({...p,total_curtidas:p.total_curtidas?.[0]?.count||0,total_comentarios:p.total_comentarios?.[0]?.count||0,total_reports:p.total_reports?.[0]?.count||0}))); setLoadingPosts(false); };
-  const deletarPost = (id) => { setModal({aberto:true,titulo:'Excluir Post',descricao:'Este post será removido permanentemente da comunidade.',onConfirmar:async()=>{setModalLoading(true);await supabase.from('posts').update({deletado:true}).eq('id',id);setModal(m=>({...m,aberto:false}));setModalLoading(false);setPostsComunidade(prev=>prev.filter(p=>p.id!==id));}}); };
+  
+  // Funções para devocionais
+  const carregarDevocionais = async () => {
+    setLoadingDevocionais(true);
+    const { data } = await supabase
+      .from('devocionais')
+      .select('*')
+      .not('titulo', 'is', null) // Apenas devocionais que têm título (admin)
+      .order('data_publicacao', { ascending: false })
+      .limit(50);
+    if (data) setDevocionais(data);
+    setLoadingDevocionais(false);
+  };
+
+  const salvarDevocional = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Usuário não autenticado');
+        setLoading(false);
+        return;
+      }
+
+      const dadosDevocional = {
+        titulo: novoDevocional.titulo.trim(),
+        versiculo_chave: novoDevocional.versiculo_chave.trim(),
+        conteudo: novoDevocional.conteudo.trim(),
+        reflexao: novoDevocional.reflexao.trim() || null,
+        data_publicacao: `${novoDevocional.data_publicacao}T00:00:00Z`,
+        // Campos da tabela original
+        texto: novoDevocional.conteudo.trim(), // Duplicar conteúdo em texto
+        user_id: user.id,
+        data_criacao_dia: novoDevocional.data_publicacao,
+        is_ia: false
+      };
+
+      const { error } = await supabase.from('devocionais').insert([dadosDevocional]);
+      
+      if (error) {
+        console.error('Erro do Supabase:', error);
+        alert(`Erro ao publicar: ${error.message}`);
+        setLoading(false);
+        return;
+      }
+
+      setNovoDevocional({
+        titulo: '',
+        versiculo_chave: '',
+        conteudo: '',
+        reflexao: '',
+        data_publicacao: new Date().toISOString().split('T')[0]
+      });
+      await carregarDevocionais();
+      alert('Devocional publicado com sucesso! 🎉');
+    } catch (err) {
+      console.error('Erro ao salvar devocional:', err);
+      alert('Erro inesperado ao publicar devocional');
+    }
+    
+    setLoading(false);
+  };
+
+  const salvarEdicaoDevocional = async (id, dados) => {
+    await supabase.from('devocionais').update({
+      titulo: dados.titulo.trim(),
+      versiculo_chave: dados.versiculo_chave.trim(),
+      conteudo: dados.conteudo.trim(),
+      texto: dados.conteudo.trim(), // Manter sincronizado
+      reflexao: dados.reflexao.trim() || null,
+      data_publicacao: `${dados.data_publicacao}T00:00:00Z`,
+      data_criacao_dia: dados.data_publicacao
+    }).eq('id', id);
+    setDevocionalEditando(null);
+    carregarDevocionais();
+  };
+
+  const confirmarDeletarDevocional = (id) => {
+    setModal({
+      aberto: true,
+      titulo: 'Excluir Devocional',
+      descricao: 'Este devocional será removido permanentemente. O progresso dos usuários também será excluído.',
+      onConfirmar: async () => {
+        setModalLoading(true);
+        await supabase.from('devocionais').delete().eq('id', id);
+        setModal(m => ({ ...m, aberto: false }));
+        setModalLoading(false);
+        carregarDevocionais();
+      }
+    });
+  };
 
   const carregarAnalytics = async () => {
     try {
@@ -377,8 +583,6 @@ const AdminDashboard = () => {
   const feedbacksNaoLidos=feedbacks.filter(f=>!f.lido).length;
   const mediaEstrelas=feedbacks.length>0?(feedbacks.reduce((s,f)=>s+f.estrelas,0)/feedbacks.length).toFixed(1):'—';
   const feedbacksFiltrados=feedbacks.filter(f=>filtroFeedback==='todos'||f.tipo===filtroFeedback).filter(f=>mostrarLidos?true:!f.lido);
-  const postsReportados=postsComunidade.filter(p=>p.total_reports>0);
-  const postsFiltrados=filtroPosts==='reportados'?postsReportados:postsComunidade;
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${aba==='analytics'?'bg-[#0f0b1e]':'bg-slate-50'} pb-[calc(6rem+env(safe-area-inset-bottom))]`}>
@@ -393,8 +597,8 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-2"><div className={`p-2 rounded-xl ${aba==='analytics'?'bg-purple-500 text-white':'bg-[#5B2DFF] text-white'}`}><Database size={18}/></div><h1 className={`font-black text-lg uppercase italic hidden sm:block ${aba==='analytics'?'text-white':'text-slate-800'}`}>Gestão Verbo</h1></div>
           </div>
           <div className={`flex p-1 rounded-2xl gap-1 overflow-x-auto ${aba==='analytics'?'bg-white/5 border border-white/10':'bg-slate-100'}`}>
-            {[{id:'analytics',label:'Analytics'},{id:'cursos',label:'Cursos'},{id:'aulas',label:'Aulas'},{id:'comunicados',label:'Avisos'},{id:'feedbacks',label:feedbacksNaoLidos>0?`Feedbacks (${feedbacksNaoLidos})`:'Feedbacks'},{id:'comunidade',label:postsReportados.length>0?`Comunidade (${postsReportados.length})`:'Comunidade'}].map(tab=>(
-              <button key={tab.id} onClick={()=>setAba(tab.id)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap transition-all ${aba===tab.id?aba==='analytics'?'bg-purple-600 text-white':'bg-white text-[#5B2DFF] shadow-sm':tab.id==='feedbacks'&&feedbacksNaoLidos>0?'text-yellow-500 hover:text-yellow-600':tab.id==='comunidade'&&postsReportados.length>0?'text-red-500 hover:text-red-600':'text-gray-500 hover:text-gray-700'}`}>{tab.label}</button>
+            {[{id:'analytics',label:'Analytics'},{id:'cursos',label:'Cursos'},{id:'aulas',label:'Aulas'},{id:'comunicados',label:'Avisos'},{id:'feedbacks',label:feedbacksNaoLidos>0?`Feedbacks (${feedbacksNaoLidos})`:'Feedbacks'},{id:'devocionais',label:'Devocionais'}].map(tab=>(
+              <button key={tab.id} onClick={()=>setAba(tab.id)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap transition-all ${aba===tab.id?aba==='analytics'?'bg-purple-600 text-white':'bg-white text-[#5B2DFF] shadow-sm':tab.id==='feedbacks'&&feedbacksNaoLidos>0?'text-yellow-500 hover:text-yellow-600':'text-gray-500 hover:text-gray-700'}`}>{tab.label}</button>
             ))}
           </div>
         </div>
@@ -485,12 +689,92 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ════ ABA COMUNIDADE ════ */}
-        {aba==='comunidade'&&(
-          <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{[{label:'Total posts',value:postsComunidade.length,cor:'bg-slate-100 text-slate-600'},{label:'Reportados',value:postsReportados.length,cor:postsReportados.length>0?'bg-red-50 text-red-500':'bg-slate-100 text-slate-400'},{label:'Total curtidas',value:postsComunidade.reduce((s,p)=>s+(p.total_curtidas||0),0),cor:'bg-purple-50 text-[#5B2DFF]'}].map(({label,value,cor})=>(<div key={label} className={`${cor} rounded-[20px] p-4 text-center`}><p className="text-2xl font-black">{value}</p><p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-70">{label}</p></div>))}</div>
-            <div className="flex items-center gap-3">{['todos','reportados'].map(f=>(<button key={f} onClick={()=>setFiltroPosts(f)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${filtroPosts===f?'bg-[#5B2DFF] text-white':'bg-white border border-slate-200 text-slate-500 hover:border-[#5B2DFF] hover:text-[#5B2DFF]'}`}>{f==='todos'?'Todos os posts':`Reportados (${postsReportados.length})`}</button>))}<button onClick={carregarPostsComunidade} className="ml-auto px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-white border border-slate-200 text-slate-500 hover:border-slate-400 transition-all flex items-center gap-1.5">{loadingPosts?<Loader2 size={12} className="animate-spin"/>:'↻'} Atualizar</button></div>
-            {loadingPosts?(<div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#5B2DFF]" size={28}/></div>):postsFiltrados.length===0?(<div className="bg-white rounded-[28px] border border-slate-100 p-16 text-center"><MessageSquare size={36} className="text-slate-200 mx-auto mb-3"/><p className="text-slate-400 text-sm font-bold">{filtroPosts==='reportados'?'Nenhum post reportado. Tudo certo!':'Nenhum post na comunidade ainda.'}</p></div>):(<div className="space-y-3">{postsFiltrados.map(post=><PostModeracaoCard key={post.id} post={post} onDeletar={deletarPost}/>)}</div>)}
+        {/* ════ ABA DEVOCIONAIS ════ */}
+        {aba==='devocionais'&&(
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="md:col-span-1">
+              <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm sticky top-24">
+                <h2 className="font-black text-slate-800 uppercase text-sm mb-6 flex items-center gap-2">
+                  <Plus size={18} className="text-[#5B2DFF]"/>Novo Devocional
+                </h2>
+                <form onSubmit={salvarDevocional} className="space-y-3">
+                  <input 
+                    placeholder="Título do devocional" 
+                    className={inputClass} 
+                    value={novoDevocional.titulo} 
+                    onChange={e=>setNovoDevocional(d=>({...d,titulo:e.target.value}))} 
+                    required
+                  />
+                  <input 
+                    placeholder="Versículo-chave (ex: João 3:16)" 
+                    className={inputClass} 
+                    value={novoDevocional.versiculo_chave} 
+                    onChange={e=>setNovoDevocional(d=>({...d,versiculo_chave:e.target.value}))} 
+                    required
+                  />
+                  <textarea 
+                    placeholder="Conteúdo do devocional..." 
+                    className={`${inputClass} min-h-[140px] resize-none`} 
+                    value={novoDevocional.conteudo} 
+                    onChange={e=>setNovoDevocional(d=>({...d,conteudo:e.target.value}))}
+                    required
+                  />
+                  <textarea 
+                    placeholder="Pergunta para reflexão (opcional)" 
+                    className={`${inputClass} min-h-[80px] resize-none`} 
+                    value={novoDevocional.reflexao} 
+                    onChange={e=>setNovoDevocional(d=>({...d,reflexao:e.target.value}))}
+                  />
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                      Data de Publicação
+                    </label>
+                    <input 
+                      type="date"
+                      className={inputClass}
+                      value={novoDevocional.data_publicacao}
+                      onChange={e=>setNovoDevocional(d=>({...d,data_publicacao:e.target.value}))}
+                      required
+                    />
+                  </div>
+                  <button 
+                    disabled={loading} 
+                    className="w-full py-4 bg-[#5B2DFF] text-white rounded-2xl font-black text-xs uppercase shadow-lg flex items-center justify-center gap-2 hover:bg-[#4a22e0] transition-all"
+                  >
+                    {loading ? <Loader2 className="animate-spin" size={16}/> : <><Plus size={14}/>Publicar Devocional</>}
+                  </button>
+                </form>
+              </div>
+            </div>
+            
+            <div className="md:col-span-2 space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h2 className="font-black text-slate-400 uppercase text-[10px] tracking-widest">
+                  Devocionais ({devocionais.length})
+                </h2>
+                {loadingDevocionais && <Loader2 className="animate-spin text-slate-300" size={16}/>}
+              </div>
+              
+              {devocionais.length === 0 ? (
+                <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center">
+                  <BookOpen size={32} className="text-slate-200 mx-auto mb-3"/>
+                  <p className="text-slate-400 text-sm font-bold">Nenhum devocional publicado ainda.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {devocionais.map(devocional => (
+                    <DevocionalCard
+                      key={devocional.id}
+                      devocional={devocional}
+                      onEditar={setDevocionalEditando}
+                      onDeletar={confirmarDeletarDevocional}
+                      editando={devocionalEditando === devocional.id}
+                      onSalvarEdicao={salvarEdicaoDevocional}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

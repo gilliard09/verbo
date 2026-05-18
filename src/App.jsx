@@ -16,7 +16,7 @@ import Cursos from './pages/cursos';
 import Aulas from './pages/aulas';
 import AdminDashboard from './pages/admindashboard';
 import Upgrade from './pages/upgrade';
-import Comunidade from './pages/Comunidade';
+import Devocionais from './pages/Devocionais';
 
 // --- COMPONENTES ---
 import BibliaSidebar from './components/BibliaSidebar';
@@ -52,9 +52,9 @@ const Navbar = ({ session, onOpenBiblia }) => {
         </div>
       </Link>
 
-      {/* Comunidade — substituiu Bíblia */}
-      <Link to="/comunidade" className={`flex flex-col items-center ${location.pathname.startsWith('/comunidade') ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
-        <Users size={22} /><span className="text-[10px] font-bold mt-1">Comunidade</span>
+      {/* Devocionais — substituiu Bíblia */}
+      <Link to="/devocionais" className={`flex flex-col items-center ${location.pathname.startsWith('/devocionais') ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+        <Users size={22} /><span className="text-[10px] font-bold mt-1">Devocionais</span>
       </Link>
 
       <Link to="/perfil" className={`flex flex-col items-center ${location.pathname === '/perfil' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
@@ -117,7 +117,7 @@ function App() {
             <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
             <Route path="/perfil"          element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
             <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
-            <Route path="/comunidade"      element={session ? <Comunidade />    : <Navigate to="/login" replace />} />
+            <Route path="/devocionais"      element={session ? <Devocionais />    : <Navigate to="/login" replace />} />
             <Route path="*"                element={<Navigate to="/" replace />} />
           </Routes>
         </main>

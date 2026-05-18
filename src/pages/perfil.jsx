@@ -241,7 +241,7 @@ const Perfil = ({ onOpenBiblia }) => {
 
   // Estatísticas
   const [stats, setStats] = useState({
-    sermoes: 0, aulasCompletas: 0, cursosMatriculados: 0, loading: true
+    sermoes: 0, aulasCompletas: 0, certificados: 0, loading: true
   });
 
   const [textoCard, setTextoCard] = useState("Escaneie e organize seus sermões agora mesmo!");
@@ -250,38 +250,46 @@ const Perfil = ({ onOpenBiblia }) => {
   useEffect(() => { getProfile(); }, []);
 
   async function getProfile() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      const { data: profileData } = await supabase
-        .from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('role, certificados_conquistados')
+      .eq('id', user.id)
+      .maybeSingle();
 
-      setPerfil({
-        nome: user.user_metadata?.full_name || '',
-        email: user.email || '',
-        telefone: user.user_metadata?.phone_contact || '',
-        avatar_url: user.user_metadata?.avatar_url || '',
-        role: profileData?.role || 'user'
-      });
+    setPerfil({
+      nome: user.user_metadata?.full_name || '',
+      email: user.email || '',
+      telefone: user.user_metadata?.phone_contact || '',
+      avatar_url: user.user_metadata?.avatar_url || '',
+      role: profileData?.role || 'user'
+    });
 
-      const [
-        { count: sermoes },
-        { count: aulasCompletas },
-        { count: cursosMatriculados }
-      ] = await Promise.all([
-        supabase.from('sermoes').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('progresso_aulas').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('matriculas').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-      ]);
+    const [
+      { count: sermoes },
+      { count: aulasCompletas }
+    ] = await Promise.all([
+      supabase.from('sermoes').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('progresso_aulas').select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('concluida_em', 'is', null)
+    ]);
 
-      setStats({ sermoes: sermoes || 0, aulasCompletas: aulasCompletas || 0, cursosMatriculados: cursosMatriculados || 0, loading: false });
-    } catch (error) {
-      console.error('Erro ao carregar:', error.message);
-    } finally {
-      setLoading(false);
-    }
+    setStats({ 
+      sermoes: sermoes || 0, 
+      aulasCompletas: aulasCompletas || 0, 
+      certificados: profileData?.certificados_conquistados || 0,
+      loading: false 
+    });
+  } catch (error) {
+    console.error('Erro ao carregar:', error.message);
+  } finally {
+    setLoading(false);
   }
+}
 
   // ── Seleção de arquivo → abre modal de crop ────────────────────────────────
   const handleAvatarSelect = (e) => {
@@ -439,7 +447,7 @@ const Perfil = ({ onOpenBiblia }) => {
             <div className="grid grid-cols-3 gap-3 mb-2">
               <StatCard icon={PenTool} color="bg-purple-50 text-[#5B2DFF]" label="Sermões" value={stats.sermoes} sub="criados" />
               <StatCard icon={BookOpen} color="bg-green-50 text-green-500" label="Aulas" value={stats.aulasCompletas} sub="concluídas" />
-              <StatCard icon={Award} color="bg-orange-50 text-orange-500" label="Cursos" value={stats.cursosMatriculados} sub="matriculado" />
+              <StatCard icon={Award} color="bg-orange-50 text-orange-500" label="Certificados" value={stats.certificados} sub="de conclusão" />
             </div>
           )}
 
