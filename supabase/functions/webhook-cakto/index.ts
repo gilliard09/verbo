@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// ── IDs dos produtos de assinatura na Cakto ────────────────────────────────
-// Preencha com os UUIDs reais dos produtos no painel da Cakto
 const PRODUTO_PLUS     = Deno.env.get('CAKTO_PRODUTO_PLUS_ID')     ?? ''
 const PRODUTO_FUNDADOR = Deno.env.get('CAKTO_PRODUTO_FUNDADOR_ID') ?? ''
 const CAKTO_SECRET     = Deno.env.get('CAKTO_WEBHOOK_SECRET')      ?? ''
@@ -35,8 +33,6 @@ serve(async (req) => {
     }
 
     // ── 2. Verificar chave secreta da Cakto ────────────────────────────────
-    // A Cakto envia o secret dentro do body JSON (campo "secret")
-    // ou via header x-cakto-secret — verificamos os dois
     const secretNoBody   = (body.secret as string | undefined) ?? ''
     const secretNoHeader = req.headers.get('x-cakto-secret') ?? ''
     const secretRecebido = secretNoBody || secretNoHeader
@@ -47,24 +43,27 @@ serve(async (req) => {
     }
 
     // ── 3. Extrair campos do payload da Cakto ─────────────────────────────
+    // Estrutura real confirmada:
+    // body.event
+    // body.data.subscription.customer.email
+    // body.data.subscription.product  (UUID direto, string)
+    // body.data.subscription.id
     const evento       = (body.event as string | undefined) ?? ''
     const data         = (body.data as Record<string, unknown> | undefined) ?? {}
-    const buyer        = (data.buyer       as Record<string, unknown> | undefined) ?? {}
-    const product      = (data.product     as Record<string, unknown> | undefined) ?? {}
-    const subscription = (data.subscription as Record<string, unknown> | undefined) ?? null
+    const subscription = (data.subscription as Record<string, unknown> | undefined) ?? {}
+    const customer     = (subscription.customer as Record<string, unknown> | undefined) ?? {}
 
-    const email          = ((buyer.email as string | undefined) ?? '').toLowerCase().trim()
-    const produtoId      = (product.id as string | undefined)?.toString() ?? ''
-    const subscriptionId = subscription?.id?.toString() ?? null
+    const email          = ((customer.email as string | undefined) ?? '').toLowerCase().trim()
+    const produtoId      = (subscription.product as string | undefined)?.toString() ?? ''
+    const subscriptionId = (subscription.id as string | undefined)?.toString() ?? null
 
     console.log("Evento Cakto:", evento, "| Produto:", produtoId, "| Email:", email)
 
-    // ── 4. Eventos de compra aprovada e assinatura renovada ───────────────
+    // ── 4. Eventos que ativam o plano ─────────────────────────────────────
     const eventosCompra = [
-      'purchase_approved',
-      'PURCHASE_APPROVED',
-      'subscription_renewed',
-      'SUBSCRIPTION_RENEWED',
+      'purchase_approved',    'PURCHASE_APPROVED',
+      'subscription_created', 'SUBSCRIPTION_CREATED',
+      'subscription_renewed', 'SUBSCRIPTION_RENEWED',
     ]
 
     if (eventosCompra.includes(evento) && email && produtoId) {
@@ -72,10 +71,10 @@ serve(async (req) => {
       const ehPlus     = produtoId === PRODUTO_PLUS
       const ehFundador = produtoId === PRODUTO_FUNDADOR
 
-      // ── 4a. É uma assinatura Verbo (Plus ou Fundador) ──────────────────
       if (ehPlus || ehFundador) {
         const novoPlano = ehFundador ? 'fundador' : 'plus'
 
+        // Buscar usuário pelo e-mail
         const { data: perfil, error: errPerfil } = await supabaseClient
           .from('profiles')
           .select('id')
@@ -98,12 +97,12 @@ serve(async (req) => {
           )
         }
 
-        // Atualizar plano — usa a nova coluna cakto_subscription_id
+        // Atualizar plano na tabela profiles
         const { error: errUpdate } = await supabaseClient
           .from('profiles')
           .update({
             plano: novoPlano,
-            cakto_subscription_id: subscriptionId,   // ← coluna nova
+            cakto_subscription_id: subscriptionId,
             plano_expira_em: null,
             plano_atualizado_em: new Date().toISOString()
           })
@@ -118,7 +117,6 @@ serve(async (req) => {
         )
       }
 
-      // ── 4b. Produto não mapeado — logar e ignorar ─────────────────────
       console.warn("Produto não mapeado como Plus ou Fundador:", produtoId)
       return new Response(
         JSON.stringify({ message: 'Produto não mapeado, evento ignorado.' }),
@@ -126,10 +124,10 @@ serve(async (req) => {
       )
     }
 
-    // ── 5. Cancelamento, reembolso ou chargeback → rebaixar para gratuito ─
+    // ── 5. Cancelamento / reembolso → rebaixar para gratuito ──────────────
     const eventosCancelamento = [
       'subscription_cancellation', 'SUBSCRIPTION_CANCELLATION',
-      'subscription_canceled',
+      'subscription_canceled',     'SUBSCRIPTION_CANCELED',
       'purchase_refunded',         'PURCHASE_REFUNDED',
       'purchase_chargeback',       'PURCHASE_CHARGEBACK',
       'refund',
@@ -148,7 +146,7 @@ serve(async (req) => {
           .from('profiles')
           .update({
             plano: 'gratuito',
-            cakto_subscription_id: null,   // ← limpa coluna nova
+            cakto_subscription_id: null,
             plano_expira_em: null,
             plano_atualizado_em: new Date().toISOString()
           })
