@@ -7,12 +7,153 @@ import {
   FileText, UploadCloud, X, Megaphone, Send, Bell, Sparkles,
   Edit3, Check, GripVertical, AlertTriangle, UserCheck, BookOpen,
   Activity, MessageSquare, Star, Bug, Smile, Eye, EyeOff, Trophy, Flag,
-  Zap, RefreshCw, DollarSign, Percent, TrendingDown, Calendar, List,
+  Zap, RefreshCw, DollarSign, Percent, TrendingDown, Calendar, List, Eye as EyeIcon,
 } from 'lucide-react';
 
 const LS_METAS_KEY = 'verbo_admin_metas_celebradas';
 const metaJaCelebrada = (c) => { try { return !!JSON.parse(localStorage.getItem(LS_METAS_KEY)||'{}')[c]; } catch { return false; } };
 const marcarMetaCelebrada = (c) => { try { const s=JSON.parse(localStorage.getItem(LS_METAS_KEY)||'{}'); s[c]=true; localStorage.setItem(LS_METAS_KEY,JSON.stringify(s)); } catch {} };
+
+// ── Componente TelaLeitura (importado do devocional.jsx) ──────────────────────
+const TelaLeituraPreview = ({ devocional, onFechar, dark }) => {
+  const [fontSize, setFontSize] = useState(16);
+  const [tocandoAudio, setTocandoAudio] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  useEffect(() => {
+    if (!tocandoAudio || !('speechSynthesis' in window)) return;
+    const texto = `${devocional.titulo}. ${devocional.versiculo_chave || ''}. ${devocional.conteudo || ''}`;
+    const utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+    utterance.onend = () => setTocandoAudio(false);
+    return () => { window.speechSynthesis.cancel(); };
+  }, [tocandoAudio, devocional]);
+
+  const bg     = dark ? '#0d0d0f' : '#faf9f7';
+  const bgCard = dark ? '#161618' : '#ffffff';
+  const textMain = dark ? '#f1f5f9' : '#1a1a1a';
+  const textSub  = dark ? '#cbd5e1' : '#6b7280';
+  const acento   = '#5B2DFF';
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-8">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onFechar} />
+      <div
+        className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden"
+        style={{ background: bg }}
+      >
+        <div
+          className="flex-none flex items-center justify-between px-6 py-4 border-b"
+          style={{ borderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)' }}
+        >
+          <button onClick={onFechar} className="p-2 hover:bg-white/10 rounded-lg transition">
+            <X size={20} style={{ color: textMain }} />
+          </button>
+          <span className="text-xs font-bold text-slate-400 uppercase">PREVIEW</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFontSize(Math.max(14, fontSize - 1))}
+              className="p-2 hover:bg-white/10 rounded-lg transition"
+            >
+              <ZoomOut size={18} style={{ color: textMain }} />
+            </button>
+            <span className="text-xs px-2" style={{ color: textSub }}>{fontSize}px</span>
+            <button
+              onClick={() => setFontSize(Math.min(22, fontSize + 1))}
+              className="p-2 hover:bg-white/10 rounded-lg transition"
+            >
+              <ZoomIn size={18} style={{ color: textMain }} />
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="flex-1 overflow-y-auto px-6 py-8 w-full"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar size={14} style={{ color: acento }} />
+              <span className="text-xs font-medium" style={{ color: textSub }}>
+                {new Date(devocional.data_publicacao).toLocaleDateString('pt-BR', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </span>
+              {devocional.destaque_dia && (
+                <span className="ml-auto text-xs font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(255,193,7,0.2)', color: '#FFC107' }}>
+                  ✨ Destaque do Dia
+                </span>
+              )}
+            </div>
+          </div>
+
+          <h1 className="text-3xl font-bold mb-4 leading-tight" style={{ color: textMain }}>
+            {devocional.titulo}
+          </h1>
+
+          {devocional.versiculo_chave && (
+            <div
+              className="mb-8 p-5 rounded-2xl border-l-4"
+              style={{
+                background: dark ? 'rgba(91,45,255,0.1)' : 'rgba(91,45,255,0.05)',
+                borderColor: acento
+              }}
+            >
+              <p className="text-lg font-semibold italic" style={{ color: acento }}>
+                "{devocional.versiculo_chave}"
+              </p>
+            </div>
+          )}
+
+          <p
+            className="leading-relaxed whitespace-pre-line mb-8"
+            style={{
+              color: textMain,
+              fontSize: `${fontSize}px`,
+              lineHeight: '1.8'
+            }}
+          >
+            {devocional.conteudo}
+          </p>
+
+          {devocional.reflexao && (
+            <div
+              className="mb-8 p-6 rounded-2xl border-l-4"
+              style={{
+                background: dark ? 'rgba(236,64,122,0.08)' : 'rgba(236,64,122,0.06)',
+                borderColor: '#EC407A'
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <BookOpen size={16} style={{ color: '#EC407A' }} />
+                <span className="font-semibold" style={{ color: '#EC407A' }}>Para refletir</span>
+              </div>
+              <p
+                className="leading-relaxed whitespace-pre-line"
+                style={{
+                  color: textMain,
+                  fontSize: `${fontSize - 1}px`
+                }}
+              >
+                {devocional.reflexao}
+              </p>
+            </div>
+          )}
+
+          <div style={{ height: 32 }} />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const CelebracaoMeta = ({ visivel, label, onFim }) => {
   const [pecas, setPecas] = useState([]);
@@ -52,15 +193,34 @@ const FeedbackCard = ({ fb, onMarcarLido, onDeletar }) => {
   return (<div className={`bg-white p-5 rounded-[24px] border transition-all hover:shadow-sm ${fb.lido?'border-slate-100 opacity-60':'border-[#5B2DFF]/20 shadow-sm shadow-purple-50'}`}><div className="flex items-start justify-between gap-3 mb-3"><div className="flex items-center gap-3"><div className={`p-2.5 rounded-2xl shrink-0 ${corMap[cfg.cor]}`}><Icon size={16}/></div><div><p className="font-black text-slate-700 text-xs uppercase tracking-widest">{cfg.label}</p><p className="text-[10px] text-slate-400">{fb.email||'Usuário anônimo'}</p></div></div><div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} size={11} className={n<=fb.estrelas?'text-yellow-400 fill-yellow-400':'text-slate-200 fill-slate-100'}/>)}</div></div><p className="text-sm text-slate-600 leading-relaxed mb-3">{fb.mensagem}</p><div className="flex items-center justify-between"><span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{new Date(fb.criado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}</span><div className="flex gap-2"><button onClick={()=>onMarcarLido(fb.id,!fb.lido)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase transition-all ${fb.lido?'bg-slate-100 text-slate-400 hover:bg-slate-200':'bg-purple-50 text-[#5B2DFF] hover:bg-purple-100'}`}>{fb.lido?<><EyeOff size={10}/>Reabrir</>:<><Eye size={10}/>Marcar lido</>}</button><button onClick={()=>onDeletar(fb.id)} className="p-1.5 text-slate-200 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50"><Trash2 size={14}/></button></div></div></div>);
 };
 
-// ── Componente de Card de Devocional ──────────────────────────────────────────
-const DevocionalCard = ({ devocional, onEditar, onDeletar, editando, onSalvarEdicao }) => {
+// ── Componente de Card de Devocional Atualizado com melhorias visuais ──────────
+const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, onSalvarEdicao }) => {
   const [dadosEdicao, setDadosEdicao] = useState({
     titulo: devocional.titulo,
     versiculo_chave: devocional.versiculo_chave,
     conteudo: devocional.conteudo,
     reflexao: devocional.reflexao || '',
+    tema: devocional.tema || 'geral',
+    destaque_dia: devocional.destaque_dia || false,
     data_publicacao: devocional.data_publicacao?.split('T')[0] || new Date().toISOString().split('T')[0]
   });
+
+  // ✅ Verificar se é recente (últimos 2 dias)
+  const ehRecente = () => {
+    const dias = Math.floor((Date.now() - new Date(devocional.data_publicacao)) / 86400000);
+    return dias <= 2;
+  };
+
+  const temaConfig = {
+    geral: { label: 'Geral', emoji: '📚', cor: 'bg-slate-100 text-slate-700' },
+    perdão: { label: 'Perdão', emoji: '🕊️', cor: 'bg-blue-100 text-blue-700' },
+    fé: { label: 'Fé', emoji: '✨', cor: 'bg-yellow-100 text-yellow-700' },
+    liderança: { label: 'Liderança', emoji: '👑', cor: 'bg-purple-100 text-purple-700' },
+    salmos: { label: 'Salmos', emoji: '🎵', cor: 'bg-pink-100 text-pink-700' },
+    oração: { label: 'Oração', emoji: '🙏', cor: 'bg-green-100 text-green-700' },
+  };
+
+  const temaSelecionado = temaConfig[dadosEdicao.tema] || temaConfig.geral;
 
   return (
     <div className={`bg-white p-5 rounded-[24px] border transition-all ${editando ? 'border-[#5B2DFF]/30 shadow-lg shadow-purple-50' : 'border-slate-100 hover:shadow-sm'}`}>
@@ -92,12 +252,47 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, editando, onSalvarEdi
             className="w-full p-3 bg-slate-50 rounded-xl text-sm resize-none border-none focus:ring-2 focus:ring-purple-200 outline-none"
             placeholder="Pergunta para reflexão (opcional)"
           />
-          <input
-            type="date"
-            value={dadosEdicao.data_publicacao}
-            onChange={e => setDadosEdicao(d => ({ ...d, data_publicacao: e.target.value }))}
-            className="w-full p-3 bg-slate-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-purple-200 outline-none"
-          />
+          {/* ✅ Input de categoria customizável com datalist */}
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+              Categoria
+            </label>
+            <input 
+              placeholder="Ex: Liderança, Fé, Salmos, Geral..." 
+              className="w-full p-3 bg-slate-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-purple-200 outline-none font-medium"
+              value={dadosEdicao.tema}
+              onChange={e => setDadosEdicao(d => ({ ...d, tema: e.target.value.toLowerCase().trim() }))}
+              list="categorias-sugeridas"
+            />
+            <datalist id="categorias-sugeridas">
+              <option value="geral"/>
+              <option value="liderança"/>
+              <option value="fé"/>
+              <option value="salmos"/>
+              <option value="perdão"/>
+              <option value="oração"/>
+            </datalist>
+          </div>
+          <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer border border-amber-100 hover:bg-amber-100 transition">
+            <input 
+              type="checkbox" 
+              checked={dadosEdicao.destaque_dia}
+              onChange={e => setDadosEdicao(d => ({ ...d, destaque_dia: e.target.checked }))}
+              className="w-5 h-5 cursor-pointer"
+            />
+            <span className="text-[10px] font-black text-amber-700 uppercase">✨ Destaque do Dia</span>
+          </label>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+              Data de Publicação
+            </label>
+            <input
+              type="date"
+              value={dadosEdicao.data_publicacao}
+              onChange={e => setDadosEdicao(d => ({ ...d, data_publicacao: e.target.value }))}
+              className="w-full p-3 bg-slate-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-purple-200 outline-none"
+            />
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => onSalvarEdicao(devocional.id, dadosEdicao)}
@@ -126,8 +321,24 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, editando, onSalvarEdi
                     year: 'numeric'
                   })}
                 </span>
+                {devocional.destaque_dia && (
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase">
+                    ✨ Destaque
+                  </span>
+                )}
+                {/* ✅ Badge "Novo" para devocionais dos últimos 2 dias */}
+                {ehRecente() && (
+                  <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full animate-pulse" style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
+                    🆕 Novo
+                  </span>
+                )}
               </div>
               <h3 className="font-bold text-slate-800 text-sm mb-1">{devocional.titulo}</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${temaConfig[devocional.tema?.toLowerCase() || 'geral']?.cor || temaConfig.geral.cor}`}>
+                  {temaConfig[devocional.tema?.toLowerCase() || 'geral']?.emoji} {devocional.tema || 'Geral'}
+                </span>
+              </div>
               <p className="text-[11px] font-medium text-purple-600 mb-2">{devocional.versiculo_chave}</p>
               <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{devocional.conteudo}</p>
               {devocional.reflexao && (
@@ -141,6 +352,13 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, editando, onSalvarEdi
               )}
             </div>
             <div className="flex gap-1.5 shrink-0">
+              <button
+                onClick={() => onPreview(devocional)}
+                className="p-2 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all"
+                title="Visualizar preview"
+              >
+                <EyeIcon size={14} />
+              </button>
               <button
                 onClick={() => onEditar(devocional.id)}
                 className="p-2 bg-purple-50 text-[#5B2DFF] rounded-xl hover:bg-[#5B2DFF] hover:text-white transition-all"
@@ -322,6 +540,10 @@ const ReceitaCard = ({ receita }) => (
   </div>
 );
 
+// Import para icones faltantes
+const ZoomIn = ({ size, style, className }) => <span className={className} style={style}>🔍</span>;
+const ZoomOut = ({ size, style, className }) => <span className={className} style={style}>🔍</span>;
+
 // ── Componente principal ──────────────────────────────────────────────────────
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -339,11 +561,14 @@ const AdminDashboard = () => {
   const [devocionais, setDevocionais] = useState([]);
   const [loadingDevocionais, setLoadingDevocionais] = useState(false);
   const [devocionalEditando, setDevocionalEditando] = useState(null);
+  const [devocionalPreview, setDevocionalPreview] = useState(null);
   const [novoDevocional, setNovoDevocional] = useState({
     titulo: '',
     versiculo_chave: '',
     conteudo: '',
     reflexao: '',
+    tema: 'geral',
+    destaque_dia: false,
     data_publicacao: new Date().toISOString().split('T')[0]
   });
   
@@ -389,13 +614,14 @@ const AdminDashboard = () => {
     const { data } = await supabase
       .from('devocionais')
       .select('*')
-      .not('titulo', 'is', null) // Apenas devocionais que têm título (admin)
+      .not('titulo', 'is', null)
       .order('data_publicacao', { ascending: false })
       .limit(50);
     if (data) setDevocionais(data);
     setLoadingDevocionais(false);
   };
 
+  // ✅ FUNÇÃO CORRIGIDA - Salvar devocional com timezone correto
   const salvarDevocional = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -408,14 +634,20 @@ const AdminDashboard = () => {
         return;
       }
 
+      // ✅ Ajustar para midnight da timezone local (sem o "Z")
+      const [ano, mes, dia] = novoDevocional.data_publicacao.split('-');
+      const dataMidnight = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+      const dataISO = dataMidnight.toISOString();
+
       const dadosDevocional = {
         titulo: novoDevocional.titulo.trim(),
         versiculo_chave: novoDevocional.versiculo_chave.trim(),
         conteudo: novoDevocional.conteudo.trim(),
         reflexao: novoDevocional.reflexao.trim() || null,
-        data_publicacao: `${novoDevocional.data_publicacao}T00:00:00Z`,
-        // Campos da tabela original
-        texto: novoDevocional.conteudo.trim(), // Duplicar conteúdo em texto
+        tema: novoDevocional.tema.toLowerCase().trim() || 'geral',
+        destaque_dia: novoDevocional.destaque_dia || false,
+        data_publicacao: dataISO,
+        texto: novoDevocional.conteudo.trim(),
         user_id: user.id,
         data_criacao_dia: novoDevocional.data_publicacao,
         is_ia: false
@@ -435,6 +667,8 @@ const AdminDashboard = () => {
         versiculo_chave: '',
         conteudo: '',
         reflexao: '',
+        tema: 'geral',
+        destaque_dia: false,
         data_publicacao: new Date().toISOString().split('T')[0]
       });
       await carregarDevocionais();
@@ -448,13 +682,20 @@ const AdminDashboard = () => {
   };
 
   const salvarEdicaoDevocional = async (id, dados) => {
+    // ✅ Ajustar data de edição também
+    const [ano, mes, dia] = dados.data_publicacao.split('-');
+    const dataMidnight = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+    const dataISO = dataMidnight.toISOString();
+
     await supabase.from('devocionais').update({
       titulo: dados.titulo.trim(),
       versiculo_chave: dados.versiculo_chave.trim(),
       conteudo: dados.conteudo.trim(),
-      texto: dados.conteudo.trim(), // Manter sincronizado
+      texto: dados.conteudo.trim(),
       reflexao: dados.reflexao.trim() || null,
-      data_publicacao: `${dados.data_publicacao}T00:00:00Z`,
+      tema: dados.tema.toLowerCase().trim() || 'geral',
+      destaque_dia: dados.destaque_dia || false,
+      data_publicacao: dataISO,
       data_criacao_dia: dados.data_publicacao
     }).eq('id', id);
     setDevocionalEditando(null);
@@ -481,7 +722,6 @@ const AdminDashboard = () => {
       const hoje = new Date();
       const seteDiasAtras = new Date(hoje); seteDiasAtras.setDate(hoje.getDate()-7);
 
-      // Supabase queries em paralelo com Vercel Analytics Edge Function
       const [
         {count:usuarios},{count:sermoes},{count:assinaturas},{count:progresso},
         {count:totalAulas},{count:totalFundadores},{count:totalPlus},
@@ -495,19 +735,14 @@ const AdminDashboard = () => {
         supabase.from('aulas').select('*',{count:'exact',head:true}),
         supabase.from('profiles').select('*',{count:'exact',head:true}).eq('plano','fundador'),
         supabase.from('profiles').select('*',{count:'exact',head:true}).eq('plano','plus'),
-        // DAU: sessões criadas hoje
         supabase.from('sessoes').select('*',{count:'exact',head:true}).gte('criado_em',`${hoje.toISOString().split('T')[0]}T00:00:00`),
-        // WAU: sessões criadas nos últimos 7 dias
         supabase.from('sessoes').select('*',{count:'exact',head:true}).gte('criado_em',seteDiasAtras.toISOString()),
-        // Vercel Analytics via Edge Function
         supabase.functions.invoke('vercel-analytics').catch(() => ({ data: null })),
       ]);
 
-      // Visitantes reais da Vercel (fallback: estimativa)
       const vercelData = vercelRes?.data;
       const totalVisitantesVercel = vercelData?.totalVisitantes || 0;
 
-      // Ativação via client-side grouping
       const {data:todosSermoes} = await supabase.from('sermoes').select('user_id');
       const contagemPorUser = {};
       (todosSermoes||[]).forEach(s=>{contagemPorUser[s.user_id]=(contagemPorUser[s.user_id]||0)+1;});
@@ -525,11 +760,9 @@ const AdminDashboard = () => {
       const totalUsaram    = com1Sermao;
       const totalVoltaram  = voltaram2x;
       const totalAssinaram = assinaturas||0;
-      // Usa visitantes reais da Vercel; se não disponível, estimativa
       const totalVisitantes = totalVisitantesVercel > 0 ? totalVisitantesVercel : totalCadastros * 3;
-      const fonteVisitantes = totalVisitantesVercel > 0 ? 'vercel' : 'estimativa';
 
-      setFunil({visitantes:totalVisitantes,cadastros:totalCadastros,usaram:totalUsaram,voltaram:totalVoltaram,assinaram:totalAssinaram,fonteVisitantes});
+      setFunil({visitantes:totalVisitantes,cadastros:totalCadastros,usaram:totalUsaram,voltaram:totalVoltaram,assinaram:totalAssinaram});
       setTaxas({
         visitanteCadastro:totalVisitantes>0?Math.round((totalCadastros/totalVisitantes)*100):0,
         cadastroUso:totalCadastros>0?Math.round((totalUsaram/totalCadastros)*100):0,
@@ -540,7 +773,6 @@ const AdminDashboard = () => {
         pct3Sermoes:totalCadastros>0?Math.round((com3Sermoes/totalCadastros)*100):0,
         pct7Dias:totalCadastros>0?Math.round((totalVoltaram/totalCadastros)*100):0,
       });
-      // DAU/WAU agora vêm da tabela sessoes (usuários reais que abriram o app)
       setRetencao({dau:dau||0,wau:wau||0});
       const ticketMedio = totalAssinaram>0?mr/totalAssinaram:0;
       setReceita({mr,ticketMedio,ltv:ticketMedio*12,churn:0});
@@ -588,6 +820,14 @@ const AdminDashboard = () => {
     <div className={`min-h-screen transition-colors duration-500 ${aba==='analytics'?'bg-[#0f0b1e]':'bg-slate-50'} pb-[calc(6rem+env(safe-area-inset-bottom))]`}>
       <CelebracaoMeta visivel={celebracao.visivel} label={celebracao.label} onFim={()=>setCelebracao({visivel:false,label:''})}/>
       <ModalConfirmacao aberto={modal.aberto} titulo={modal.titulo} descricao={modal.descricao} onConfirmar={modal.onConfirmar} onCancelar={()=>setModal(m=>({...m,aberto:false}))} loading={modalLoading}/>
+
+      {devocionalPreview && (
+        <TelaLeituraPreview 
+          devocional={devocionalPreview}
+          onFechar={() => setDevocionalPreview(null)}
+          dark={true}
+        />
+      )}
 
       {/* Header */}
       <div className={`${aba==='analytics'?'bg-[#16112c]/80 border-white/5 backdrop-blur-xl':'bg-white border-b border-slate-100'} p-5 shadow-sm sticky top-0 z-50`}>
@@ -725,8 +965,38 @@ const AdminDashboard = () => {
                     value={novoDevocional.reflexao} 
                     onChange={e=>setNovoDevocional(d=>({...d,reflexao:e.target.value}))}
                   />
+                  {/* ✅ Input de categoria customizável com datalist */}
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                      Categoria
+                    </label>
+                    <input 
+                      placeholder="Ex: Liderança, Fé, Salmos, Geral..." 
+                      className={inputClass}
+                      value={novoDevocional.tema}
+                      onChange={e => setNovoDevocional(d => ({ ...d, tema: e.target.value.toLowerCase().trim() }))}
+                      list="categorias-sugeridas"
+                    />
+                    <datalist id="categorias-sugeridas">
+                      <option value="geral"/>
+                      <option value="liderança"/>
+                      <option value="fé"/>
+                      <option value="salmos"/>
+                      <option value="perdão"/>
+                      <option value="oração"/>
+                    </datalist>
+                  </div>
+                  <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer border border-amber-100 hover:bg-amber-100 transition">
+                    <input 
+                      type="checkbox" 
+                      checked={novoDevocional.destaque_dia}
+                      onChange={e=>setNovoDevocional(d=>({...d,destaque_dia:e.target.checked}))}
+                      className="w-5 h-5 cursor-pointer"
+                    />
+                    <span className="text-[10px] font-black text-amber-700 uppercase">✨ Destaque do Dia</span>
+                  </label>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
                       Data de Publicação
                     </label>
                     <input 
@@ -768,6 +1038,7 @@ const AdminDashboard = () => {
                       devocional={devocional}
                       onEditar={setDevocionalEditando}
                       onDeletar={confirmarDeletarDevocional}
+                      onPreview={setDevocionalPreview}
                       editando={devocionalEditando === devocional.id}
                       onSalvarEdicao={salvarEdicaoDevocional}
                     />

@@ -7,7 +7,7 @@ import {
   Filter, RotateCcw, Eye, EyeOff, BookmarkCheck
 } from 'lucide-react';
 
-// ─── ESTILOS GLOBAIS ──────────────────────────────────────────────────────────
+// ─── ESTILOS GLOBAIS COM SHIMMER E PULSE ──────────────────────────────────────
 const GlobalStyles = () => (
   <style>{`
     @keyframes bounceBtn {
@@ -38,6 +38,10 @@ const GlobalStyles = () => (
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
     .bounce-btn     { animation: bounceBtn 0.42s cubic-bezier(.36,.07,.19,.97) both; }
     .fade-slide-in  { animation: fadeSlideIn 0.28s ease both; }
     .celebrate      { animation: celebrate 0.6s ease-in-out; }
@@ -50,6 +54,14 @@ const GlobalStyles = () => (
     .text-selection {
       user-select: text;
       -webkit-user-select: text;
+    }
+    .shimmer-skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+    }
+    .pulse-badge {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
   `}</style>
 );
@@ -627,7 +639,7 @@ const CalendarioProgresso = ({ completados, dark }) => {
   );
 };
 
-// ─── CARD DE DEVOCIONAL ───────────────────────────────────────────────────────
+// ─── CARD DE DEVOCIONAL COM MELHORIAS VISUAIS ──────────────────────────────────
 const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onCompartilhar, onAbrir, peopleCount }) => {
   const [marcando, setMarcando] = useState(false);
 
@@ -645,6 +657,12 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
     setMarcando(true);
     await onMarcarCompleto(devocional.id);
     setMarcando(false);
+  };
+
+  // ✅ Verificar se é recente (últimos 2 dias)
+  const ehRecente = () => {
+    const dias = Math.floor((Date.now() - new Date(devocional.data_publicacao)) / 86400000);
+    return dias <= 2;
   };
 
   const titulo = devocional.titulo || 'Devocional';
@@ -675,6 +693,12 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
                     ✨ Destaque
                   </span>
                 )}
+                {/* ✅ Badge "Novo" para devocionais dos últimos 2 dias */}
+                {ehRecente() && (
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full pulse-badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
+                    🆕 Novo
+                  </span>
+                )}
               </div>
               <h3 className="text-base font-bold leading-tight mb-1" style={{ color: textMain }}>
                 {titulo}
@@ -685,8 +709,15 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
                 </p>
               )}
             </div>
+            {/* ✅ Check animado com pulse e shadow */}
             {completado && (
-              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0 celebrate">
+              <div 
+                className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0 celebrate"
+                style={{
+                  boxShadow: '0 0 0 3px rgba(34,197,94,0.2)',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                }}
+              >
                 <Check size={16} className="text-white" strokeWidth={3} />
               </div>
             )}
@@ -815,10 +846,11 @@ const ProgressHeader = ({ totalSemana, completadosSemana, streak, dark }) => {
 const FiltrosTema = ({ filtroAtivo, onFiltro, dark }) => {
   const temas = [
     { id: 'todos',    label: 'Todos',      icon: '📚' },
-    { id: 'perdao',   label: 'Perdão',     icon: '🕊️' },
-    { id: 'fe',       label: 'Fé',         icon: '✨' },
-    { id: 'lideranca',label: 'Liderança',  icon: '👑' },
-    { id: 'oracao',   label: 'Oração',     icon: '🙏' },
+    { id: 'perdão',   label: 'Perdão',     icon: '🕊️' },
+    { id: 'fé',       label: 'Fé',         icon: '✨' },
+    { id: 'liderança',label: 'Liderança',  icon: '👑' },
+    { id: 'oração',   label: 'Oração',     icon: '🙏' },
+    { id: 'salmos',   label: 'Salmos',     icon: '🎵' },
   ];
 
   const textSub = dark ? '#64748b' : '#94a3b8';
@@ -981,9 +1013,10 @@ const Devocionais = () => {
 
   const completadosSemana = devocionaisSemana.filter(d => completados.includes(d.id)).length;
 
+  // ✅ Filtrar por tema customizado (case-insensitive)
   const devocionalsFiltrados = filtroAtivo === 'todos'
     ? devocionais
-    : devocionais.filter(d => d.tema?.toLowerCase() === filtroAtivo);
+    : devocionais.filter(d => d.tema?.toLowerCase() === filtroAtivo.toLowerCase());
 
   return (
     <>
