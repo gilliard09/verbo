@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { usePlano } from '../hooks/usePlano';
 import { gerarCertificado } from '../utils/gerarCertificado';
 import { supabase } from '../supabaseClient';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import {
   ChevronLeft, Play, CheckCircle,
   Loader2, Lightbulb, LightbulbOff, ChevronRight,
@@ -256,6 +255,9 @@ const Aulas = () => {
     if (!aulaAtiva?.material_url) return;
     setBaixandoPDF(true);
     try {
+      // Carregamento dinâmico das bibliotecas
+      const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+      
       const response = await fetch(aulaAtiva.material_url);
       const pdfBytes = await response.arrayBuffer();
 
@@ -263,6 +265,7 @@ const Aulas = () => {
       const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const helvetica     = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
+      // ... (mantenha a lógica de branding inalterada, ela funcionará normalmente) ...
       const roxo       = rgb(0.357, 0.176, 1.0);
       const roxoClaro  = rgb(0.545, 0.369, 1.0);
       const branco     = rgb(1, 1, 1);

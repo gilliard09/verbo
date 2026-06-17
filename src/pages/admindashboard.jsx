@@ -354,6 +354,7 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, 
             <div className="flex gap-1.5 shrink-0">
               <button
                 onClick={() => onPreview(devocional)}
+                aria-label="Visualizar preview do devocional"
                 className="p-2 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all"
                 title="Visualizar preview"
               >
@@ -361,12 +362,14 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, 
               </button>
               <button
                 onClick={() => onEditar(devocional.id)}
+                aria-label="Editar devocional"
                 className="p-2 bg-purple-50 text-[#5B2DFF] rounded-xl hover:bg-[#5B2DFF] hover:text-white transition-all"
               >
                 <Edit3 size={14} />
               </button>
               <button
                 onClick={() => onDeletar(devocional.id)}
+                aria-label="Deletar devocional"
                 className="p-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"
               >
                 <Trash2 size={14} />
@@ -599,15 +602,75 @@ const AdminDashboard = () => {
   const [modal, setModal] = useState({aberto:false,titulo:'',descricao:'',onConfirmar:null});
   const [modalLoading, setModalLoading] = useState(false);
 
-  useEffect(()=>{carregarTudo();},[]);
-  useEffect(()=>{if(cursoSelecionadoAulas)carregarAulasDoCurso(cursoSelecionadoAulas);},[cursoSelecionadoAulas]);
-  useEffect(()=>{if(aba==='devocionais')carregarDevocionais();},[aba]);
+  // ✅ NOVO: Carregamento inicial LEVE: apenas Analytics
+  useEffect(() => {
+    carregarAnalytics();
+  }, []);
 
-  const carregarTudo = async () => await Promise.all([carregarCursos(),carregarAnalytics(),carregarNotificacoes(),carregarMatriculasRecentes(),carregarFeedbacks()]);
-  const carregarNotificacoes = async () => { const{data}=await supabase.from('notificacoes').select('*').order('created_at',{ascending:false}).limit(5); if(data)setNotificacoes(data); };
-  const carregarMatriculasRecentes = async () => { const{data}=await supabase.from('profiles').select('id,full_name,email,plano,plano_atualizado_em,created_at').in('plano',['fundador','plus']).order('plano_atualizado_em',{ascending:false}).limit(8); if(data)setMatriculasRecentes(data); };
-  const carregarFeedbacks = async () => { const{data}=await supabase.from('feedbacks').select('*').order('criado_em',{ascending:false}); if(data)setFeedbacks(data); };
-  
+  // ✅ NOVO: Carregamento por aba: cada aba puxa seus próprios dados
+  useEffect(() => {
+    switch (aba) {
+      case 'analytics':
+        carregarAnalytics();
+        carregarMatriculasRecentes(); // dados importantes para esta visão
+        break;
+      case 'cursos':
+        carregarCursos();
+        break;
+      case 'aulas':
+        // aulas são carregadas automaticamente via useEffect abaixo quando cursoSelecionadoAulas muda
+        if (cursos.length === 0) carregarCursos();
+        break;
+      case 'comunicados':
+        carregarNotificacoes();
+        break;
+      case 'feedbacks':
+        carregarFeedbacks();
+        break;
+      case 'devocionais':
+        carregarDevocionais();
+        break;
+      default:
+        break;
+    }
+  }, [aba]);
+
+  // ✅ NOVO: Carregamento específico quando curso é selecionado
+  useEffect(() => {
+    if (cursoSelecionadoAulas) carregarAulasDoCurso(cursoSelecionadoAulas);
+  }, [cursoSelecionadoAulas]);
+
+  // ════════════════════════════════════════════════════════════════════════════════
+  // FUNÇÕES DE CARREGAMENTO INDIVIDUAIS
+  // ════════════════════════════════════════════════════════════════════════════════
+
+  const carregarNotificacoes = async () => {
+    const { data } = await supabase
+      .from('notificacoes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (data) setNotificacoes(data);
+  };
+
+  const carregarMatriculasRecentes = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id,full_name,email,plano,plano_atualizado_em,created_at')
+      .in('plano', ['fundador', 'plus'])
+      .order('plano_atualizado_em', { ascending: false })
+      .limit(8);
+    if (data) setMatriculasRecentes(data);
+  };
+
+  const carregarFeedbacks = async () => {
+    const { data } = await supabase
+      .from('feedbacks')
+      .select('*')
+      .order('criado_em', { ascending: false });
+    if (data) setFeedbacks(data);
+  };
+
   // Funções para devocionais
   const carregarDevocionais = async () => {
     setLoadingDevocionais(true);
@@ -833,7 +896,7 @@ const AdminDashboard = () => {
       <div className={`${aba==='analytics'?'bg-[#16112c]/80 border-white/5 backdrop-blur-xl':'bg-white border-b border-slate-100'} p-5 shadow-sm sticky top-0 z-50`}>
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <button onClick={()=>navigate('/perfil')} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border transition-all ${aba==='analytics'?'border-white/10 text-white hover:bg-white/5':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}><ArrowLeft size={14}/>Voltar</button>
+            <button onClick={()=>navigate('/perfil')}className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border transition-all ${aba==='analytics'?'border-white/10 text-white hover:bg-white/5':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}><ArrowLeft size={14}/>Voltar</button>
             <div className="flex items-center gap-2"><div className={`p-2 rounded-xl ${aba==='analytics'?'bg-purple-500 text-white':'bg-[#5B2DFF] text-white'}`}><Database size={18}/></div><h1 className={`font-black text-lg uppercase italic hidden sm:block ${aba==='analytics'?'text-white':'text-slate-800'}`}>Gestão Verbo</h1></div>
           </div>
           <div className={`flex p-1 rounded-2xl gap-1 overflow-x-auto ${aba==='analytics'?'bg-white/5 border border-white/10':'bg-slate-100'}`}>

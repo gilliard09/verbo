@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import { Analytics } from '@vercel/analytics/react';
 
-// --- IMPORTAÇÕES ---
-import Dashboard from './pages/dashboard';
-import NovoSermao from './pages/novosermao';
-import Login from './pages/login';
-import Editor from './pages/editor';
-import Leitura from './pages/leitura';
-import Perfil from './pages/perfil';
-import Biblioteca from './pages/biblioteca';
-import LandingPage from './pages/landingpage';
-import Cursos from './pages/cursos';
-import Aulas from './pages/aulas';
-import AdminDashboard from './pages/admindashboard';
-import Upgrade from './pages/upgrade';
-import Devocionais from './pages/Devocionais';
+// --- IMPORTAÇÕES LAZY (CARREGAMENTO SOB DEMANDA) ---
+const Dashboard = lazy(() => import('./pages/dashboard'));
+const NovoSermao = lazy(() => import('./pages/novosermao'));
+const Login = lazy(() => import('./pages/login'));
+const Editor = lazy(() => import('./pages/editor'));
+const Leitura = lazy(() => import('./pages/leitura'));
+const Perfil = lazy(() => import('./pages/perfil'));
+const Biblioteca = lazy(() => import('./pages/biblioteca'));
+const LandingPage = lazy(() => import('./pages/landingpage'));
+const Cursos = lazy(() => import('./pages/cursos'));
+const Aulas = lazy(() => import('./pages/aulas'));
+const AdminDashboard = lazy(() => import('./pages/admindashboard'));
+const Upgrade = lazy(() => import('./pages/upgrade'));
+const Devocionais = lazy(() => import('./pages/Devocionais'));
 
 // --- COMPONENTES ---
 import BibliaSidebar from './components/BibliaSidebar';
@@ -45,14 +45,12 @@ const Navbar = ({ session, onOpenBiblia }) => {
         <PlayCircle size={22} /><span className="text-[10px] font-bold mt-1">Academia</span>
       </Link>
 
-      {/* Botão central — Editor */}
       <Link to="/editor" className="flex flex-col items-center -mt-10">
         <div className="bg-[#5B2DFF] p-4 rounded-full text-white shadow-lg shadow-purple-200 hover:scale-105 active:scale-95 transition-all">
           <PenTool size={24} />
         </div>
       </Link>
 
-      {/* Devocionais — substituiu Bíblia */}
       <Link to="/devocionais" className={`flex flex-col items-center ${location.pathname.startsWith('/devocionais') ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
         <Users size={22} /><span className="text-[10px] font-bold mt-1">Devocionais</span>
       </Link>
@@ -71,6 +69,16 @@ function App() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
+    // 1. Registro do Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registrado:', reg.scope))
+          .catch(err => console.error('Falha SW:', err));
+      });
+    }
+
+    // 2. Lógica de Autenticação
     const getInitialSession = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
@@ -103,29 +111,35 @@ function App() {
     <Router>
       <div className="min-h-screen bg-[#FDFDFF]">
         <main className={session ? "pb-24" : ""}>
-          <Routes>
-            <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
-            <Route path="/novosermao" element={session ? <NovoSermao /> : <Navigate to="/login" replace />} />
-            <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
-            <Route path="/landing"         element={<LandingPage />} />
-            <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
-            <Route path="/cursos/:cursoId" element={session ? <Aulas />         : <Navigate to="/login" replace />} />
-            <Route path="/admin"           element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
-            <Route path="/biblioteca"      element={session ? <Biblioteca />    : <Navigate to="/login" replace />} />
-            <Route path="/editor"          element={session ? <Editor />        : <Navigate to="/login" replace />} />
-            <Route path="/editor/:id"      element={session ? <Editor />        : <Navigate to="/login" replace />} />
-            <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
-            <Route path="/perfil"          element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
-            <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
-            <Route path="/devocionais"      element={session ? <Devocionais />    : <Navigate to="/login" replace />} />
-            <Route path="*"                element={<Navigate to="/" replace />} />
-          </Routes>
+          {/* Suspense garante uma transição suave entre o carregamento das páginas */}
+          <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-[#5B2DFF] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          }>
+            <Routes>
+              <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
+              <Route path="/novosermao" element={session ? <NovoSermao /> : <Navigate to="/login" replace />} />
+              <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
+              <Route path="/landing"         element={<LandingPage />} />
+              <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
+              <Route path="/cursos/:cursoId" element={session ? <Aulas />         : <Navigate to="/login" replace />} />
+              <Route path="/admin"           element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
+              <Route path="/biblioteca"      element={session ? <Biblioteca />    : <Navigate to="/login" replace />} />
+              <Route path="/editor"          element={session ? <Editor />        : <Navigate to="/login" replace />} />
+              <Route path="/editor/:id"      element={session ? <Editor />        : <Navigate to="/login" replace />} />
+              <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
+              <Route path="/perfil"          element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
+              <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
+              <Route path="/devocionais"      element={session ? <Devocionais />    : <Navigate to="/login" replace />} />
+              <Route path="*"                element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </main>
 
         <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
         <Analytics />
 
-        {/* BibliaSidebar mantida — acessível pelo botão no Perfil */}
         {session && (
           <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
         )}
