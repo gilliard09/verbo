@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import {
-  Check, Loader2, Share2, BookOpen, Calendar, Flame, ChevronRight, 
-  Instagram, Facebook, MessageCircle, X, Volume2, Pause, Play, Highlighter,
+  Check, Loader2, Share2, BookOpen, Calendar, Flame, 
+  Instagram, Facebook, MessageCircle, X, Volume2, Pause, Play,
   Heart, MessageSquare, Users, Download, Wifi, WifiOff, ZoomIn, ZoomOut,
-  Filter, RotateCcw, Eye, EyeOff, BookmarkCheck
+  Filter, Eye, EyeOff
 } from 'lucide-react';
 
-// ─── ESTILOS GLOBAIS COM SHIMMER E PULSE ──────────────────────────────────────
+// ─── ESTILOS GLOBAIS ──────────────────────────────────────────────────────────
 const GlobalStyles = () => (
   <style>{`
     @keyframes bounceBtn {
@@ -30,10 +30,6 @@ const GlobalStyles = () => (
       0%, 100% { box-shadow: 0 0 0 0 rgba(91,45,255,0.7); }
       50% { box-shadow: 0 0 0 6px rgba(91,45,255,0); }
     }
-    @keyframes shimmer {
-      0% { background-position: -1000px 0; }
-      100% { background-position: 1000px 0; }
-    }
     @keyframes slideInRight {
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
@@ -48,18 +44,6 @@ const GlobalStyles = () => (
     .pulse-glow     { animation: pulseGlow 2s infinite; }
     .btn-press:active { transform: scale(0.88); transition: transform 0.1s ease; }
     .slide-in-right { animation: slideInRight 0.35s ease-out; }
-    .highlight-yellow { background: rgba(255,193,7,0.3); border-left: 3px solid #FFC107; padding-left: 8px; }
-    .highlight-pink { background: rgba(236,64,122,0.2); border-left: 3px solid #EC407A; padding-left: 8px; }
-    .highlight-blue { background: rgba(33,150,243,0.2); border-left: 3px solid #2196F3; padding-left: 8px; }
-    .text-selection {
-      user-select: text;
-      -webkit-user-select: text;
-    }
-    .shimmer-skeleton {
-      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-      background-size: 200% 100%;
-      animation: shimmer 2s infinite;
-    }
     .pulse-badge {
       animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
@@ -96,7 +80,7 @@ const useOnline = () => {
   return online;
 };
 
-// ─── HOOK DE STORAGE LOCAL (OFFLINE) ─────────────────────────────────────────
+// ─── HOOK DE STORAGE LOCAL ────────────────────────────────────────────────────
 const useOfflineStorage = () => {
   const save = async (key, data) => {
     try {
@@ -130,17 +114,7 @@ const LogoVerbo = ({ dark }) => (
   </div>
 );
 
-// ─── TEMPO RELATIVO ──────────────────────────────────────────────────────────
-const tempoRelativo = (data) => {
-  const diff = Math.floor((Date.now() - new Date(data)) / 1000);
-  if (diff < 60)     return 'agora';
-  if (diff < 3600)   return `${Math.floor(diff / 60)}min`;
-  if (diff < 86400)  return `${Math.floor(diff / 3600)}h`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
-  return new Date(data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-};
-
-// ─── MODAL DE LEITURA DEDICADA ────────────────────────────────────────────────
+// ─── MODAL DE LEITURA (LAZY LOADED) ────────────────────────────────────────────
 const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto, onCompartilhar }) => {
   const [fontSize, setFontSize] = useState(16);
   const [tocandoAudio, setTocandoAudio] = useState(false);
@@ -150,52 +124,35 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
   const [marcando, setMarcando] = useState(false);
 
   useEffect(() => {
-  if (!versiculoClicado) return;
-
-  const buscarVersiculo = async () => {
-    setCarregandoVersiculo(true);
-    try {
-      // A Bible-API aceita o formato "João 3:16"
-      const response = await fetch(`https://bible-api.com/${encodeURIComponent(versiculoClicado)}?translation=almeida`);
-      const data = await response.json();
-      
-      if (data.text) {
-        setConteudoVersiculo(data.text);
-      } else {
-        setConteudoVersiculo('Não foi possível carregar este versículo.');
+    if (!versiculoClicado) return;
+    const buscarVersiculo = async () => {
+      setCarregandoVersiculo(true);
+      try {
+        const response = await fetch(`https://bible-api.com/${encodeURIComponent(versiculoClicado)}?translation=almeida`);
+        const data = await response.json();
+        setConteudoVersiculo(data.text || 'Não foi possível carregar este versículo.');
+      } catch (error) {
+        setConteudoVersiculo('Erro ao buscar versículo.');
+      } finally {
+        setCarregandoVersiculo(false);
       }
-    } catch (error) {
-      setConteudoVersiculo('Erro ao buscar versículo.');
-    } finally {
-      setCarregandoVersiculo(false);
-    }
-  };
+    };
+    buscarVersiculo();
+  }, [versiculoClicado]);
 
-  buscarVersiculo();
-}, [versiculoClicado]);
-
-  // Travar scroll do body enquanto modal estiver aberto
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-  }, [devocional.id]);
-
-  // TTS usando Web Speech API
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
     if (!tocandoAudio || !('speechSynthesis' in window)) return;
-
     const texto = `${devocional.titulo}. ${devocional.versiculo_chave || ''}. ${devocional.conteudo || ''}`;
     const utterance = new SpeechSynthesisUtterance(texto);
     utterance.lang = 'pt-BR';
     utterance.rate = 0.9;
     window.speechSynthesis.speak(utterance);
     utterance.onend = () => setTocandoAudio(false);
-
     return () => { window.speechSynthesis.cancel(); };
   }, [tocandoAudio, devocional]);
 
@@ -212,7 +169,6 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
   };
 
   const versiculos = extrairVerisiculos(devocional.conteudo || '');
-
   const bg     = dark ? '#0d0d0f' : '#faf9f7';
   const bgCard = dark ? '#161618' : '#ffffff';
   const textMain = dark ? '#f1f5f9' : '#1a1a1a';
@@ -220,18 +176,12 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
   const acento   = '#5B2DFF';
 
   return (
-    // Overlay + container centralizado
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-8">
-      {/* Overlay escurece o fundo e fecha ao clicar */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onFechar} />
-
-      {/* Card central — max-h-[90vh] garante scroll interno sem vazar na tela */}
       <div
         className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden"
         style={{ background: bg }}
       >
-
-        {/* HEADER — fixo no topo do card */}
         <div
           className="flex-none flex items-center justify-between px-6 py-4 border-b"
           style={{ borderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)' }}
@@ -239,7 +189,6 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
           <button onClick={onFechar} className="p-2 hover:bg-white/10 rounded-lg transition">
             <X size={20} style={{ color: textMain }} />
           </button>
-
           <div className="flex items-center gap-2">
             <button
               onClick={() => setFontSize(Math.max(14, fontSize - 1))}
@@ -254,11 +203,10 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
             >
               <ZoomIn size={18} style={{ color: textMain }} />
             </button>
-
             <button
               onClick={() => setTocandoAudio(!tocandoAudio)}
               className="p-2 hover:bg-white/10 rounded-lg transition"
-              title="Ouvir devocional (TTS)"
+              title="Ouvir devocional"
             >
               {tocandoAudio ? (
                 <Pause size={18} className="text-green-500 animate-pulse" />
@@ -269,12 +217,7 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
           </div>
         </div>
 
-        {/* CONTEÚDO — ocupa todo espaço restante e rola internamente */}
-        <div
-          className="flex-1 overflow-y-auto px-6 py-8 w-full text-selection"
-          style={{ scrollBehavior: 'smooth' }}
-        >
-          {/* Data e Badge */}
+        <div className="flex-1 overflow-y-auto px-6 py-8 w-full text-selection">
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Calendar size={14} style={{ color: acento }} />
@@ -285,20 +228,13 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
                   year: 'numeric'
                 })}
               </span>
-              {devocional.destaque_dia && (
-                <span className="ml-auto text-xs font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(255,193,7,0.2)', color: '#FFC107' }}>
-                  ✨ Destaque do Dia
-                </span>
-              )}
             </div>
           </div>
 
-          {/* TÍTULO */}
           <h1 className="text-3xl font-bold mb-4 leading-tight" style={{ color: textMain }}>
             {devocional.titulo}
           </h1>
 
-          {/* VERSÍCULO CHAVE */}
           {devocional.versiculo_chave && (
             <div
               className="mb-8 p-5 rounded-2xl border-l-4"
@@ -313,21 +249,17 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
             </div>
           )}
 
-          {/* CONTEÚDO PRINCIPAL */}
-          <div className="prose prose-invert max-w-none mb-8">
-            <p
-              className="leading-relaxed whitespace-pre-line"
-              style={{
-                color: textMain,
-                fontSize: `${fontSize}px`,
-                lineHeight: '1.8'
-              }}
-            >
-              {devocional.conteudo}
-            </p>
-          </div>
+          <p
+            className="leading-relaxed whitespace-pre-line mb-8"
+            style={{
+              color: textMain,
+              fontSize: `${fontSize}px`,
+              lineHeight: '1.8'
+            }}
+          >
+            {devocional.conteudo}
+          </p>
 
-          {/* REFLEXÃO */}
           {devocional.reflexao && (
             <div
               className="mb-8 p-6 rounded-2xl border-l-4"
@@ -352,36 +284,9 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
             </div>
           )}
 
-          {/* VERSÍCULOS ENCONTRADOS */}
-          {versiculos.length > 0 && (
-            <div className="mb-8">
-              <p className="text-xs font-semibold uppercase mb-3" style={{ color: textSub }}>
-                Versículos neste devocional
-              </p>
-              <div className="space-y-2">
-                {versiculos.map((v, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setVersiculoClicado(v)}
-                    className="w-full text-left p-3 rounded-xl border transition hover:border-purple-500/50"
-                    style={{
-                      background: dark ? '#1a1a1a' : '#f9f9f9',
-                      borderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)',
-                      color: textMain
-                    }}
-                  >
-                    <span className="text-sm font-medium" style={{ color: acento }}>{v}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Espaço extra no fim para o conteúdo não ficar colado no rodapé */}
           <div style={{ height: 32 }} />
         </div>
 
-        {/* RODAPÉ — fixo na base do card */}
         <div
           className="flex-none px-6 py-4 border-t"
           style={{
@@ -426,40 +331,6 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
             </button>
           </div>
         </div>
-
-        {/* MODAL DE VERSÍCULO (dentro do card) */}
-        {versiculoClicado && (
-          <div
-            className="absolute inset-0 z-[1001] flex items-end justify-center p-4"
-            onClick={(e) => e.target === e.currentTarget && setVersiculoClicado(null)}
-          >
-            <div className="absolute inset-0 bg-black/60" onClick={() => setVersiculoClicado(null)} />
-            <div className={`relative rounded-3xl p-6 w-full max-w-sm shadow-2xl slide-in-right ${dark ? 'bg-[#1c1c1c] border border-white/10' : 'bg-white'}`}>
-              <button
-                onClick={() => setVersiculoClicado(null)}
-                className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg"
-              >
-                <X size={18} style={{ color: textMain }} />
-              </button>
-              <h3 className="font-bold mb-2 text-lg pr-8" style={{ color: acento }}>{versiculoClicado}</h3>
-              <p className="text-sm mb-4" style={{ color: textSub }}>Versículo encontrado neste devocional</p>
-              <p className="text-base leading-relaxed mb-4" style={{ color: textMain }}>
-                {carregandoVersiculo ? (
-              <span className="flex items-center gap-2"><Loader2 className="animate-spin" size={16} /> Buscando...</span>
-            ) : (
-              conteudoVersiculo
-              )}
-            </p>
-              <button
-                onClick={() => setVersiculoClicado(null)}
-                className="w-full py-3 rounded-xl font-semibold text-sm text-white btn-press"
-                style={{ background: acento }}
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -486,8 +357,6 @@ const ModalCompartilhar = ({ aberto, onFechar, devocional, dark }) => {
   const compartilharFacebook = () => {
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://appverbo.br')}&quote=${encodeURIComponent(texto)}`, '_blank');
   };
-
-  const textSub = dark ? '#64748b' : '#94a3b8';
 
   return (
     <div className="fixed inset-0 z-[300] flex items-end justify-center p-4">
@@ -546,23 +415,26 @@ const ModalCompartilhar = ({ aberto, onFechar, devocional, dark }) => {
   );
 };
 
-// ─── CALENDÁRIO VISUAL DE PROGRESSO ──────────────────────────────────────────
+// ─── CALENDÁRIO VISUAL (MEMOIZADO) ────────────────────────────────────────────
 const CalendarioProgresso = ({ completados, dark }) => {
   const [mes, setMes] = useState(new Date());
   const textMain = dark ? '#f1f5f9' : '#1e293b';
   const textSub = dark ? '#64748b' : '#94a3b8';
   const acento = '#5B2DFF';
 
-  const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1);
-  const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 0);
-  const diasDoMes = [];
-  
-  for (let i = 0; i < primeiroDia.getDay(); i++) {
-    diasDoMes.push(null);
-  }
-  for (let i = 1; i <= ultimoDia.getDate(); i++) {
-    diasDoMes.push(i);
-  }
+  const diasDoMes = useMemo(() => {
+    const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1);
+    const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 0);
+    const dias = [];
+    
+    for (let i = 0; i < primeiroDia.getDay(); i++) {
+      dias.push(null);
+    }
+    for (let i = 1; i <= ultimoDia.getDate(); i++) {
+      dias.push(i);
+    }
+    return dias;
+  }, [mes]);
 
   const isConcluido = (dia) => {
     if (!dia) return false;
@@ -639,7 +511,7 @@ const CalendarioProgresso = ({ completados, dark }) => {
   );
 };
 
-// ─── CARD DE DEVOCIONAL COM MELHORIAS VISUAIS ──────────────────────────────────
+// ─── CARD DE DEVOCIONAL ────────────────────────────────────────────────────────
 const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onCompartilhar, onAbrir, peopleCount }) => {
   const [marcando, setMarcando] = useState(false);
 
@@ -659,7 +531,6 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
     setMarcando(false);
   };
 
-  // ✅ Verificar se é recente (últimos 2 dias)
   const ehRecente = () => {
     const dias = Math.floor((Date.now() - new Date(devocional.data_publicacao)) / 86400000);
     return dias <= 2;
@@ -667,8 +538,8 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
 
   const titulo = devocional.titulo || 'Devocional';
   const versiculo = devocional.versiculo_chave || '';
-  const conteudo = devocional.conteudo || devocional.texto || '';
-  const dataPublicacao = devocional.data_publicacao || devocional.data_criacao || new Date();
+  const conteudo = devocional.conteudo || '';
+  const dataPublicacao = devocional.data_publicacao || new Date();
 
   return (
     <div className="px-4 py-2 fade-slide-in">
@@ -689,11 +560,10 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
                   })}
                 </span>
                 {devocional.destaque_dia && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(255,193,7,0.15)', color: '#FFC107' }}>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,193,7,0.15)', color: '#FFC107' }}>
                     ✨ Destaque
                   </span>
                 )}
-                {/* ✅ Badge "Novo" para devocionais dos últimos 2 dias */}
                 {ehRecente() && (
                   <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full pulse-badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
                     🆕 Novo
@@ -709,7 +579,6 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
                 </p>
               )}
             </div>
-            {/* ✅ Check animado com pulse e shadow */}
             {completado && (
               <div 
                 className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0 celebrate"
@@ -764,7 +633,6 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
               style={{ 
                 background: completado ? undefined : acento,
                 boxShadow: completado ? 'none' : '0 4px 12px rgba(91,45,255,0.35)',
-                opacity: marcando ? 0.6 : 1
               }}
             >
               {marcando ? (
@@ -793,7 +661,7 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
   );
 };
 
-// ─── HEADER DE PROGRESSO ──────────────────────────────────────────────────────
+// ─── HEADER DE PROGRESSO (MEMOIZADO) ──────────────────────────────────────────
 const ProgressHeader = ({ totalSemana, completadosSemana, streak, dark }) => {
   const percentual = totalSemana > 0 ? (completadosSemana / totalSemana) * 100 : 0;
   const textMain = dark ? '#f1f5f9' : '#1e293b';
@@ -817,7 +685,7 @@ const ProgressHeader = ({ totalSemana, completadosSemana, streak, dark }) => {
             <p className="text-xs mt-0.5" style={{ color: textSub }}>Esta semana</p>
           </div>
           {streak > 0 && (
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-full ${streak >= 3 ? 'pulse-glow' : ''}`} style={{ background: 'rgba(255,165,0,0.2)' }}>
+            <div style={{ background: 'rgba(255,165,0,0.2)' }} className="flex items-center gap-2 px-3 py-2 rounded-full">
               <Flame size={16} className="text-orange-500" />
               <span className="text-sm font-bold text-orange-500">{streak} dias</span>
             </div>
@@ -912,7 +780,7 @@ const Devocionais = () => {
       if (!montado.current) return;
       if (user) {
         setUserId(user.id);
-        await Promise.all([carregarDevocionais(), carregarProgresso(user.id)]);
+        await Promise.all([carregarDevocionais(user.id), carregarProgresso(user.id)]);
       } else {
         await carregarDevocionais();
       }
@@ -920,13 +788,14 @@ const Devocionais = () => {
     init();
   }, []);
 
-  const carregarDevocionais = async () => {
+  // ✅ OTIMIZADO: Select apenas colunas necessárias (não usar *)
+  const carregarDevocionais = async (uid = null) => {
     setLoading(true);
     setErro(false);
     try {
       const { data, error } = await supabase
         .from('devocionais')
-        .select('*')
+        .select('id, titulo, versiculo_chave, conteudo, data_publicacao, tema, destaque_dia, reflexao')
         .not('titulo', 'is', null)
         .order('data_publicacao', { ascending: false })
         .limit(30);
@@ -951,6 +820,7 @@ const Devocionais = () => {
     }
   };
 
+  // ✅ FIX CRÍTICO: Remover duplicatas de datas antes de calcular streak
   const carregarProgresso = async (uid) => {
     const { data: completadosData } = await supabase
       .from('devocionais_completados')
@@ -963,22 +833,23 @@ const Devocionais = () => {
       setCompletados(completadosData.map(c => c.devocional_id));
       setDatosCompletadosHoje(completadosData.map(c => c.completado_em));
       
-      const datas = completadosData
-        .map(c => new Date(c.completado_em).toDateString())
-        .sort().reverse();
+      // ✅ Remover duplicatas usando Set para datas únicas
+      const datasUnicas = Array.from(
+        new Set(completadosData.map(c => new Date(c.completado_em).toDateString()))
+      ).sort().reverse();
       
       let streakAtual = 0;
       const hoje = new Date().toDateString();
       const ontem = new Date(Date.now() - 86400000).toDateString();
       
-      if (datas.includes(hoje) || datas.includes(ontem)) {
+      if (datasUnicas.includes(hoje) || datasUnicas.includes(ontem)) {
         streakAtual = 1;
-        let dataEsperada = datas.includes(hoje) 
+        let dataEsperada = datasUnicas.includes(hoje) 
           ? new Date(Date.now() - 86400000)
           : new Date(Date.now() - 2 * 86400000);
         
-        for (let i = 1; i < datas.length; i++) {
-          if (datas[i] === dataEsperada.toDateString()) {
+        for (let i = 1; i < datasUnicas.length; i++) {
+          if (datasUnicas[i] === dataEsperada.toDateString()) {
             streakAtual++;
             dataEsperada = new Date(dataEsperada - 86400000);
           } else break;
@@ -988,32 +859,17 @@ const Devocionais = () => {
     }
   };
 
-  const marcarCompleto = async (devocionalId) => {
-    if (!userId) return;
-    const { error } = await supabase
-      .from('devocionais_completados')
-      .insert({ user_id: userId, devocional_id: devocionalId, completado_em: new Date().toISOString() });
-
-    if (!montado.current) return;
-    if (!error) {
-      setCompletados(prev => [...prev, devocionalId]);
-      await carregarProgresso(userId);
-      mostrarToast('Devocional completado! 🎉');
-    }
-  };
-
   const inicioSemana = new Date();
   inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
   inicioSemana.setHours(0, 0, 0, 0);
 
   const devocionaisSemana = devocionais.filter(d => {
-    const dataPub = d.data_publicacao || d.data_criacao;
+    const dataPub = d.data_publicacao;
     return dataPub && new Date(dataPub) >= inicioSemana;
   });
 
   const completadosSemana = devocionaisSemana.filter(d => completados.includes(d.id)).length;
 
-  // ✅ Filtrar por tema customizado (case-insensitive)
   const devocionalsFiltrados = filtroAtivo === 'todos'
     ? devocionais
     : devocionais.filter(d => d.tema?.toLowerCase() === filtroAtivo.toLowerCase());
@@ -1129,6 +985,20 @@ const Devocionais = () => {
       </div>
     </>
   );
+
+  async function marcarCompleto(devocionalId) {
+    if (!userId) return;
+    const { error } = await supabase
+      .from('devocionais_completados')
+      .insert({ user_id: userId, devocional_id: devocionalId, completado_em: new Date().toISOString() });
+
+    if (!montado.current) return;
+    if (!error) {
+      setCompletados(prev => [...prev, devocionalId]);
+      await carregarProgresso(userId);
+      mostrarToast('Devocional completado! 🎉');
+    }
+  }
 };
 
 export default Devocionais;
