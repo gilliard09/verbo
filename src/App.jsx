@@ -32,8 +32,9 @@ const Navbar = ({ session, onOpenBiblia }) => {
   const isAdminPage  = location.pathname.startsWith('/admin');
   const isEditor     = location.pathname.startsWith('/editor');
   const isUpgrade    = location.pathname.startsWith('/upgrade');
+  const isCursos     = location.pathname.startsWith('/cursos');
 
-  if (!session || isPublicPage || isReading || isAdminPage || isEditor || isUpgrade) return null;
+  if (!session || isPublicPage || isReading || isAdminPage || isEditor || isUpgrade || isCursos) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-[100] pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
@@ -59,6 +60,59 @@ const Navbar = ({ session, onOpenBiblia }) => {
         <User size={22} /><span className="text-[10px] font-bold mt-1">Perfil</span>
       </Link>
     </nav>
+  );
+};
+
+// ─── AppShell — precisa estar dentro do <Router> para usar useLocation ────────
+const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
+  const location = useLocation();
+
+  // Rotas onde a navbar inferior fica escondida (não reservamos o respiro pb-24 nelas)
+  const isPublicPage = location.pathname === '/login' || location.pathname === '/landing';
+  const isReading    = location.pathname.startsWith('/leitura');
+  const isAdminPage  = location.pathname.startsWith('/admin');
+  const isEditor     = location.pathname.startsWith('/editor');
+  const isUpgrade    = location.pathname.startsWith('/upgrade');
+  const isCursos     = location.pathname.startsWith('/cursos');
+
+  const navbarEscondida = !session || isPublicPage || isReading || isAdminPage || isEditor || isUpgrade || isCursos;
+
+  return (
+    <div className="min-h-screen bg-[#FDFDFF]">
+      <main className={session && !navbarEscondida ? "pb-24" : ""}>
+        {/* Suspense garante uma transição suave entre o carregamento das páginas */}
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-[#5B2DFF] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        }>
+          <Routes>
+            <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
+            <Route path="/novosermao" element={session ? <NovoSermao /> : <Navigate to="/login" replace />} />
+            <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
+            <Route path="/landing"         element={<LandingPage />} />
+            <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
+            <Route path="/cursos/:cursoId" element={session ? <Aulas />         : <Navigate to="/login" replace />} />
+            <Route path="/admin"           element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
+            <Route path="/biblioteca"      element={session ? <Biblioteca />    : <Navigate to="/login" replace />} />
+            <Route path="/editor"          element={session ? <Editor />        : <Navigate to="/login" replace />} />
+            <Route path="/editor/:id"      element={session ? <Editor />        : <Navigate to="/login" replace />} />
+            <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
+            <Route path="/perfil"          element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
+            <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
+            <Route path="/devocionais"      element={session ? <Devocionais />    : <Navigate to="/login" replace />} />
+            <Route path="*"                element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </main>
+
+      <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
+      <Analytics />
+
+      {session && (
+        <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
+      )}
+    </div>
   );
 };
 
@@ -109,41 +163,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-[#FDFDFF]">
-        <main className={session ? "pb-24" : ""}>
-          {/* Suspense garante uma transição suave entre o carregamento das páginas */}
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-[#5B2DFF] border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          }>
-            <Routes>
-              <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
-              <Route path="/novosermao" element={session ? <NovoSermao /> : <Navigate to="/login" replace />} />
-              <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
-              <Route path="/landing"         element={<LandingPage />} />
-              <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
-              <Route path="/cursos/:cursoId" element={session ? <Aulas />         : <Navigate to="/login" replace />} />
-              <Route path="/admin"           element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
-              <Route path="/biblioteca"      element={session ? <Biblioteca />    : <Navigate to="/login" replace />} />
-              <Route path="/editor"          element={session ? <Editor />        : <Navigate to="/login" replace />} />
-              <Route path="/editor/:id"      element={session ? <Editor />        : <Navigate to="/login" replace />} />
-              <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
-              <Route path="/perfil"          element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
-              <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
-              <Route path="/devocionais"      element={session ? <Devocionais />    : <Navigate to="/login" replace />} />
-              <Route path="*"                element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </main>
-
-        <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
-        <Analytics />
-
-        {session && (
-          <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
-        )}
-      </div>
+      <AppShell session={session} bibliaAberta={bibliaAberta} setBibliaAberta={setBibliaAberta} />
     </Router>
   );
 }

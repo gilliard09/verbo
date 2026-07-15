@@ -18,7 +18,7 @@ const Celebracao = ({ ativo, onFim }) => {
 
   useEffect(() => {
     if (!ativo) return;
-    const cores = ['#5B2DFF', '#FF6B35', '#FFD700', '#00C896', '#FF3CAC', '#fff'];
+    const cores = ['#8B5CF6', '#FF6B35', '#FFD700', '#00C896', '#FF3CAC', '#fff'];
     const novasPecas = Array.from({ length: 60 }, (_, i) => ({
       id: i,
       left: `${Math.random() * 100}%`,
@@ -59,11 +59,11 @@ const Celebracao = ({ ativo, onFim }) => {
 // ─── Toast de conclusão ────────────────────────────────────────────────────────
 const ToastConclusao = ({ visivel, titulo }) => (
   <div className={`fixed bottom-8 left-1/2 z-[150] transition-all duration-500 ${visivel ? '-translate-x-1/2 translate-y-0 opacity-100 scale-100' : '-translate-x-1/2 translate-y-8 opacity-0 scale-95 pointer-events-none'}`}>
-    <div className="flex items-center gap-4 bg-slate-900 text-white px-6 py-4 rounded-[24px] shadow-2xl border border-white/10">
-      <div className="w-10 h-10 bg-green-500 rounded-2xl flex items-center justify-center shrink-0"><CheckCircle size={20} /></div>
+    <div className="flex items-center gap-4 bg-[#17141F] text-white px-6 py-4 rounded-[24px] shadow-2xl border border-white/10">
+      <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center shrink-0"><CheckCircle size={20} /></div>
       <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Aula concluída!</p>
-        <p className="text-xs font-bold text-slate-300 truncate max-w-[220px]">{titulo}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Aula concluída!</p>
+        <p className="text-xs font-bold text-white/70 truncate max-w-[220px]">{titulo}</p>
       </div>
     </div>
   </div>
@@ -76,7 +76,6 @@ const LeitorPDF = ({ url, titulo }) => {
   const [falhou, setFalhou] = useState(false);
   const iframeRef = useRef(null);
   const timerRef = useRef(null);
-  // Ref para controlar se o load já foi disparado — evita closure stale
   const carregouRef = useRef(false);
 
   const srcViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true&t=${tentativa}`;
@@ -87,7 +86,6 @@ const LeitorPDF = ({ url, titulo }) => {
     setFalhou(false);
 
     timerRef.current = setTimeout(() => {
-      // Só retenta/falha se o iframe ainda não confirmou carregamento
       if (!carregouRef.current) {
         if (tentativa < 3) {
           setTentativa(t => t + 1);
@@ -116,33 +114,31 @@ const LeitorPDF = ({ url, titulo }) => {
 
   return (
     <div className="relative w-full h-full">
-      {/* Loading overlay */}
       {carregando && !falhou && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 rounded-2xl gap-3">
-          <Loader2 className="animate-spin text-[#5B2DFF]" size={28} />
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0F0D16] rounded-2xl gap-3">
+          <Loader2 className="animate-spin text-[#8B5CF6]" size={28} />
+          <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
             {tentativa === 0 ? 'Carregando apostila...' : `Tentando novamente... (${tentativa}/3)`}
           </p>
         </div>
       )}
 
-      {/* Falhou após 3 tentativas */}
       {falhou ? (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 rounded-2xl gap-4 p-6 text-center">
-          <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0F0D16] rounded-2xl gap-4 p-6 text-center">
+          <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center">
             <FileText size={22} className="text-orange-400" />
           </div>
           <div>
-            <p className="font-black text-slate-700 text-sm mb-1">Visualizador indisponível</p>
-            <p className="text-slate-400 text-xs">O Google Docs está lento. Use uma das opções abaixo.</p>
+            <p className="font-black text-white text-sm mb-1">Visualizador indisponível</p>
+            <p className="text-white/40 text-xs">O Google Docs está lento. Use uma das opções abaixo.</p>
           </div>
           <div className="flex gap-3">
             <button onClick={retentar}
-              className="flex items-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase active:scale-95 transition-all">
+              className="flex items-center gap-2 px-4 py-3 bg-white/10 text-white rounded-2xl font-black text-[10px] uppercase active:scale-95 transition-all">
               <RefreshCw size={13} /> Tentar novamente
             </button>
             <a href={url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-3 bg-[#5B2DFF] text-white rounded-2xl font-black text-[10px] uppercase active:scale-95 transition-all">
+              className="flex items-center gap-2 px-4 py-3 bg-[#6D28D9] text-white rounded-2xl font-black text-[10px] uppercase active:scale-95 transition-all">
               <ExternalLink size={13} /> Abrir PDF
             </a>
           </div>
@@ -180,9 +176,7 @@ const Aulas = () => {
   const [toastVisivel, setToastVisivel] = useState(false);
   const [toastTitulo, setToastTitulo] = useState('');
 
-  // Dados do certificado prontos para uso síncrono
   const dadosCertificadoRef = useRef(null);
-
   const aulaAtivaRef = useRef(null);
   const sidebarRef = useRef(null);
 
@@ -211,7 +205,6 @@ const Aulas = () => {
       const { data: cursoBD } = await supabase.from('cursos').select('*').eq('id', cursoId).single();
       setDadosCurso(cursoBD);
 
-      // Pré-carrega dados do certificado para uso síncrono no clique
       const nomeAluno = user.user_metadata?.full_name || user.email.split('@')[0];
       const nomeCurso = cursoBD?.titulo || 'Curso Ministerial';
       const dataFormatada = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -244,20 +237,17 @@ const Aulas = () => {
     }
   };
 
-  // ─── Certificado — chamada síncrona para não bloquear window.open ─────────────
   const handleGerarCertificado = () => {
     if (!dadosCertificadoRef.current) return;
     gerarCertificado(dadosCertificadoRef.current);
   };
 
-  // ─── Download com branding Verbo ──────────────────────────────────────────────
   const baixarPDFComBranding = async () => {
     if (!aulaAtiva?.material_url) return;
     setBaixandoPDF(true);
     try {
-      // Carregamento dinâmico das bibliotecas
       const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
-      
+
       const response = await fetch(aulaAtiva.material_url);
       const pdfBytes = await response.arrayBuffer();
 
@@ -265,7 +255,6 @@ const Aulas = () => {
       const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const helvetica     = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-      // ... (mantenha a lógica de branding inalterada, ela funcionará normalmente) ...
       const roxo       = rgb(0.357, 0.176, 1.0);
       const roxoClaro  = rgb(0.545, 0.369, 1.0);
       const branco     = rgb(1, 1, 1);
@@ -375,57 +364,57 @@ const Aulas = () => {
   const porcentagem = aulas.length > 0 ? Math.round((concluidas.size / aulas.length) * 100) : 0;
 
   if (loading || loadingPlano) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white">
-      <Loader2 className="animate-spin text-[#5B2DFF] mb-4" size={40} />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A0F] text-white">
+      <Loader2 className="animate-spin text-[#8B5CF6] mb-4" size={40} />
       <p className="text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Preparando aulas...</p>
     </div>
   );
 
   const acessoPorPlano = temAcessoCurso(dadosCurso);
   if (!acessoPorPlano && !temAcessoMatricula) return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
-      <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[32px] flex items-center justify-center mb-8 shadow-inner">
+    <div className="min-h-screen bg-[#0A0A0F] flex flex-col items-center justify-center p-8 text-center">
+      <div className="w-24 h-24 bg-red-500/10 text-red-400 rounded-[32px] flex items-center justify-center mb-8">
         <Lock size={48} />
       </div>
-      <h2 className="text-3xl font-black text-slate-900 mb-4 italic uppercase tracking-tighter">Área Restrita</h2>
+      <h2 className="text-3xl font-black text-white mb-4 italic uppercase tracking-tighter">Área Restrita</h2>
       {isAssinante && dadosCurso?.plano_minimo === 'plus' && (
-        <p className="text-slate-400 text-sm mb-6 max-w-xs">
-          Este curso requer o plano <span className="font-black text-[#5B2DFF]">Plus</span>. Faça upgrade para acessar.
+        <p className="text-white/40 text-sm mb-6 max-w-xs">
+          Este curso requer o plano <span className="font-black text-[#A78BFA]">Plus</span>. Faça upgrade para acessar.
         </p>
       )}
       <a href={dadosCurso?.checkout_url || '#'} target="_blank" rel="noopener noreferrer"
-        className="bg-[#5B2DFF] text-white px-12 py-5 rounded-3xl font-black text-xs uppercase shadow-2xl flex items-center gap-3">
+        className="bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6] text-white px-12 py-5 rounded-3xl font-black text-xs uppercase shadow-2xl shadow-purple-900/40 flex items-center gap-3">
         <ShoppingCart size={16} /> GARANTIR MEU ACESSO
       </a>
     </div>
   );
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${modoCinema ? 'bg-black' : 'bg-[#F8FAFC]'}`}>
+    <div className="min-h-screen bg-black transition-all duration-500">
 
       <Celebracao ativo={celebrando} onFim={() => setCelebrando(false)} />
       <ToastConclusao visivel={toastVisivel} titulo={toastTitulo} />
 
       {/* ── Header ── */}
-      <header className={`sticky top-0 z-[100] border-b backdrop-blur-md transition-all ${modoCinema ? 'bg-black/80 border-white/5' : 'bg-white/80 border-slate-200/60'}`}>
+      <header className="sticky top-0 z-[100] border-b backdrop-blur-md bg-black/80 border-white/5 transition-all">
         <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/cursos" className={`p-2 rounded-xl transition-all ${modoCinema ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100 text-slate-600'}`}>
+            <Link to="/cursos" className="p-2 rounded-xl transition-all hover:bg-white/10 text-white">
               <ChevronLeft size={20} />
             </Link>
             <div className="flex flex-col">
-              <span className={`text-[9px] font-black uppercase tracking-widest ${modoCinema ? 'text-slate-500' : 'text-slate-400'}`}>Aula Ativa</span>
-              <h1 className={`text-xs font-black uppercase truncate max-w-[200px] ${modoCinema ? 'text-white' : 'text-slate-800'}`}>{aulaAtiva?.titulo}</h1>
+              <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Aula Ativa</span>
+              <h1 className="text-xs font-black uppercase truncate max-w-[200px] text-white">{aulaAtiva?.titulo}</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`hidden md:flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest opacity-30 ${modoCinema ? 'text-white' : 'text-slate-500'}`}>
-              <kbd className="px-1.5 py-0.5 bg-black/10 rounded text-[9px]">←</kbd>
-              <kbd className="px-1.5 py-0.5 bg-black/10 rounded text-[9px]">→</kbd>
+            <span className="hidden md:flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest opacity-30 text-white">
+              <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[9px]">←</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[9px]">→</kbd>
               navegar
             </span>
             <button onClick={() => setModoCinema(!modoCinema)}
-              className={`p-2.5 rounded-xl transition-all ${modoCinema ? 'bg-yellow-400 text-black' : 'bg-slate-900 text-white'}`}>
+              className={`p-2.5 rounded-xl transition-all ${modoCinema ? 'bg-yellow-400 text-black' : 'bg-white/10 text-white'}`}>
               {modoCinema ? <Lightbulb size={18} /> : <LightbulbOff size={18} />}
             </button>
           </div>
@@ -448,47 +437,47 @@ const Aulas = () => {
           <div className={`px-4 md:px-0 transition-opacity duration-500 ${modoCinema ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
             <div className="flex items-center justify-between gap-4 mb-6">
               <button onClick={irParaAnterior} disabled={indexAtual === 0}
-                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[11px] uppercase transition-all border ${indexAtual === 0 ? 'opacity-30 cursor-not-allowed border-slate-200 text-slate-400 bg-white' : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:shadow-md active:scale-95'}`}>
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[11px] uppercase transition-all border ${indexAtual === 0 ? 'opacity-30 cursor-not-allowed border-white/10 text-white/30 bg-white/5' : 'border-white/10 text-white bg-white/5 hover:bg-white/10 active:scale-95'}`}>
                 <ChevronLeft size={16} />
                 {indexAtual > 0 ? <span className="hidden sm:inline truncate max-w-[140px]">{aulas[indexAtual - 1]?.titulo}</span> : <span>Anterior</span>}
               </button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">{indexAtual + 1} / {aulas.length}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40 shrink-0">{indexAtual + 1} / {aulas.length}</span>
               <button onClick={irParaProxima} disabled={indexAtual === aulas.length - 1}
-                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[11px] uppercase transition-all border ${indexAtual === aulas.length - 1 ? 'opacity-30 cursor-not-allowed border-slate-200 text-slate-400 bg-white' : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:shadow-md active:scale-95'}`}>
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[11px] uppercase transition-all border ${indexAtual === aulas.length - 1 ? 'opacity-30 cursor-not-allowed border-white/10 text-white/30 bg-white/5' : 'border-white/10 text-white bg-white/5 hover:bg-white/10 active:scale-95'}`}>
                 {indexAtual < aulas.length - 1 ? <span className="hidden sm:inline truncate max-w-[140px]">{aulas[indexAtual + 1]?.titulo}</span> : <span>Próxima</span>}
                 <ChevronRight size={16} />
               </button>
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 uppercase tracking-tighter">{aulaAtiva?.titulo}</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-white uppercase tracking-tighter">{aulaAtiva?.titulo}</h2>
               <button onClick={() => alternarConclusao(aulaAtiva.id)}
-                className={`flex items-center justify-center gap-3 px-8 py-4 rounded-[24px] font-black text-xs transition-all shadow-xl active:scale-95 ${concluidas.has(aulaAtiva?.id) ? 'bg-green-500 text-white' : 'bg-[#5B2DFF] text-white hover:bg-[#4a22e0]'}`}>
+                className={`flex items-center justify-center gap-3 px-8 py-4 rounded-[24px] font-black text-xs transition-all shadow-xl active:scale-95 ${concluidas.has(aulaAtiva?.id) ? 'bg-emerald-500 text-white' : 'bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6] text-white hover:opacity-90'}`}>
                 {btnLoading ? <Loader2 className="animate-spin" size={18} /> : concluidas.has(aulaAtiva?.id) ? <><CheckCircle size={18} /> CONCLUÍDA</> : <><Play size={18} fill="currentColor" /> MARCAR COMO VISTA</>}
               </button>
             </div>
 
             {/* ── Material de Apoio ─────────────────────────────────────────────── */}
             {aulaAtiva?.material_url && (
-              <div className="bg-white rounded-[40px] border border-slate-200/60 shadow-sm overflow-hidden transition-all duration-500">
+              <div className="bg-[#131019] rounded-[40px] border border-white/10 shadow-sm overflow-hidden transition-all duration-500">
                 <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex items-center gap-4">
-                    <div className="p-4 bg-purple-50 text-[#5B2DFF] rounded-3xl"><FileText size={28} /></div>
+                    <div className="p-4 bg-purple-500/10 text-[#A78BFA] rounded-3xl"><FileText size={28} /></div>
                     <div>
-                      <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Material de Apoio</h4>
-                      <p className="text-slate-400 text-xs font-medium">Apostila em PDF disponível para esta aula.</p>
+                      <h4 className="font-black text-white uppercase text-xs tracking-widest">Material de Apoio</h4>
+                      <p className="text-white/40 text-xs font-medium">Apostila em PDF disponível para esta aula.</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 w-full md:w-auto">
                     <button
                       onClick={() => setVisualizarPDF(!visualizarPDF)}
-                      className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase transition-all ${visualizarPDF ? 'bg-slate-100 text-slate-600' : 'bg-slate-900 text-white'}`}>
+                      className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase transition-all ${visualizarPDF ? 'bg-white/10 text-white' : 'bg-white text-black'}`}>
                       <Eye size={16} /> {visualizarPDF ? 'Fechar Leitor' : 'Ver Apostila'}
                     </button>
                     <button
                       onClick={baixarPDFComBranding}
                       disabled={baixandoPDF}
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-[#5B2DFF] text-white rounded-2xl font-black text-[10px] uppercase transition-all hover:bg-[#4a22e0] shadow-lg shadow-purple-100 disabled:opacity-60 active:scale-95">
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6] text-white rounded-2xl font-black text-[10px] uppercase transition-all hover:opacity-90 shadow-lg shadow-purple-900/30 disabled:opacity-60 active:scale-95">
                       {baixandoPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                       {baixandoPDF ? 'Gerando...' : 'Baixar PDF'}
                     </button>
@@ -496,9 +485,8 @@ const Aulas = () => {
                 </div>
 
                 {visualizarPDF && (
-                  <div className="border-t border-slate-100">
-                    {/* Header visual Verbo */}
-                    <div className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-[#5B2DFF] to-[#8B5CF6]">
+                  <div className="border-t border-white/10">
+                    <div className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6]">
                       <div className="w-7 h-7 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
                         <FileText size={14} className="text-white" />
                       </div>
@@ -506,16 +494,16 @@ const Aulas = () => {
                         <p className="text-[9px] font-black uppercase tracking-widest text-purple-200">Material de Apoio</p>
                         <p className="text-xs font-black text-white truncate">{aulaAtiva?.titulo}</p>
                       </div>
-                      <span className="text-[9px] font-black text-purple-300 uppercase tracking-widest shrink-0">Verbo</span>
+                      <span className="text-[9px] font-black text-purple-200 uppercase tracking-widest shrink-0">Verbo</span>
                     </div>
 
-                    <div className="p-4 bg-slate-50">
-                      <div className="aspect-[1/1.4] md:aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-white">
+                    <div className="p-4 bg-[#0F0D16]">
+                      <div className="aspect-[1/1.4] md:aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-inner bg-[#0F0D16]">
                         <LeitorPDF url={aulaAtiva.material_url} titulo={aulaAtiva?.titulo} />
                       </div>
                       <div className="mt-4 flex justify-center">
                         <a href={aulaAtiva.material_url} target="_blank"
-                          className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase hover:text-[#5B2DFF] transition-colors">
+                          className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase hover:text-[#A78BFA] transition-colors">
                           <ExternalLink size={12} /> Abrir em tela cheia
                         </a>
                       </div>
@@ -529,23 +517,23 @@ const Aulas = () => {
 
         {/* ── Sidebar ── */}
         <aside className={`w-full lg:w-[400px] space-y-6 transition-all duration-500 ${modoCinema ? 'opacity-0 translate-x-10 pointer-events-none' : 'opacity-100'}`}>
-          <div className="bg-white rounded-[40px] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col h-[700px]">
-            <div className="p-6 border-b border-slate-100 bg-slate-50/50 space-y-4">
+          <div className="bg-[#131019] rounded-[40px] border border-white/10 shadow-sm overflow-hidden flex flex-col h-[700px]">
+            <div className="p-6 border-b border-white/10 bg-white/[0.02] space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Conteúdo do Curso</h4>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{concluidas.size}/{aulas.length} aulas</span>
+                <h4 className="font-black text-white uppercase text-xs tracking-widest">Conteúdo do Curso</h4>
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">{concluidas.size}/{aulas.length} aulas</span>
               </div>
               <div className="space-y-2">
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-700 ease-out"
-                    style={{ width: `${porcentagem}%`, background: porcentagem === 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #5B2DFF, #8B5CF6)' }} />
+                    style={{ width: `${porcentagem}%`, background: porcentagem === 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #6D28D9, #8B5CF6)' }} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400">
+                  <span className="text-[10px] font-bold text-white/40">
                     {porcentagem === 0 ? 'Começar curso' : porcentagem === 100 ? '🎉 Curso concluído!' : `${porcentagem}% concluído`}
                   </span>
                   {porcentagem > 0 && porcentagem < 100 && (
-                    <span className="text-[10px] font-bold text-slate-300">{aulas.length - concluidas.size} restante{aulas.length - concluidas.size !== 1 ? 's' : ''}</span>
+                    <span className="text-[10px] font-bold text-white/25">{aulas.length - concluidas.size} restante{aulas.length - concluidas.size !== 1 ? 's' : ''}</span>
                   )}
                 </div>
               </div>
@@ -556,12 +544,12 @@ const Aulas = () => {
                 {aulas.map((aula, idx) => (
                   <button key={aula.id} ref={aulaAtiva?.id === aula.id ? aulaAtivaRef : null}
                     onClick={() => { setAulaAtiva(aula); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all ${aulaAtiva?.id === aula.id ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-all ${aulaAtiva?.id === aula.id ? 'bg-[#5B2DFF]' : concluidas.has(aula.id) ? 'bg-green-50 text-green-500' : 'bg-slate-100 text-slate-400'}`}>
+                    className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all ${aulaAtiva?.id === aula.id ? 'bg-white/10 text-white shadow-lg' : 'hover:bg-white/5 text-white/70'}`}>
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-all ${aulaAtiva?.id === aula.id ? 'bg-[#8B5CF6]' : concluidas.has(aula.id) ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/30'}`}>
                       {concluidas.has(aula.id) ? <CheckCircle size={18} /> : <span className="text-[11px] font-black">{idx + 1}</span>}
                     </div>
                     <span className="text-[13px] font-bold truncate text-left flex-1">{aula.titulo}</span>
-                    {aulaAtiva?.id === aula.id && <div className="w-2 h-2 rounded-full bg-[#5B2DFF] animate-pulse shrink-0" />}
+                    {aulaAtiva?.id === aula.id && <div className="w-2 h-2 rounded-full bg-[#8B5CF6] animate-pulse shrink-0" />}
                   </button>
                 ))}
               </div>

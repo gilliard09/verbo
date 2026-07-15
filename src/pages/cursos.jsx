@@ -4,12 +4,12 @@ import { supabase } from '../supabaseClient';
 import { Link } from 'react-router-dom';
 import {
   PlayCircle, Lock, ChevronRight, Loader2,
-  ShoppingCart, CheckCircle, Award, BookOpen,
-  ChevronDown, AlertTriangle, RefreshCw, Sparkles, Youtube, X
+  ShoppingCart, CheckCircle, BookOpen,
+  AlertTriangle, RefreshCw, Sparkles, X, ArrowLeft
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const Cursos = () => {
+const CursosNew = () => {
   const { isAssinante, isPlus, isFundador, temAcessoCurso, loading: loadingPlano } = usePlano();
   const navigate = useNavigate();
   const [cursos, setCursos] = useState([]);
@@ -19,6 +19,28 @@ const Cursos = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(false);
   const [descricaoExpandida, setDescricaoExpandida] = useState(new Set());
+  const [statsProgresso, setStatsProgresso] = useState({
+    cursosIniciados: 0,
+    certificados: 0,
+    diasConsecutivos: 7,
+    horasEstudadas: 12
+  });
+
+  // ─── Conquistas simuladas (pode ser expandido para banco de dados) ───
+  const conquistas = [
+    { id: 1, nome: 'Primeiro Passo', descricao: 'Iniciou seu primeiro curso', icon: '🎯', desbloqueada: true },
+    { id: 2, nome: 'Sequência Sagrada', descricao: '7 dias consecutivos', icon: '🔥', desbloqueada: true },
+    { id: 3, nome: 'Mestre em Formação', descricao: '50 aulas assistidas', icon: '📚', desbloqueada: false },
+    { id: 4, nome: 'Certificado Premium', descricao: 'Primeiro certificado obtido', icon: '🏅', desbloqueada: false }
+  ];
+
+  // ─── Novidades da Academia ───
+  const novidades = [
+    { id: 1, tipo: '📖', titulo: 'Novo Devocional', descricao: 'Reflexão diária sobre Fé', data: 'Hoje' },
+    { id: 2, tipo: '🎥', titulo: 'Novo Vídeo', descricao: 'Pregação sobre Oração', data: 'Ontem' },
+    { id: 3, tipo: '🎓', titulo: 'Novo Curso', descricao: 'Teologia Prática', data: '2 dias atrás' },
+    { id: 4, tipo: '🔥', titulo: 'Série Especial', descricao: 'Livro de Romanos', data: '3 dias atrás' }
+  ];
 
   const carregarDados = async () => {
     setLoading(true);
@@ -78,6 +100,18 @@ const Cursos = () => {
       });
 
       setCursos(cursosFormatados);
+
+      // Calcular stats
+      const cursosAcessiveis = cursosFormatados.filter(c => temAcessoCurso(c) || c.temMatricula);
+      const cursosIniciados = cursosAcessiveis.filter(c => c.aulasFeitas > 0).length;
+      const certificados = cursosAcessiveis.filter(c => c.concluido).length;
+
+      setStatsProgresso({
+        cursosIniciados,
+        certificados,
+        diasConsecutivos: 7,
+        horasEstudadas: cursosIniciados * 2
+      });
     } catch (error) {
       console.error("Erro ao carregar academia:", error);
       setErro(true);
@@ -156,234 +190,364 @@ const Cursos = () => {
     });
   };
 
-  // ─── Componente do player — aparece para TODOS os usuários ───────────────────
-  const CardVideoCanal = () => (
-    <div className="bg-white border border-slate-100 rounded-[28px] overflow-hidden shadow-sm mb-6">
-      <div className="p-4 border-b border-slate-50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-red-50 rounded-xl flex items-center justify-center">
-            <Youtube size={14} className="text-red-500" />
-          </div>
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vídeo novo no canal</p>
-            <p className="text-[9px] text-slate-300 font-bold">youtube.com/@ojefersonrocha</p>
-          </div>
+  // ─── Componente: Hero — Vídeo Destaque estilo capa Netflix ────────────────
+  const HeroVideoDestaque = () => {
+    if (loadingVideo) {
+      return (
+        <div className="mx-6 aspect-[3/4] max-h-[440px] bg-white/5 rounded-[28px] flex items-center justify-center border border-white/10">
+          <Loader2 className="animate-spin text-white/30" size={28} />
         </div>
-        {/* Badge "novo" piscando */}
-        <div className="flex items-center gap-1.5 bg-red-50 px-2.5 py-1 rounded-full">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-[9px] font-black uppercase tracking-widest text-red-500">Novo</span>
-        </div>
-      </div>
+      );
+    }
+    if (!ultimoVideo) return null;
 
-      {loadingVideo ? (
-        <div className="aspect-video flex items-center justify-center bg-slate-50">
-          <Loader2 className="animate-spin text-slate-300" size={28} />
-        </div>
-      ) : ultimoVideo ? (
-        <>
-          {!playerAberto ? (
-            <button onClick={() => setPlayerAberto(true)} className="w-full relative aspect-video overflow-hidden group">
-              <img src={ultimoVideo.thumb} alt={ultimoVideo.titulo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                  <PlayCircle size={32} className="text-white fill-white" />
+    return (
+      <div className="relative mx-6 rounded-[28px] overflow-hidden border border-white/10 shadow-2xl shadow-black/60">
+        {!playerAberto ? (
+          <button onClick={() => setPlayerAberto(true)} className="w-full block relative aspect-[3/4] max-h-[440px] group">
+            <img
+              src={ultimoVideo.thumb}
+              alt={ultimoVideo.titulo}
+              className="w-full h-full object-cover group-active:scale-105 transition-transform duration-500"
+            />
+            {/* Gradiente estilo capa de streaming */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/10" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent" />
+
+            <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-red-500/90 backdrop-blur px-2.5 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              <span className="text-[9px] font-black uppercase text-white tracking-wide">Novo no canal</span>
+            </div>
+
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/15 backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center group-active:scale-90 transition-transform">
+                <PlayCircle size={32} className="text-white fill-white/20" strokeWidth={1.5} />
+              </div>
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#C4B5FD] mb-1.5">
+                youtube.com/@ojefersonrocha
+              </p>
+              <h3 className="font-black text-white text-lg leading-tight line-clamp-2">{ultimoVideo.titulo}</h3>
+              <p className="text-[10px] text-white/50 font-bold uppercase mt-1.5">{ultimoVideo.publicado}</p>
+            </div>
+          </button>
+        ) : (
+          <div className="relative aspect-video bg-black">
+            <iframe
+              className="w-full h-full"
+              src={`https://www.youtube.com/embed/${ultimoVideo.id}?autoplay=1`}
+              title={ultimoVideo.titulo}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+            <button
+              onClick={() => setPlayerAberto(false)}
+              className="absolute top-3 right-3 p-2 bg-black/70 rounded-full text-white hover:bg-black/90 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ─── Componente: Continue de Onde Parou — card largo tipo "continue watching" ──
+  const ContinueDeOndeParou = () => {
+    const cursoEmProgresso = cursos.find(
+      c => (temAcessoCurso(c) || c.temMatricula) && c.aulasFeitas > 0 && !c.concluido
+    );
+
+    if (!cursoEmProgresso) return null;
+
+    const proximaAula = cursoEmProgresso.aulasFeitas + 1;
+
+    return (
+      <div className="mb-8">
+        <p className="text-xs font-black uppercase tracking-widest text-white/40 mb-3 px-6">Continue de onde parou</p>
+        <div className="px-6">
+          <Link
+            to={`/cursos/${cursoEmProgresso.id}`}
+            className="block relative rounded-[24px] overflow-hidden border border-white/10 active:scale-[0.98] transition-transform"
+          >
+            <div className="flex bg-gradient-to-br from-[#1A1625] to-[#0F0D16]">
+              <div className="w-28 h-28 flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-[#6D28D9] to-[#3B1E82] flex items-center justify-center p-2.5">
+                {cursoEmProgresso.thumb_url || cursoEmProgresso.capa_url ? (
+                  <img
+                    src={cursoEmProgresso.thumb_url || cursoEmProgresso.capa_url}
+                    alt={cursoEmProgresso.titulo}
+                    className="w-full h-full object-contain drop-shadow-lg"
+                  />
+                ) : (
+                  <span className="text-white font-black text-2xl opacity-60">
+                    {cursoEmProgresso.titulo?.charAt(0) || 'V'}
+                  </span>
+                )}
+                <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                  <PlayCircle size={26} className="text-white" />
                 </div>
               </div>
-            </button>
-          ) : (
-            <div className="relative aspect-video">
-              <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${ultimoVideo.id}?autoplay=1`} title={ultimoVideo.titulo} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-              <button onClick={() => setPlayerAberto(false)} className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"><X size={14} /></button>
+
+              <div className="flex-1 min-w-0 p-4 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-black text-white text-sm leading-tight line-clamp-1">
+                    {cursoEmProgresso.titulo}
+                  </h3>
+                  <p className="text-[#C4B5FD] text-[11px] font-bold mt-0.5">
+                    Aula {proximaAula} de {cursoEmProgresso.totalAulas}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#C4B5FD] rounded-full"
+                      style={{ width: `${cursoEmProgresso.porcentagem}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-white/40 font-bold">{cursoEmProgresso.porcentagem}% concluído</p>
+                </div>
+              </div>
+
+              <div className="flex items-center pr-4">
+                <ChevronRight size={18} className="text-white/30" />
+              </div>
             </div>
-          )}
-          <div className="p-4">
-            <p className="font-black text-slate-800 text-sm leading-snug mb-1">{ultimoVideo.titulo}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{ultimoVideo.publicado}</p>
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
+  // ─── Componente: Fileira de Cursos — scroll horizontal, cards pôster ──────
+  const FileiraCursos = () => {
+    const cursosAcessiveis = cursos.filter(c => temAcessoCurso(c) || c.temMatricula);
+
+    if (cursosAcessiveis.length === 0) {
+      return (
+        <div className="mx-6 text-center py-12 border border-dashed border-white/10 rounded-2xl">
+          <BookOpen className="text-white/20 mx-auto mb-2" size={28} />
+          <p className="text-white/30 text-sm font-bold">Nenhum curso disponível.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-8">
+        <p className="text-xs font-black uppercase tracking-widest text-white/40 mb-3 px-6">Seus cursos</p>
+        <div className="flex gap-3.5 overflow-x-auto px-6 pb-2 -mx-0 scrollbar-hide snap-x snap-mandatory">
+          {cursosAcessiveis.map(curso => (
+            <Link
+              key={curso.id}
+              to={`/cursos/${curso.id}`}
+              className="snap-start shrink-0 w-[132px] active:scale-95 transition-transform group"
+            >
+              <div className="relative w-[132px] aspect-[2/3] rounded-2xl overflow-hidden bg-gradient-to-br from-[#271c6b] to-[#4c36b6] border border-white/10 p-2">
+                {curso.thumb_url || curso.capa_url ? (
+                  <img
+                    src={curso.thumb_url || curso.capa_url}
+                    alt={curso.titulo}
+                    className="w-full h-full object-contain drop-shadow-lg"
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-white font-black text-3xl opacity-50">
+                      {curso.titulo?.charAt(0) || 'V'}
+                    </span>
+                  </div>
+                )}
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+
+                {curso.concluido && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black">
+                    <CheckCircle size={9} /> Concluído
+                  </div>
+                )}
+
+                {!curso.concluido && curso.porcentagem > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#C4B5FD]"
+                      style={{ width: `${curso.porcentagem}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+              <h3 className="font-bold text-white text-[12.5px] leading-tight line-clamp-2 mt-2">
+                {curso.titulo}
+              </h3>
+              {curso.totalAulas > 0 && (
+                <p className="text-[10px] font-bold text-white/35 uppercase tracking-wide mt-0.5">
+                  {curso.totalAulas} aula{curso.totalAulas !== 1 ? 's' : ''}
+                </p>
+              )}
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // ─── Componente: Conquistas — fileira horizontal de badges ────────────────
+  const SecaoConquistas = () => (
+    <div className="mb-8">
+      <p className="text-xs font-black uppercase tracking-widest text-white/40 mb-3 px-6">Suas conquistas</p>
+      <div className="flex gap-3 overflow-x-auto px-6 pb-2 scrollbar-hide snap-x snap-mandatory">
+        {conquistas.map(c => (
+          <div
+            key={c.id}
+            className={`snap-start shrink-0 w-[132px] rounded-2xl p-3.5 border transition-all ${
+              c.desbloqueada
+                ? 'bg-white/5 border-white/10'
+                : 'bg-white/[0.02] border-white/5 opacity-40'
+            }`}
+          >
+            <p className="text-xl mb-1.5">{c.icon}</p>
+            <h4 className="font-black text-white text-[11px] leading-tight">{c.nome}</h4>
+            <p className="text-[9.5px] text-white/40 mt-1 leading-snug">{c.descricao}</p>
+            {c.desbloqueada && (
+              <div className="mt-2 text-[9px] font-black text-emerald-400">✓ Desbloqueada</div>
+            )}
           </div>
-        </>
-      ) : null}
-    </div>
-  );
-
-  // ─── Loading ─────────────────────────────────────────────────────────────────
-  if (loading || loadingPlano) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="animate-spin text-[#5B2DFF]" size={32} />
-    </div>
-  );
-
-  // ─── Erro ────────────────────────────────────────────────────────────────────
-  if (erro) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-8 text-center">
-      <div className="w-16 h-16 bg-red-50 rounded-[24px] flex items-center justify-center">
-        <AlertTriangle className="text-red-400" size={28} />
+        ))}
       </div>
-      <div>
-        <p className="font-black text-slate-700 uppercase text-sm tracking-tight">Erro ao carregar</p>
-        <p className="text-slate-400 text-xs mt-1">Verifique sua conexão e tente novamente.</p>
-      </div>
-      <button onClick={carregarDados} className="flex items-center gap-2 px-6 py-3 bg-[#5B2DFF] text-white rounded-2xl font-black text-xs uppercase shadow-lg">
-        <RefreshCw size={14} /> Tentar novamente
-      </button>
     </div>
   );
 
-  // ─── Academia bloqueada ───────────────────────────────────────────────────────
+  // ─── Loading ─────────────────────────────────────────────────────────────
+  if (loading || loadingPlano) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+        <Loader2 className="animate-spin text-[#8B5CF6]" size={32} />
+      </div>
+    );
+  }
+
+  // ─── Erro ────────────────────────────────────────────────────────────────
+  if (erro) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0F] flex flex-col items-center justify-center gap-4 p-8 text-center">
+        <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center">
+          <AlertTriangle className="text-red-400" size={24} />
+        </div>
+        <div>
+          <p className="font-black text-white uppercase text-sm">Erro ao carregar</p>
+          <p className="text-white/40 text-xs mt-1">Verifique sua conexão e tente novamente.</p>
+        </div>
+        <button
+          onClick={carregarDados}
+          className="flex items-center gap-2 px-6 py-2.5 bg-[#6D28D9] text-white rounded-full font-black text-xs uppercase shadow-lg hover:bg-[#5b23c8] transition-colors"
+        >
+          <RefreshCw size={13} /> Tentar novamente
+        </button>
+      </div>
+    );
+  }
+
+  // ─── Acesso restrito ─────────────────────────────────────────────────────
   if (!isAssinante) {
     return (
-      <div className="min-h-screen pb-28">
+      <div className="min-h-screen bg-[#0A0A0F] pb-24 pt-2">
         <div className="p-6 pb-0 max-w-2xl mx-auto">
-          <header className="mb-6 mt-2">
-            <h1 className="text-2xl font-black tracking-tight uppercase text-slate-800">Academia Verbo</h1>
-            <p className="text-gray-400 text-sm mt-1">Sua formação ministerial descomplicada.</p>
+          <header className="mb-6 mt-2 flex items-center gap-3">
+            <Link to="/" className="p-2 -ml-2 rounded-xl hover:bg-white/10 active:bg-white/10 transition-colors shrink-0">
+              <ArrowLeft size={20} className="text-white" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight uppercase text-white mb-1">
+                Academia Verbo
+              </h1>
+              <p className="text-white/40 text-sm">Formando cristãos para viver e ensinar a Palavra.</p>
+            </div>
           </header>
         </div>
 
-        <div className="px-6 max-w-2xl mx-auto">
-          <CardVideoCanal />
+        <div className="mb-8">
+          <HeroVideoDestaque />
         </div>
 
         <div className="px-6 max-w-2xl mx-auto flex flex-col items-center gap-5 text-center">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#5B2DFF] mb-2 block">Quer ir mais fundo?</span>
-            <h2 className="font-black text-xl text-slate-800 tracking-tight mb-2">Acesse os cursos completos<br />da Academia Verbo.</h2>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">Teologia, pregação e formação ministerial — tudo organizado em aulas progressivas.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#A78BFA] mb-2 block">
+              Quer crescer ainda mais?
+            </span>
+            <h2 className="font-black text-xl text-white tracking-tight mb-2">
+              Acesse cursos completos<br />da Academia Verbo
+            </h2>
+            <p className="text-white/40 text-sm">
+              Teologia, pregação e formação ministerial — tudo em aulas progressivas.
+            </p>
           </div>
-          <div className="bg-white border border-slate-100 rounded-[24px] p-5 w-full max-w-xs text-left space-y-3">
-            {['Cursos de teologia simplificada', 'Pregação na prática', 'Novos cursos todo mês', 'Progresso salvo automaticamente'].map((item, i) => (
+
+          <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl p-5 w-full space-y-3">
+            {[
+              'Cursos de teologia do zero ao avançado',
+              'Pregação na prática',
+              'Novos cursos todo mês',
+              'Certificados oficiais'
+            ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-green-50 rounded-full flex items-center justify-center shrink-0"><CheckCircle size={11} className="text-green-500" /></div>
-                <p className="text-xs font-semibold text-slate-600">{item}</p>
+                <div className="w-5 h-5 bg-emerald-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <CheckCircle size={10} className="text-emerald-400" />
+                </div>
+                <p className="text-xs font-semibold text-white/70">{item}</p>
               </div>
             ))}
           </div>
+
           <button
-            onClick={() => { try { navigate('/upgrade?motivo=academia'); } catch { window.location.href = '/upgrade?motivo=academia'; } }}
-            className="w-full max-w-xs bg-[#5B2DFF] text-white py-5 rounded-[24px] font-black shadow-xl shadow-purple-200 hover:bg-[#4a22e0] active:scale-95 transition-all flex items-center justify-center gap-2"
+            onClick={() => navigate('/upgrade?motivo=academia')}
+            className="w-full bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6] text-white py-4 rounded-xl font-black text-sm shadow-lg shadow-purple-900/40 active:scale-95 transition-all flex items-center justify-center gap-2"
           >
-            <Sparkles size={18} /> VER PLANOS
+            <Sparkles size={16} /> Ver Planos
           </button>
-          <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">A partir de R$9,90/mês</p>
+
+          <p className="text-[10px] text-white/30 font-bold uppercase">A partir de R$9,90/mês</p>
         </div>
       </div>
     );
   }
 
-  // ─── Academia liberada (isPlus = true) ───────────────────────────────────────
+  // ─── Academia liberada ────────────────────────────────────────────────────
   return (
-    <div className="p-6 pb-28 max-w-2xl mx-auto">
-      <header className="mb-6 mt-2">
-        <h1 className="text-2xl font-black tracking-tight uppercase text-slate-800">Academia Verbo</h1>
-        <p className="text-gray-400 text-sm mt-1">Sua formação ministerial descomplicada.</p>
+    <div className="min-h-screen bg-[#0A0A0F] pb-28 pt-2">
+      {/* Cabeçalho */}
+      <header className="mb-6 mt-2 px-6 flex items-center gap-3">
+        <Link to="/" className="p-2 -ml-2 rounded-xl hover:bg-white/10 active:bg-white/10 transition-colors shrink-0">
+          <ArrowLeft size={20} className="text-white" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight uppercase text-white mb-1">
+            Academia Verbo
+          </h1>
+          <p className="text-white/40 text-sm">Formando cristãos para viver e ensinar a Palavra.</p>
+        </div>
       </header>
 
-      {/* Vídeo do canal — visível para todos os planos */}
-      <CardVideoCanal />
+      {/* Vídeo Destaque — hero estilo capa */}
+      <div className="mb-8">
+        <HeroVideoDestaque />
+      </div>
 
-      {cursos.length === 0 ? (
-        <div className="text-center p-12 border-2 border-dashed border-gray-100 rounded-[32px]">
-          <BookOpen className="text-slate-200 mx-auto mb-3" size={36} />
-          <p className="text-gray-400 text-sm font-bold">Nenhum curso disponível no momento.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {cursos.map((curso) => {
-            const expandida = descricaoExpandida.has(curso.id);
-            const temAcesso = temAcessoCurso(curso) || curso.temMatricula;
+      {/* Continue de Onde Parou */}
+      <ContinueDeOndeParou />
 
-            return (
-              <div
-                key={curso.id}
-                className={`relative overflow-hidden rounded-[28px] border transition-all duration-300 ${
-                  curso.concluido
-                    ? 'border-green-100 bg-green-50/30'
-                    : temAcesso
-                      ? 'border-slate-100 bg-white shadow-sm'
-                      : 'border-slate-200 bg-slate-50/50'
-                }`}
-              >
-                {curso.concluido && (
-                  <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-green-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md">
-                    <CheckCircle size={10} /> Concluído
-                  </div>
-                )}
+      {/* Fileira de Cursos */}
+      <FileiraCursos />
 
-                <div className="flex gap-4 p-4">
-                  <div className="relative w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-gradient-to-br from-[#5B2DFF] to-[#D946EF] flex items-center justify-center">
-                    {curso.thumb_url || curso.capa_url ? (
-                      <img src={curso.thumb_url || curso.capa_url} alt={curso.titulo} className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
-                    ) : (
-                      <span className="text-white font-black text-2xl opacity-60">{curso.titulo?.charAt(0) || 'V'}</span>
-                    )}
-                    {!temAcesso && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-[2px]">
-                        <Lock size={18} className="text-white" />
-                      </div>
-                    )}
-                  </div>
+      {/* Conquistas */}
+      <SecaoConquistas />
 
-                  <div className="flex flex-col justify-center flex-1 min-w-0">
-                    <h3 className="font-black text-slate-800 leading-tight mb-1 text-sm">{curso.titulo}</h3>
-                    {curso.totalAulas > 0 && (
-                      <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5">
-                        {curso.totalAulas} aula{curso.totalAulas !== 1 ? 's' : ''}
-                      </span>
-                    )}
-                    {curso.descricao && (
-                      <button onClick={() => toggleDescricao(curso.id)} className="text-left">
-                        <p className={`text-[11px] text-gray-500 leading-relaxed transition-all ${expandida ? '' : 'line-clamp-2'}`}>{curso.descricao}</p>
-                        <span className="flex items-center gap-0.5 text-[9px] font-black text-[#5B2DFF] uppercase tracking-widest mt-1">
-                          {expandida ? 'Ver menos' : 'Ver mais'}
-                          <ChevronDown size={10} className={`transition-transform ${expandida ? 'rotate-180' : ''}`} />
-                        </span>
-                      </button>
-                    )}
-                    {temAcesso && curso.totalAulas > 0 && !curso.concluido && (
-                      <div className="mt-2.5 space-y-1">
-                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#5B2DFF] to-[#8B5CF6] rounded-full transition-all duration-700" style={{ width: `${curso.porcentagem}%` }} />
-                        </div>
-                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{curso.aulasFeitas}/{curso.totalAulas} aulas · {curso.porcentagem}%</p>
-                      </div>
-                    )}
-                    {!temAcesso && (
-                      <span className="text-[10px] font-bold mt-1.5 flex items-center gap-1">
-                        <span className="text-slate-300">Requer plano</span>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${curso.plano_minimo === 'plus' ? 'bg-purple-100 text-purple-600' : 'bg-blue-50 text-blue-500'}`}>
-                          {curso.plano_minimo === 'plus' ? 'Plus' : 'Fundador'}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center gap-2 shrink-0">
-                    {temAcesso ? (
-                      <>
-                        <Link to={`/cursos/${curso.id}`} className="p-2.5 bg-purple-50 text-[#5B2DFF] rounded-full hover:bg-purple-100 transition-colors">
-                          <ChevronRight size={20} />
-                        </Link>
-                        {curso.concluido && (
-                          <Link to={`/cursos/${curso.id}`} className="p-2 bg-green-50 text-green-500 rounded-full hover:bg-green-100 transition-colors" title="Ver certificado">
-                            <Award size={16} />
-                          </Link>
-                        )}
-                      </>
-                    ) : (
-                      <a href={curso.checkout_url || '#'} target="_blank" rel="noopener noreferrer"
-                        className="px-4 py-2.5 bg-[#5B2DFF] text-white text-[10px] font-black rounded-2xl shadow-lg shadow-purple-100 hover:bg-[#4a22e0] active:scale-95 transition-all flex items-center gap-1.5 whitespace-nowrap">
-                        <ShoppingCart size={12} /> LIBERAR
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   );
 };
 
-export default Cursos;
+export default CursosNew;
