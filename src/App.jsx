@@ -7,6 +7,7 @@ import { Analytics } from '@vercel/analytics/react';
 const Dashboard = lazy(() => import('./pages/dashboard'));
 const NovoSermao = lazy(() => import('./pages/novosermao'));
 const Login = lazy(() => import('./pages/login'));
+const ResetPassword = lazy(() => import('./pages/resetpassword'));
 const Editor = lazy(() => import('./pages/editor'));
 const Leitura = lazy(() => import('./pages/leitura'));
 const Perfil = lazy(() => import('./pages/perfil'));
@@ -23,11 +24,15 @@ import BibliaSidebar from './components/BibliaSidebar';
 import RotaAdmin from './components/RotaAdmin';
 import { Home, PenTool, User, Users, PlayCircle } from 'lucide-react';
 
+// Rotas de autenticação/marketing onde a navbar inferior nunca deve aparecer,
+// independente do estado de sessão (login, landing e recuperação de senha).
+const ROTAS_SEM_NAVBAR = ['/login', '/landing', '/reset-password'];
+
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 const Navbar = ({ session, onOpenBiblia }) => {
   const location = useLocation();
 
-  const isPublicPage = location.pathname === '/login' || location.pathname === '/landing';
+  const isPublicPage = ROTAS_SEM_NAVBAR.includes(location.pathname);
   const isReading    = location.pathname.startsWith('/leitura');
   const isAdminPage  = location.pathname.startsWith('/admin');
   const isEditor     = location.pathname.startsWith('/editor');
@@ -68,7 +73,7 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
   const location = useLocation();
 
   // Rotas onde a navbar inferior fica escondida (não reservamos o respiro pb-24 nelas)
-  const isPublicPage = location.pathname === '/login' || location.pathname === '/landing';
+  const isPublicPage = ROTAS_SEM_NAVBAR.includes(location.pathname);
   const isReading    = location.pathname.startsWith('/leitura');
   const isAdminPage  = location.pathname.startsWith('/admin');
   const isEditor     = location.pathname.startsWith('/editor');
@@ -90,6 +95,9 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
             <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
             <Route path="/novosermao" element={session ? <NovoSermao /> : <Navigate to="/login" replace />} />
             <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
+            {/* Sempre acessível: o Supabase cria uma sessão temporária de recuperação
+                ao abrir o link do e-mail, então essa rota não pode depender de `session`. */}
+            <Route path="/reset-password"  element={<ResetPassword />} />
             <Route path="/landing"         element={<LandingPage />} />
             <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
             <Route path="/cursos/:cursoId" element={session ? <Aulas />         : <Navigate to="/login" replace />} />
