@@ -30,7 +30,7 @@ const NovoSermao = () => {
           onClick={() => criarSermao('expositivo')}
           className="w-full bg-white border border-gray-100 p-5 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md active:scale-[0.98] transition-all"
         >
-          <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-[#5B2DFF]">
+          <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-[#4C1D95]">
             <BookOpen size={22} />
           </div>
           <div className="text-left">

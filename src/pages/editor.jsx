@@ -18,17 +18,68 @@ const AUTO_SAVE_DELAY     = 30000;
 const RASCUNHO_KEY  = (id) => `verbo_rascunho_${id  || 'novo'}`;
 const HISTORICO_KEY = (id) => `verbo_historico_${id || 'novo'}`;
 
+// ─── Hook: altura real da viewport visível (contorna o bug do teclado no iOS) ──
+// No iOS Safari, elementos `fixed` não recalculam quando o teclado abre — a
+// viewport "visual" encolhe mas o layout `fixed inset-0` continua medindo a
+// altura antiga, empurrando header/rodapé para trás do teclado. Escutamos
+// `visualViewport` (quando disponível) e usamos essa altura real no container.
+const useAlturaVisivel = () => {
+  const [altura, setAltura] = useState(
+    typeof window !== 'undefined' ? window.innerHeight : 0
+  );
+
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+
+    const atualizar = () => {
+      if (vv) setAltura(vv.height);
+      else setAltura(window.innerHeight);
+    };
+
+    atualizar();
+
+    if (vv) {
+      vv.addEventListener('resize', atualizar);
+      vv.addEventListener('scroll', atualizar);
+      return () => {
+        vv.removeEventListener('resize', atualizar);
+        vv.removeEventListener('scroll', atualizar);
+      };
+    }
+    window.addEventListener('resize', atualizar);
+    return () => window.removeEventListener('resize', atualizar);
+  }, []);
+
+  return altura;
+};
+
 // ─── Toast ────────────────────────────────────────────────────────────────────
 const Toast = ({ visivel, tipo, mensagem, onFechar }) => (
-  <div className={`fixed top-6 left-1/2 z-[200] transition-all duration-400 ${visivel ? '-translate-x-1/2 translate-y-0 opacity-100 scale-100' : '-translate-x-1/2 -translate-y-4 opacity-0 scale-95 pointer-events-none'}`}>
-    <div className={`flex items-center gap-3 px-5 py-3.5 rounded-[20px] shadow-2xl border ${tipo === 'sucesso' ? 'bg-green-500 border-green-400 text-white' : tipo === 'erro' ? 'bg-red-500 border-red-400 text-white' : 'bg-slate-900 border-white/10 text-white'}`}>
-      {tipo === 'sucesso' && <CheckCircle2 size={16} />}
-      {tipo === 'erro'    && <AlertTriangle size={16} />}
-      {tipo === 'offline' && <WifiOff size={16} />}
-      <span className="text-xs font-black uppercase tracking-wide">{mensagem}</span>
-      <button onClick={onFechar} className="ml-1 opacity-60 hover:opacity-100"><X size={14} /></button>
+  <div className={`fixed top-6 left-1/2 z-[200] w-[calc(100%-2rem)] max-w-sm px-0 transition-all duration-400 ${visivel ? '-translate-x-1/2 translate-y-0 opacity-100 scale-100' : '-translate-x-1/2 -translate-y-4 opacity-0 scale-95 pointer-events-none'}`}
+    style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
+  >
+    <div className={`flex items-start gap-3 px-5 py-3.5 rounded-[20px] shadow-2xl border ${tipo === 'sucesso' ? 'bg-green-500 border-green-400 text-white' : tipo === 'erro' ? 'bg-red-500 border-red-400 text-white' : 'bg-slate-900 border-white/10 text-white'}`}>
+      {tipo === 'sucesso' && <CheckCircle2 size={16} className="shrink-0 mt-0.5" />}
+      {tipo === 'erro'    && <AlertTriangle size={16} className="shrink-0 mt-0.5" />}
+      {tipo === 'offline' && <WifiOff size={16} className="shrink-0 mt-0.5" />}
+      <span className="text-xs font-bold uppercase tracking-wide leading-snug break-words">{mensagem}</span>
+      <button onClick={onFechar} className="ml-auto shrink-0 opacity-60 hover:opacity-100"><X size={14} /></button>
     </div>
   </div>
+);
+
+// ─── Botão de toolbar com alvo de toque de 44px ────────────────────────────────
+const BotaoToolbar = ({ onClick, title, active, children }) => (
+  <button
+    onClick={onClick}
+    title={title}
+    aria-label={title}
+    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-all active:scale-90 ${
+      active ? 'bg-purple-100 text-purple-500' : 'hover:bg-white text-slate-500'
+    }`}
+  >
+    {children}
+  </button>
 );
 
 // ─── Editor ───────────────────────────────────────────────────────────────────
@@ -37,6 +88,7 @@ const Editor = () => {
   const navigate    = useNavigate();
   const location    = useLocation();                          // ← NOVO
   const textAreaRef = useRef(null);
+  const alturaVisivel = useAlturaVisivel();                    // ← NOVO
 
   // ── Tipo via URL ─────────────────────────────────────────────────────────
   const params = new URLSearchParams(location.search);       // ← NOVO
@@ -319,7 +371,7 @@ Oração:`
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center gap-5">
         <div className="w-16 h-16 bg-purple-50 rounded-[24px] flex items-center justify-center">
-          <Lock size={28} className="text-[#5B2DFF]" />
+          <Lock size={28} className="text-[#4C1D95]" />
         </div>
         <div>
           <h2 className="font-black text-xl text-slate-800 mb-2">Limite de sermões atingido</h2>
@@ -328,7 +380,7 @@ Oração:`
           </p>
         </div>
         <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')}
-          className="bg-[#5B2DFF] text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-[#4a22e0] active:scale-95 transition-all">
+          className="bg-[#4C1D95] text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-[#5B21B6] active:scale-95 transition-all">
           Ver planos
         </button>
         <button onClick={() => navigate(-1)} className="text-slate-400 text-sm font-bold">Voltar</button>
@@ -337,40 +389,46 @@ Oração:`
   }
 
   return (
-    <div className={`bg-white flex flex-col transition-all duration-300 ${telaCheia ? 'fixed inset-0 z-[150]' : 'min-h-screen'}`}>
+    <div
+      className={`bg-white flex flex-col transition-all duration-300 ${telaCheia ? 'fixed inset-x-0 top-0 z-[150]' : 'min-h-screen'}`}
+      style={telaCheia ? { height: alturaVisivel ? `${alturaVisivel}px` : '100dvh' } : undefined}
+    >
 
       <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem}
         onFechar={() => setToast(t => ({ ...t, visivel: false }))} />
 
       {/* Header */}
-      <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
-        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-slate-700 transition-colors p-1">
+      <div
+        className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
+      >
+        <button onClick={() => navigate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-slate-700 transition-colors -ml-2">
           <ArrowLeft size={22} />
         </button>
 
         <div className="flex flex-col items-center gap-1">
-          <h1 className="text-sm font-black bg-gradient-to-r from-[#5B2DFF] to-[#3A1DB8] bg-clip-text text-transparent uppercase tracking-widest">
+          <h1 className="text-sm font-black bg-gradient-to-r from-[#4C1D95] to-[#3A1DB8] bg-clip-text text-transparent uppercase tracking-widest">
             {id ? 'Editar Mensagem' : 'Novo Sermão'}
           </h1>
           {!isOnline && (
             <div className="flex items-center gap-1 text-amber-500">
               <WifiOff size={10} />
-              <span className="text-[9px] font-black uppercase tracking-widest">Offline</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest">Offline</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={() => setTelaCheia(t => !t)} className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+        <div className="flex items-center gap-1">
+          <button onClick={() => setTelaCheia(t => !t)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-slate-600 transition-colors">
             {telaCheia ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
           </button>
           {historico.length > 0 && (
-            <button onClick={() => setMostrarHistorico(true)} className="p-2 text-slate-300 hover:text-[#5B2DFF] transition-colors">
+            <button onClick={() => setMostrarHistorico(true)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-[#4C1D95] transition-colors">
               <RotateCcw size={18} />
             </button>
           )}
           <button onClick={salvar} disabled={loading}
-            className="bg-[#5B2DFF] text-white p-3 rounded-2xl shadow-lg disabled:opacity-50 active:scale-95 hover:bg-[#4a22e0] transition-all">
+            className="bg-[#4C1D95] text-white p-3 rounded-2xl shadow-lg disabled:opacity-50 active:scale-95 hover:bg-[#5B21B6] transition-all min-w-[44px] min-h-[44px] flex items-center justify-center">
             {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
           </button>
         </div>
@@ -384,7 +442,7 @@ Oração:`
 
         {/* ── Indicador de tipo guiado ── */}
         {tipo && !id && (                                    // ← NOVO
-          <p className="text-[11px] text-[#5B2DFF] font-bold mb-2">
+          <p className="text-[11px] text-[#4C1D95] font-bold mb-2">
             Estrutura pronta para{' '}
             {tipo === 'expositivo' ? 'sermão expositivo'
               : tipo === 'tematico' ? 'sermão temático'
@@ -392,22 +450,22 @@ Oração:`
           </p>
         )}
 
-        <div className="flex items-center gap-2 mb-4 text-[#5B2DFF] bg-purple-50 p-3 rounded-2xl">
-          <Book size={16} />
+        <div className="flex items-center gap-2 mb-4 text-[#4C1D95] bg-purple-50 p-3 rounded-2xl">
+          <Book size={16} className="shrink-0" />
           <input type="text" placeholder="Referência Bíblica (ex: João 3:16)"
             className="text-sm font-bold border-none outline-none w-full bg-transparent focus:ring-0"
             value={referencia} onChange={e => setReferencia(e.target.value)} />
         </div>
         <div className="flex items-center gap-1 mb-3 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit">
-          <button onClick={() => aplicarFormatacao('**', '**')} className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Negrito"><Bold size={16} /></button>
-          <button onClick={() => aplicarFormatacao('*', '*')}   className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Itálico"><Italic size={16} /></button>
-          <button onClick={() => aplicarFormatacao('> ', '')}   className="p-2 hover:bg-white rounded-lg text-slate-500 transition-all" title="Citação"><Quote size={16} /></button>
-          <button onClick={() => aplicarFormatacao('==', '==')} className="p-2 hover:bg-purple-100 text-purple-500 rounded-lg transition-all" title="Destaque"><Highlighter size={16} /></button>
+          <BotaoToolbar onClick={() => aplicarFormatacao('**', '**')} title="Negrito"><Bold size={16} /></BotaoToolbar>
+          <BotaoToolbar onClick={() => aplicarFormatacao('*', '*')} title="Itálico"><Italic size={16} /></BotaoToolbar>
+          <BotaoToolbar onClick={() => aplicarFormatacao('> ', '')} title="Citação"><Quote size={16} /></BotaoToolbar>
+          <BotaoToolbar onClick={() => aplicarFormatacao('==', '==')} title="Destaque" active><Highlighter size={16} /></BotaoToolbar>
         </div>
       </div>
 
       {/* Textarea */}
-      <div className="flex-1 px-6 overflow-hidden">
+      <div className="flex-1 px-6 overflow-hidden min-h-0">
         <textarea ref={textAreaRef}
           placeholder={                                      // ← NOVO placeholder inteligente
             tipo === 'expositivo'
@@ -419,60 +477,65 @@ Oração:`
               : 'Escreva a mensagem aqui...'
           }
           className="w-full h-full border-none outline-none resize-none text-slate-700 leading-relaxed text-base focus:ring-0 pb-4"
-          style={{ minHeight: '60vh' }}                     // ← NOVO altura dinâmica melhor para iOS
           value={conteudo} onChange={e => setConteudo(e.target.value)} />
       </div>
 
       {/* Rodapé */}
-      <div className="px-6 py-3 border-t border-slate-50 flex items-center justify-between shrink-0">
+      <div
+        className="px-6 py-3 border-t border-slate-50 flex items-center justify-between shrink-0 gap-2"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+      >
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 text-slate-300">
             <AlignLeft size={12} />
-            <span className="text-[10px] font-black uppercase tracking-widest">{metricas.palavras} palavras</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">{metricas.palavras} palavras</span>
           </div>
           <div className="flex items-center gap-1.5 text-slate-300">
             <Clock size={12} />
-            <span className="text-[10px] font-black uppercase tracking-widest">~{metricas.minutos} min</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">~{metricas.minutos} min</span>
           </div>
         </div>
 
         {!isPlus && sermoesRestantes !== null && sermoesRestantes <= 10 && (
-          <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')} className="flex items-center gap-1.5 text-amber-500">
+          <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')} className="flex items-center gap-1.5 text-amber-500 shrink-0">
             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-amber-400 rounded-full" style={{ width: `${percentualUso}%` }} />
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest">{sermoesRestantes} restantes</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest whitespace-nowrap">{sermoesRestantes} restantes</span>
           </button>
         )}
 
-        <div className={`flex items-center gap-1.5 transition-opacity duration-500 ${autoSaveAtivo ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`flex items-center gap-1.5 shrink-0 transition-opacity duration-500 ${autoSaveAtivo ? 'opacity-100' : 'opacity-0'}`}>
           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Rascunho salvo</span>
+          <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest whitespace-nowrap">Rascunho salvo</span>
         </div>
       </div>
 
-      {/* Modal histórico — inalterado */}
+      {/* Modal histórico */}
       {mostrarHistorico && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMostrarHistorico(false)} />
-          <div className="relative bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+          <div
+            className="relative bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300"
+            style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          >
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest flex items-center gap-2">
-                <RotateCcw size={14} className="text-[#5B2DFF]" /> Histórico de Versões
+                <RotateCcw size={14} className="text-[#4C1D95]" /> Histórico de Versões
               </h3>
-              <button onClick={() => setMostrarHistorico(false)} className="p-1 text-slate-300 hover:text-slate-600"><X size={18} /></button>
+              <button onClick={() => setMostrarHistorico(false)} className="min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-300 hover:text-slate-600"><X size={18} /></button>
             </div>
             <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto">
               {historico.map((versao, i) => (
                 <button key={i} onClick={() => restaurarVersao(versao)} className="w-full p-5 text-left hover:bg-purple-50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-xs font-black text-slate-700 truncate">{versao.titulo || 'Sem título'}</p>
+                      <p className="text-xs font-bold text-slate-700 truncate">{versao.titulo || 'Sem título'}</p>
                       <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">{versao.conteudo?.substring(0, 80)}...</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <span className="text-[9px] font-black text-slate-300 uppercase block">{formatarHora(versao.savedAt)}</span>
-                      <span className="text-[9px] text-[#5B2DFF] font-bold mt-1 block">Restaurar →</span>
+                      <span className="text-[9px] font-bold text-slate-300 uppercase block">{formatarHora(versao.savedAt)}</span>
+                      <span className="text-[9px] text-[#4C1D95] font-bold mt-1 block">Restaurar →</span>
                     </div>
                   </div>
                 </button>

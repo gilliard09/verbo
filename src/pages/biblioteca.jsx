@@ -70,7 +70,7 @@ const Biblioteca = () => {
 
   if (loading && livros.length === 0) return (
     <div className="flex h-screen items-center justify-center bg-[#FDFDFF]">
-      <Loader2 className="animate-spin text-[#5B2DFF]" size={32} />
+      <Loader2 className="animate-spin text-[#4C1D95]" size={32} />
     </div>
   );
 
@@ -115,7 +115,7 @@ const Biblioteca = () => {
             </div>
             <div className="mt-3 px-1">
               <h3 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2">{livro.titulo}</h3>
-              <p className="text-[#5B2DFF] font-black text-xs mt-1 tracking-tighter">{livro.preco}</p>
+              <p className="text-[#4C1D95] font-black text-xs mt-1 tracking-tighter">{livro.preco}</p>
             </div>
           </div>
         ))}
@@ -125,7 +125,7 @@ const Biblioteca = () => {
       {userEmail === adminEmail && (
         <button 
           onClick={() => setShowAdminForm(true)}
-          className="fixed bottom-24 right-6 bg-[#5B2DFF] text-white p-4 rounded-full shadow-2xl z-40 border-4 border-white active:scale-90 transition-all"
+          className="fixed bottom-24 right-6 bg-[#4C1D95] text-white p-4 rounded-full shadow-2xl z-40 border-4 border-white active:scale-90 transition-all"
         >
           <Plus size={24} />
         </button>
@@ -167,7 +167,7 @@ const Biblioteca = () => {
               <button 
                 type="submit" 
                 disabled={enviando}
-                className="w-full py-5 bg-[#5B2DFF] text-white rounded-[28px] font-black shadow-lg shadow-purple-100 mt-4 active:scale-95 transition-all flex justify-center"
+                className="w-full py-5 bg-[#4C1D95] text-white rounded-[28px] font-black shadow-lg shadow-purple-100 mt-4 active:scale-95 transition-all flex justify-center"
               >
                 {enviando ? <Loader2 className="animate-spin"/> : 'ADICIONAR À VITRINE'}
               </button>

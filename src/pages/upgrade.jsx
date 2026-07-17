@@ -55,7 +55,7 @@ const Upgrade = () => {
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center gap-4">
         <CheckCircle2 size={48} className="text-green-500" />
         <h2 className="font-black text-xl text-slate-800">Você já é assinante Plus!</h2>
-        <button onClick={() => navigate('/')} className="text-[#5B2DFF] font-bold text-sm">
+        <button onClick={() => navigate('/')} className="text-[#4C1D95] font-bold text-sm">
           Voltar para o início
         </button>
       </div>
@@ -110,7 +110,7 @@ const Upgrade = () => {
                 : CHECKOUT_PLUS;
               window.open(url, '_blank');
             }}
-            className="w-full bg-[#5B2DFF] text-white py-5 rounded-[24px] font-black text-base shadow-xl shadow-purple-200 hover:bg-[#4a22e0] active:scale-95 transition-all flex items-center justify-center gap-2 mb-4"
+            className="w-full bg-[#4C1D95] text-white py-5 rounded-[24px] font-black text-base shadow-xl shadow-purple-200 hover:bg-[#4a22e0] active:scale-95 transition-all flex items-center justify-center gap-2 mb-4"
           >
             <Sparkles size={18} /> FAZER UPGRADE — R$47/mês
           </button>
@@ -158,8 +158,8 @@ const Upgrade = () => {
         {/* Headline */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-full mb-4">
-            <Sparkles size={13} className="text-[#5B2DFF]" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#5B2DFF]">Desbloqueie tudo</span>
+            <Sparkles size={13} className="text-[#4C1D95]" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#4C1D95]">Desbloqueie tudo</span>
           </div>
           <h2 className="text-3xl font-black tracking-tight text-slate-900 leading-tight mb-2">
             Pregue sem limites<br />com o Verbo.
@@ -174,21 +174,21 @@ const Upgrade = () => {
           <button
             onClick={() => setPlanoSelecionado('fundador')}
             className={`w-full text-left p-5 rounded-[24px] border-2 transition-all relative overflow-hidden ${
-              planoSelecionado === 'fundador' ? 'border-[#5B2DFF] bg-purple-50' : 'border-slate-200 bg-white'
+              planoSelecionado === 'fundador' ? 'border-[#4C1D95] bg-purple-50' : 'border-slate-200 bg-white'
             }`}
           >
             <div className="absolute top-4 right-4 bg-amber-400 text-amber-900 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
               <Crown size={9} /> Fundador
             </div>
             <div className="flex items-start gap-3 pr-20">
-              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${planoSelecionado === 'fundador' ? 'border-[#5B2DFF] bg-[#5B2DFF]' : 'border-slate-300'}`}>
+              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${planoSelecionado === 'fundador' ? 'border-[#4C1D95] bg-[#4C1D95]' : 'border-slate-300'}`}>
                 {planoSelecionado === 'fundador' && <div className="w-2 h-2 bg-white rounded-full" />}
               </div>
               <div>
                 <p className="font-black text-slate-800">Plano Fundador</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">App completo + Curso para Pregadores incluso.</p>
                 <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-black text-[#5B2DFF]">R$9,90</span>
+                  <span className="text-3xl font-black text-[#4C1D95]">R$9,90</span>
                   <span className="text-xs text-gray-400 font-bold">/mês para sempre</span>
                 </div>
                 <p className="text-[10px] text-amber-600 font-black uppercase tracking-widest mt-1">Vagas limitadas</p>
@@ -200,21 +200,21 @@ const Upgrade = () => {
           <button
             onClick={() => setPlanoSelecionado('plus')}
             className={`w-full text-left p-5 rounded-[24px] border-2 transition-all relative overflow-hidden ${
-              planoSelecionado === 'plus' ? 'border-[#5B2DFF] bg-purple-50' : 'border-slate-200 bg-white'
+              planoSelecionado === 'plus' ? 'border-[#4C1D95] bg-purple-50' : 'border-slate-200 bg-white'
             }`}
           >
-            <div className="absolute top-4 right-4 bg-[#5B2DFF] text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
+            <div className="absolute top-4 right-4 bg-[#4C1D95] text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
               <Zap size={9} /> Mais completo
             </div>
             <div className="flex items-start gap-3 pr-24">
-              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${planoSelecionado === 'plus' ? 'border-[#5B2DFF] bg-[#5B2DFF]' : 'border-slate-300'}`}>
+              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${planoSelecionado === 'plus' ? 'border-[#4C1D95] bg-[#4C1D95]' : 'border-slate-300'}`}>
                 {planoSelecionado === 'plus' && <div className="w-2 h-2 bg-white rounded-full" />}
               </div>
               <div>
                 <p className="font-black text-slate-800">Plano Plus</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">Todos os cursos da Academia + app completo.</p>
                 <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-black text-[#5B2DFF]">R$47</span>
+                  <span className="text-3xl font-black text-[#4C1D95]">R$47</span>
                   <span className="text-xs text-gray-400 font-bold">/mês</span>
                 </div>
                 <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mt-1 flex items-center gap-1">
@@ -234,7 +234,7 @@ const Upgrade = () => {
             {beneficiosAtivos.map((b, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-7 h-7 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
-                  <b.icon size={14} className="text-[#5B2DFF]" />
+                  <b.icon size={14} className="text-[#4C1D95]" />
                 </div>
                 <p className="text-sm font-semibold text-slate-700">{b.texto}</p>
               </div>
@@ -243,7 +243,7 @@ const Upgrade = () => {
           {planoSelecionado === 'fundador' && (
             <div className="mt-4 pt-4 border-t border-slate-100">
               <p className="text-[10px] text-slate-400 font-bold">
-                ✦ Para acesso a <span className="text-[#5B2DFF]">todos os cursos</span>, escolha o Plano Plus.
+                ✦ Para acesso a <span className="text-[#4C1D95]">todos os cursos</span>, escolha o Plano Plus.
               </p>
             </div>
           )}
@@ -252,7 +252,7 @@ const Upgrade = () => {
         {/* CTA */}
         <button
           onClick={irParaCheckout}
-          className="w-full bg-[#5B2DFF] text-white py-5 rounded-[24px] font-black text-base shadow-xl shadow-purple-200 hover:bg-[#4a22e0] active:scale-95 transition-all flex items-center justify-center gap-2 mb-4"
+          className="w-full bg-[#4C1D95] text-white py-5 rounded-[24px] font-black text-base shadow-xl shadow-purple-200 hover:bg-[#3a15b0] active:scale-95 transition-all flex items-center justify-center gap-2 mb-4"
         >
           <Sparkles size={18} />
           {planoSelecionado === 'fundador' ? 'GARANTIR PREÇO FUNDADOR — R$9,90/mês' : 'ASSINAR AGORA — R$47/mês'}

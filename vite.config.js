@@ -57,7 +57,7 @@ export default defineConfig({
         name: 'Verbo — Plataforma do Pregador',
         short_name: 'Verbo',
         description: 'Escreva, leia e pregue seus sermões com o Verbo.',
-        theme_color: '#5B2DFF',
+        theme_color: '#4C1D95',
         background_color: '#FDFDFF',
         display: 'standalone',
         orientation: 'portrait',

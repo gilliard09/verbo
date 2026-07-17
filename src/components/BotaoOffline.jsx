@@ -57,7 +57,7 @@ const BotaoOffline = ({ sermao, className = '' }) => {
         </>
       ) : (
         <>
-          <Download size={15} className="text-slate-300 group-hover:text-[#5B2DFF]" />
+          <Download size={15} className="text-slate-300 group-hover:text-[#4C1D95]" />
           <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Salvar</span>
         </>
       )}

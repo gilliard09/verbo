@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, Loader2, ScrollText, Clock, Trash2, Edit3, 
-  Bell, X, WifiOff, RefreshCw, CheckCircle2, Eye, EyeOff, 
+  Plus, Loader2, ScrollText, Clock, Trash2, Edit3,
+  Bell, X, WifiOff, RefreshCw, CheckCircle2, Eye, EyeOff, Sparkles,
 } from 'lucide-react';
 
 // ✅ Lazy load offline sync APENAS quando necessário
@@ -18,14 +18,64 @@ const initOfflineModule = async () => {
   }
 };
 
+// Chave de persistência de "notificações lidas" no dispositivo.
+// Como ainda não existe uma tabela de leitura por usuário no Supabase,
+// guardamos os ids já vistos localmente — simples e já resolve o badge
+// voltar a marcar como "não lido" a cada reload.
+const LIDAS_KEY = 'verbo_notificacoes_lidas';
+
+const carregarIdsLidos = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(LIDAS_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
+};
+
+const salvarIdsLidos = (idsSet) => {
+  try {
+    // Mantém só os últimos 100 ids para não crescer indefinidamente
+    localStorage.setItem(LIDAS_KEY, JSON.stringify([...idsSet].slice(-100)));
+  } catch {
+    /* silencioso */
+  }
+};
+
 // ✅ Indicador de sync (simples, sem dependências pesadas)
 const SyncBadge = ({ isOnline, pendingCount }) => {
   if (isOnline && pendingCount === 0) return null;
   return (
-    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-[#5B2DFF] transition-all">
+    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-[#4C1D95] transition-all">
       {!isOnline && <WifiOff size={11} />}
       {!isOnline ? 'Offline' : `${pendingCount} pendente${pendingCount > 1 ? 's' : ''}`}
     </button>
+  );
+};
+
+// ✅ Toast automático de nova notificação — aparece sem precisar clicar no sino
+const ToastNotificacao = ({ notificacao, onAbrir, onFechar }) => {
+  if (!notificacao) return null;
+  return (
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[150] w-[calc(100%-2rem)] max-w-sm animate-slide-down">
+      <button
+        onClick={onAbrir}
+        className="w-full flex items-start gap-3 bg-slate-900 text-white rounded-[20px] shadow-2xl px-5 py-4 text-left active:scale-[0.98] transition-transform"
+      >
+        <div className="w-9 h-9 rounded-full bg-[#4C1D95] flex items-center justify-center shrink-0">
+          <Sparkles size={16} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-purple-300 mb-0.5">Nova novidade</p>
+          <p className="text-sm font-bold leading-snug truncate">{notificacao.titulo}</p>
+        </div>
+        <span
+          onClick={(e) => { e.stopPropagation(); onFechar(); }}
+          className="shrink-0 opacity-60 hover:opacity-100 p-1"
+        >
+          <X size={16} />
+        </span>
+      </button>
+    </div>
   );
 };
 
@@ -37,8 +87,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [notificacoes, setNotificacoes] = useState([]);
   const [showNotificacoes, setShowNotificacoes] = useState(false);
-  const [temNovidade, setTemNovidade] = useState(false);
+  const [idsLidos, setIdsLidos] = useState(() => carregarIdsLidos());
   const [expandedId, setExpandedId] = useState(null);
+  const [toastNotificacao, setToastNotificacao] = useState(null);
 
   // ✅ Offline state (lazy init)
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -47,6 +98,11 @@ const Dashboard = () => {
 
   const abortControllerRef = useRef(null);
   const notificacoesTimeoutRef = useRef(null);
+  const toastTimeoutRef = useRef(null);
+
+  // Quantas notificações ainda não foram vistas neste dispositivo
+  const naoLidas = notificacoes.filter(n => !idsLidos.has(n.id));
+  const temNovidade = naoLidas.length > 0;
 
   // ✅ Detectar online/offline
   useEffect(() => {
@@ -79,7 +135,7 @@ const Dashboard = () => {
     abortControllerRef.current = new AbortController();
 
     const timeouts = [];
-    
+
     // Carrega dados + notificações em paralelo
     Promise.all([
       carregarDados(abortControllerRef.current.signal),
@@ -92,6 +148,7 @@ const Dashboard = () => {
         abortControllerRef.current.abort();
       }
       timeouts.forEach(t => clearTimeout(t));
+      clearTimeout(toastTimeoutRef.current);
     };
   }, []);
 
@@ -171,7 +228,16 @@ const Dashboard = () => {
 
       if (data) {
         setNotificacoes(data);
-        if (data.length > 0) setTemNovidade(true);
+
+        // Dispara o toast automático só para a notificação mais recente
+        // ainda não vista neste dispositivo — sem precisar clicar no sino.
+        const idsLidosAtual = carregarIdsLidos();
+        const maisRecenteNaoLida = data.find(n => !idsLidosAtual.has(n.id));
+        if (maisRecenteNaoLida) {
+          setToastNotificacao(maisRecenteNaoLida);
+          clearTimeout(toastTimeoutRef.current);
+          toastTimeoutRef.current = setTimeout(() => setToastNotificacao(null), 6000);
+        }
       }
     } catch (err) {
       console.error('Erro ao carregar notificações:', err);
@@ -183,6 +249,16 @@ const Dashboard = () => {
       notificacoesTimeoutRef.current = null;
     }, 30000);
   }
+
+  // Marca todas as notificações carregadas como lidas e persiste no dispositivo
+  const marcarTodasComoLidas = useCallback(() => {
+    setIdsLidos(prev => {
+      const novo = new Set(prev);
+      notificacoes.forEach(n => novo.add(n.id));
+      salvarIdsLidos(novo);
+      return novo;
+    });
+  }, [notificacoes]);
 
   /**
    * ✅ Excluir sermão (otimizado offline)
@@ -212,8 +288,30 @@ const Dashboard = () => {
     }
   };
 
+  const abrirPainelViaToast = () => {
+    setToastNotificacao(null);
+    clearTimeout(toastTimeoutRef.current);
+    setShowNotificacoes(true);
+    marcarTodasComoLidas();
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFDFF] p-6 pb-32">
+      <style>{`
+        @keyframes slide-down {
+          from { opacity: 0; transform: translate(-50%, -12px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .animate-slide-down { animation: slide-down 0.35s ease; }
+      `}</style>
+
+      {/* ── Toast automático de novidade ── */}
+      <ToastNotificacao
+        notificacao={toastNotificacao}
+        onAbrir={abrirPainelViaToast}
+        onFechar={() => { setToastNotificacao(null); clearTimeout(toastTimeoutRef.current); }}
+      />
+
       {/* Header */}
       <header className="mt-10 mb-10 flex justify-between items-start">
         <div>
@@ -234,25 +332,33 @@ const Dashboard = () => {
         <div className="relative">
           <button
             onClick={() => {
-              setShowNotificacoes(!showNotificacoes);
-              setTemNovidade(false);
+              const abrindo = !showNotificacoes;
+              setShowNotificacoes(abrindo);
+              if (abrindo) {
+                marcarTodasComoLidas();
+                setToastNotificacao(null);
+                clearTimeout(toastTimeoutRef.current);
+              }
             }}
             className={`p-3 rounded-2xl transition-all relative ${
               showNotificacoes
-                ? 'bg-[#5B2DFF] text-white'
+                ? 'bg-[#4C1D95] text-white'
                 : 'bg-white border border-gray-100 text-slate-400 shadow-sm'
             }`}
+            aria-label={temNovidade ? `${naoLidas.length} notificações não lidas` : 'Notificações'}
           >
             <Bell size={20} />
             {temNovidade && (
-              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full" />
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 border-2 border-white rounded-full text-[9px] font-bold text-white leading-none">
+                {naoLidas.length > 9 ? '9+' : naoLidas.length}
+              </span>
             )}
           </button>
 
           {showNotificacoes && (
             <div className="absolute right-0 mt-3 w-72 bg-white rounded-[32px] border border-gray-100 shadow-2xl z-50 p-5 animate-in fade-in zoom-in duration-200">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                   Novidades
                 </h4>
                 <button onClick={() => setShowNotificacoes(false)}>
@@ -291,7 +397,7 @@ const Dashboard = () => {
       {/* Sermões */}
       <section>
         <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-2">
-          <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-[3px] opacity-40">
+          <h3 className="font-bold text-slate-800 uppercase text-[10px] tracking-[3px] opacity-40">
             {isOnline ? 'Suas Mensagens' : 'Suas Mensagens (offline)'}
           </h3>
         </div>
@@ -311,7 +417,7 @@ const Dashboard = () => {
                 className="bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between group hover:shadow-md active:scale-[0.98] transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center group-hover:bg-[#5B2DFF] group-hover:text-white transition-colors">
+                  <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center group-hover:bg-[#4C1D95] group-hover:text-white transition-colors">
                     <ScrollText size={20} />
                   </div>
                   <div className="flex-1 text-left">
@@ -354,7 +460,7 @@ const Dashboard = () => {
               </p>
               <button
                 onClick={() => navigate('/novosermao')}
-                className="w-full max-w-xs bg-[#5B2DFF] text-white font-bold py-4 rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="w-full max-w-xs bg-[#4C1D95] text-white font-bold py-4 rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 Criar meu primeiro sermão
               </button>

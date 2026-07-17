@@ -173,7 +173,7 @@ const TelaLeitura = ({ devocional, onFechar, dark, completado, onMarcarCompleto,
   const bgCard = dark ? '#161618' : '#ffffff';
   const textMain = dark ? '#f1f5f9' : '#1a1a1a';
   const textSub  = dark ? '#cbd5e1' : '#6b7280';
-  const acento   = '#5B2DFF';
+  const acento   = '#4C1D95';
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-8">
@@ -420,7 +420,7 @@ const CalendarioProgresso = ({ completados, dark }) => {
   const [mes, setMes] = useState(new Date());
   const textMain = dark ? '#f1f5f9' : '#1e293b';
   const textSub = dark ? '#64748b' : '#94a3b8';
-  const acento = '#5B2DFF';
+  const acento = '#4C1D95';
 
   const diasDoMes = useMemo(() => {
     const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1);
@@ -522,7 +522,7 @@ const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onComp
   const cardBorder = dark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)';
   const textMain = dark ? '#f1f5f9' : '#1e293b';
   const textSub = dark ? '#64748b' : '#94a3b8';
-  const acento = '#5B2DFF';
+  const acento = '#4C1D95';
 
   const handleMarcarCompleto = async () => {
     if (marcando) return;
@@ -666,7 +666,7 @@ const ProgressHeader = ({ totalSemana, completadosSemana, streak, dark }) => {
   const percentual = totalSemana > 0 ? (completadosSemana / totalSemana) * 100 : 0;
   const textMain = dark ? '#f1f5f9' : '#1e293b';
   const textSub = dark ? '#64748b' : '#94a3b8';
-  const acento = '#5B2DFF';
+  const acento = '#4C1D95';
 
   return (
     <div className="px-4 py-4">
@@ -696,7 +696,7 @@ const ProgressHeader = ({ totalSemana, completadosSemana, streak, dark }) => {
           <div className="h-2 rounded-full overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}>
             <div 
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${percentual}%`, background: 'linear-gradient(90deg, #5B2DFF 0%, #8B5CF6 100%)' }}
+              style={{ width: `${percentual}%`, background: 'linear-gradient(90deg, #4C1D95 0%, #8B5CF6 100%)' }}
             />
           </div>
         </div>
@@ -722,7 +722,7 @@ const FiltrosTema = ({ filtroAtivo, onFiltro, dark }) => {
   ];
 
   const textSub = dark ? '#64748b' : '#94a3b8';
-  const acento = '#5B2DFF';
+  const acento = '#4C1D95';
 
   return (
     <div className="px-4 py-3">
@@ -948,19 +948,19 @@ const Devocionais = () => {
               <div>
                 <p className="font-semibold text-base mb-1" style={{ color: textMain }}>Não foi possível carregar</p>
                 <p className="text-sm mb-4" style={{ color: textSub }}>Verifique sua conexão e tente novamente.</p>
-                <button onClick={carregarDevocionais} className="px-5 py-2 rounded-full text-[13px] font-semibold text-white btn-press" style={{ background: '#5B2DFF' }}>
+                <button onClick={carregarDevocionais} className="px-5 py-2 rounded-full text-[13px] font-semibold text-white btn-press" style={{ background: '#4C1D95' }}>
                   Tentar novamente
                 </button>
               </div>
             </div>
           ) : loading ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="animate-spin" size={26} style={{ color: '#5B2DFF' }} />
+              <Loader2 className="animate-spin" size={26} style={{ color: '#4C1D95' }} />
             </div>
           ) : devocionalsFiltrados.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-8">
               <div className="w-14 h-14 rounded-[20px] flex items-center justify-center" style={{ background: dark ? 'rgba(91,45,255,0.15)' : '#f0ecff' }}>
-                <BookOpen size={24} style={{ color: '#5B2DFF' }} />
+                <BookOpen size={24} style={{ color: '#4C1D95' }} />
               </div>
               <div>
                 <p className="font-semibold text-base mb-1" style={{ color: textMain }}>Em breve...</p>

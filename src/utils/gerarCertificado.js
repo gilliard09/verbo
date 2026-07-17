@@ -27,7 +27,7 @@ export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoVa
   /* ── Faixa lateral ── */
   .sidebar {
     width:64px;
-    background:linear-gradient(180deg,#5B2DFF 0%,#3d1db3 60%,#1a0a5e 100%);
+    background:linear-gradient(180deg,#4C1D95 0%,#3d1db3 60%,#1a0a5e 100%);
     display:flex; flex-direction:column;
     align-items:center; justify-content:space-between;
     padding:24px 0; flex-shrink:0;
@@ -98,7 +98,7 @@ export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoVa
     letter-spacing:-0.025em;
     margin-bottom:20px;
   }
-  .cert-headline span { color:#5B2DFF; }
+  .cert-headline span { color:#4C1D95; }
 
   /* Linha "que o(a) aluno(a) + nome" lado a lado */
   .award-row {
@@ -111,7 +111,7 @@ export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoVa
   .student-name {
     font-family:'Playfair Display',serif;
     font-size:38px; font-weight:700; font-style:italic;
-    color:#5B2DFF; letter-spacing:-0.01em; line-height:1.05;
+    color:#4C1D95; letter-spacing:-0.01em; line-height:1.05;
   }
 
   /* Linha "concluiu + curso" */
@@ -125,7 +125,7 @@ export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoVa
     font-family:'Playfair Display',serif;
     font-size:22px; font-weight:700;
     color:#0f0730; letter-spacing:-0.01em;
-    background: linear-gradient(135deg,#5B2DFF,#9b6fff);
+    background: linear-gradient(135deg,#4C1D95,#9b6fff);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     background-clip:text;
   }
@@ -182,7 +182,7 @@ export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoVa
     <div class="sidebar-logo">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6L12 2z" fill="rgba(255,255,255,0.9)"/>
-        <path d="M9 12l2 2 4-4" stroke="#5B2DFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 12l2 2 4-4" stroke="#4C1D95" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
     <div class="sidebar-text">Academia Verbo · Certificado de Conclusão</div>
@@ -193,14 +193,14 @@ export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoVa
 
     <!-- Ornamento fundo -->
     <svg class="ornament" width="340" height="340" viewBox="0 0 340 340">
-      <circle cx="170" cy="170" r="160" fill="none" stroke="#5B2DFF" stroke-width="1.5"/>
-      <circle cx="170" cy="170" r="130" fill="none" stroke="#5B2DFF" stroke-width="0.8"/>
-      <circle cx="170" cy="170" r="100" fill="none" stroke="#5B2DFF" stroke-width="1.5"/>
-      <circle cx="170" cy="170" r="70" fill="none" stroke="#5B2DFF" stroke-width="0.8"/>
-      <line x1="10" y1="170" x2="330" y2="170" stroke="#5B2DFF" stroke-width="0.8"/>
-      <line x1="170" y1="10" x2="170" y2="330" stroke="#5B2DFF" stroke-width="0.8"/>
-      <line x1="57" y1="57" x2="283" y2="283" stroke="#5B2DFF" stroke-width="0.5"/>
-      <line x1="283" y1="57" x2="57" y2="283" stroke="#5B2DFF" stroke-width="0.5"/>
+      <circle cx="170" cy="170" r="160" fill="none" stroke="#4C1D95" stroke-width="1.5"/>
+      <circle cx="170" cy="170" r="130" fill="none" stroke="#4C1D95" stroke-width="0.8"/>
+      <circle cx="170" cy="170" r="100" fill="none" stroke="#4C1D95" stroke-width="1.5"/>
+      <circle cx="170" cy="170" r="70" fill="none" stroke="#4C1D95" stroke-width="0.8"/>
+      <line x1="10" y1="170" x2="330" y2="170" stroke="#4C1D95" stroke-width="0.8"/>
+      <line x1="170" y1="10" x2="170" y2="330" stroke="#4C1D95" stroke-width="0.8"/>
+      <line x1="57" y1="57" x2="283" y2="283" stroke="#4C1D95" stroke-width="0.5"/>
+      <line x1="283" y1="57" x2="57" y2="283" stroke="#4C1D95" stroke-width="0.5"/>
     </svg>
 
     <!-- Topo -->

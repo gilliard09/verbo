@@ -7,7 +7,7 @@ const AdminTabs = ({ aba, setAba }) => (
       <button
         key={tab.id}
         onClick={() => setAba(tab.id)}
-        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap ${aba === tab.id ? 'bg-white text-[#5B2DFF]' : 'text-gray-500'}`}
+        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap ${aba === tab.id ? 'bg-white text-[#4C1D95]' : 'text-gray-500'}`}
       >
         {tab.label}
       </button>

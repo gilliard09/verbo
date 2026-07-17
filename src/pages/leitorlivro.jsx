@@ -40,7 +40,7 @@ const LeitorLivro = ({ livro, onVoltar }) => {
 
   if (loading) return (
     <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[#121212]">
-      <Loader2 className="animate-spin text-[#5B2DFF] mb-4" size={32} />
+      <Loader2 className="animate-spin text-[#4C1D95] mb-4" size={32} />
       <p className="text-white/30 text-xs font-black uppercase tracking-widest">Preparando Púlpito...</p>
     </div>
   );
@@ -59,7 +59,7 @@ const LeitorLivro = ({ livro, onVoltar }) => {
           style={{ fontSize: `${fontSize}px` }}
         >
           <h1 className="text-4xl font-playfair font-black mb-8 leading-tight">{livro.titulo}</h1>
-          <div className="w-12 h-1 bg-[#5B2DFF] mb-10 opacity-30 rounded-full"></div>
+          <div className="w-12 h-1 bg-[#4C1D95] mb-10 opacity-30 rounded-full"></div>
           
           {conteudoTexto}
         </article>

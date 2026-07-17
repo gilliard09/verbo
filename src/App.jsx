@@ -43,25 +43,25 @@ const Navbar = ({ session, onOpenBiblia }) => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-[100] pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-      <Link to="/" className={`flex flex-col items-center ${location.pathname === '/' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+      <Link to="/" className={`flex flex-col items-center ${location.pathname === '/' ? 'text-[#4C1D95]' : 'text-gray-400'}`}>
         <Home size={22} /><span className="text-[10px] font-bold mt-1">Início</span>
       </Link>
 
-      <Link to="/cursos" className={`flex flex-col items-center ${location.pathname.startsWith('/cursos') ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+      <Link to="/cursos" className={`flex flex-col items-center ${location.pathname.startsWith('/cursos') ? 'text-[#4C1D95]' : 'text-gray-400'}`}>
         <PlayCircle size={22} /><span className="text-[10px] font-bold mt-1">Academia</span>
       </Link>
 
       <Link to="/editor" className="flex flex-col items-center -mt-10">
-        <div className="bg-[#5B2DFF] p-4 rounded-full text-white shadow-lg shadow-purple-200 hover:scale-105 active:scale-95 transition-all">
+        <div className="bg-[#4C1D95] p-4 rounded-full text-white shadow-lg shadow-purple-200 hover:scale-105 active:scale-95 transition-all">
           <PenTool size={24} />
         </div>
       </Link>
 
-      <Link to="/devocionais" className={`flex flex-col items-center ${location.pathname.startsWith('/devocionais') ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+      <Link to="/devocionais" className={`flex flex-col items-center ${location.pathname.startsWith('/devocionais') ? 'text-[#4C1D95]' : 'text-gray-400'}`}>
         <Users size={22} /><span className="text-[10px] font-bold mt-1">Devocionais</span>
       </Link>
 
-      <Link to="/perfil" className={`flex flex-col items-center ${location.pathname === '/perfil' ? 'text-[#5B2DFF]' : 'text-gray-400'}`}>
+      <Link to="/perfil" className={`flex flex-col items-center ${location.pathname === '/perfil' ? 'text-[#4C1D95]' : 'text-gray-400'}`}>
         <User size={22} /><span className="text-[10px] font-bold mt-1">Perfil</span>
       </Link>
     </nav>
@@ -88,7 +88,7 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
         {/* Suspense garante uma transição suave entre o carregamento das páginas */}
         <Suspense fallback={
           <div className="min-h-screen flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-[#5B2DFF] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-[#4C1D95] border-t-transparent rounded-full animate-spin"></div>
           </div>
         }>
           <Routes>
@@ -164,7 +164,7 @@ function App() {
   if (isChecking) {
     return (
       <div className="min-h-screen bg-[#FDFDFF] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#5B2DFF] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-[#4C1D95] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }

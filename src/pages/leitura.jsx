@@ -171,18 +171,22 @@ const Leitura = () => {
 
       {/* ── Percentual flutuante no modo foco ── */}
       <div
-        className={`fixed top-3 right-4 z-[90] text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${
+        className={`fixed right-4 z-[90] text-[10px] font-bold uppercase tracking-widest transition-all duration-500 ${
           modoFoco ? 'opacity-30' : 'opacity-0 pointer-events-none'
         }`}
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
       >
         {progresso}%
       </div>
 
       {/* ── Badge offline ── */}
       {modoOffline && (
-        <div className={`fixed top-3 right-10 z-[90] flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-opacity duration-500 ${
-          tema === 'dark' ? 'bg-purple-900/60 text-purple-300' : 'bg-slate-100 text-slate-400'
-        } ${modoFoco ? 'opacity-30' : 'opacity-100'}`}>
+        <div
+          className={`fixed right-10 z-[90] flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest transition-opacity duration-500 ${
+            tema === 'dark' ? 'bg-purple-900/60 text-purple-300' : 'bg-slate-100 text-slate-400'
+          } ${modoFoco ? 'opacity-30' : 'opacity-100'}`}
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+        >
           <WifiOff size={10} /> Offline
         </div>
       )}
@@ -191,30 +195,32 @@ const Leitura = () => {
       {wakeLockAtivo && (
         <div
           title="Tela protegida contra bloqueio automático"
-          className={`fixed top-3 left-4 z-[90] w-2 h-2 rounded-full transition-opacity duration-500 ${
+          className={`fixed left-4 z-[90] w-2 h-2 rounded-full transition-opacity duration-500 ${
             tema === 'dark' ? 'bg-purple-400' : 'bg-slate-400'
           } ${modoFoco ? 'opacity-30' : 'opacity-60'}`}
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
         />
       )}
 
       {/* ── Header de controles ── */}
       <div
-        className={`sticky top-[3px] z-50 flex items-center justify-between p-4 bg-inherit border-b border-black/5 backdrop-blur-md transition-all duration-500 ${
+        className={`sticky top-[3px] z-50 flex flex-wrap items-center justify-between gap-2 p-4 bg-inherit border-b border-black/5 backdrop-blur-md transition-all duration-500 ${
           modoFoco ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
         }`}
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
       >
         <button
           onClick={() => navigate(-1)}
-          className="p-2 hover:bg-black/10 rounded-full transition-colors"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-full transition-colors shrink-0"
         >
           <ArrowLeft size={24} />
         </button>
 
-        <div className="flex items-center gap-3 bg-black/10 p-1.5 rounded-2xl shadow-inner">
+        <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-2xl shadow-inner overflow-x-auto max-w-full">
           <select
             value={fonte}
             onChange={(e) => setFonte(e.target.value)}
-            className="bg-transparent text-[10px] font-black uppercase tracking-tighter border-none focus:ring-0 cursor-pointer opacity-60"
+            className="bg-transparent text-[11px] font-bold uppercase tracking-tighter border-none focus:ring-0 cursor-pointer opacity-70 min-h-[40px] shrink-0"
           >
             <option value="serif">Padrão</option>
             <option value="inter">Inter</option>
@@ -222,33 +228,33 @@ const Leitura = () => {
             <option value="times">Times</option>
           </select>
 
-          <div className="w-[1px] h-6 bg-black/10 mx-1" />
+          <div className="w-[1px] h-6 bg-black/10 mx-0.5 shrink-0" />
 
           <button
             onClick={() => setFontSize(f => Math.max(f - 2, 14))}
-            className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-xl"
+            className="w-11 h-11 shrink-0 flex items-center justify-center bg-white/20 rounded-xl active:scale-90 transition-transform"
           >
-            <Minus size={20} />
+            <Minus size={18} />
           </button>
-          <div className="flex flex-col items-center px-1">
+          <div className="flex flex-col items-center px-1 shrink-0">
             <Type size={14} className="opacity-40" />
             <span className="text-[10px] font-bold opacity-60">{fontSize}</span>
           </div>
           <button
             onClick={() => setFontSize(f => Math.min(f + 2, 50))}
-            className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-xl"
+            className="w-11 h-11 shrink-0 flex items-center justify-center bg-white/20 rounded-xl active:scale-90 transition-transform"
           >
-            <Plus size={20} />
+            <Plus size={18} />
           </button>
 
-          <div className="w-[1px] h-6 bg-black/10 mx-1" />
+          <div className="w-[1px] h-6 bg-black/10 mx-0.5 shrink-0" />
 
           <button
             onClick={alternarTema}
-            className="flex flex-col items-center justify-center px-3 py-1 hover:bg-black/5 rounded-xl transition-all"
+            className="flex flex-col items-center justify-center px-3 min-w-[44px] min-h-[44px] hover:bg-black/5 rounded-xl transition-all shrink-0"
           >
             <Palette size={18} />
-            <span className="text-[9px] font-black uppercase tracking-tighter mt-1">{tema}</span>
+            <span className="text-[9px] font-bold uppercase tracking-tighter mt-1">{tema}</span>
           </button>
         </div>
       </div>
@@ -259,7 +265,12 @@ const Leitura = () => {
         className={`p-6 max-w-2xl mx-auto pb-32 transition-all duration-1000 ${modoFoco ? 'pt-10' : 'pt-6'}`}
       >
         <header className="text-center mb-10">
-          <h1 className="text-4xl font-black mb-4 leading-tight">{sermao.titulo}</h1>
+          <h1
+            className="font-black mb-4 leading-tight"
+            style={{ fontSize: 'clamp(1.75rem, 6vw, 2.25rem)' }}
+          >
+            {sermao.titulo}
+          </h1>
           <div className="inline-block px-4 py-1 rounded-full bg-black/5 text-[11px] font-bold uppercase tracking-widest opacity-60">
             {sermao.referencia_biblica}
           </div>
@@ -271,7 +282,7 @@ const Leitura = () => {
             fontFamily:
               fonte === 'serif' || fonte === 'inter' ? undefined : fontesFamilia[fonte]
           }}
-          className={`leading-relaxed whitespace-pre-wrap text-justify [text-align-last:left] [hyphens:auto] [word-spacing:-0.01em] ${
+          className={`leading-relaxed whitespace-pre-wrap text-left break-words [hyphens:auto] ${
             fonte === 'serif' ? 'font-serif' : ''
           } ${fonte === 'inter' ? 'font-sans' : ''}`}
           dangerouslySetInnerHTML={{ __html: renderizarConteudo(sermao.conteudo) }}
@@ -281,9 +292,13 @@ const Leitura = () => {
       {/* ── Botão modo foco ── */}
       <button
         onClick={() => setModoFoco(!modoFoco)}
-        className={`fixed bottom-8 right-8 p-4 rounded-full shadow-2xl transition-all duration-500 z-[60] ${
+        className={`fixed p-4 rounded-full shadow-2xl transition-all duration-500 z-[60] ${
           tema === 'dark' ? 'bg-white text-black' : 'bg-black text-white'
         } hover:scale-110 active:scale-95`}
+        style={{
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)',
+          right: 'calc(env(safe-area-inset-right, 0px) + 2rem)',
+        }}
       >
         {modoFoco ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
       </button>
@@ -293,6 +308,7 @@ const Leitura = () => {
         className={`fixed bottom-0 left-0 right-0 p-4 text-center text-[9px] font-bold pointer-events-none uppercase tracking-widest transition-opacity duration-1000 ${
           modoFoco ? 'opacity-0' : 'opacity-20'
         }`}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
       >
         Modo Púlpito • Verbo
       </div>

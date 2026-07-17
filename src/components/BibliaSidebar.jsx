@@ -47,7 +47,7 @@ const BibliaSidebar = ({ isOpen, onClose }) => {
         <div className="p-6 flex flex-col h-full">
           
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2 text-[#5B2DFF]">
+            <div className="flex items-center gap-2 text-[#4C1D95]">
               <BookOpen size={24} />
               <h2 className="font-black uppercase tracking-tighter">Bíblia Rápida</h2>
             </div>
@@ -64,7 +64,7 @@ const BibliaSidebar = ({ isOpen, onClose }) => {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
             />
-            <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5B2DFF]">
+            <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4C1D95]">
               {loading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
             </button>
           </form>
@@ -73,8 +73,8 @@ const BibliaSidebar = ({ isOpen, onClose }) => {
             {resultado ? (
               <div className="animate-in fade-in slide-in-from-bottom-2">
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-black text-[#5B2DFF] text-xl">{resultado.reference}</h3>
-                  <button onClick={copiarTexto} className="p-2 text-gray-400 hover:text-[#5B2DFF] transition-colors">
+                  <h3 className="font-black text-[#4C1D95] text-xl">{resultado.reference}</h3>
+                  <button onClick={copiarTexto} className="p-2 text-gray-400 hover:text-[#4C1D95] transition-colors">
                     <Copy size={18} />
                   </button>
                 </div>
