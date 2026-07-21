@@ -90,8 +90,10 @@ const Upgrade = () => {
           <div className="bg-white border border-slate-100 rounded-[24px] p-5 mb-8 space-y-3">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">O que você ganha a mais</p>
             {[
-              'Teologia Completa (R$97 avulso)',
-              'Todos os cursos futuros da Academia',
+              'Curso de Teologia Completo',
+              'Acesso a todos os cursos da Academia',
+              'Sermões ilimitados',
+              'Acesso offline aos sermões',
               'Suporte prioritário',
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">

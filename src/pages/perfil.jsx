@@ -15,7 +15,8 @@ import {
   Crown, Zap, Book, ZoomIn, ZoomOut, Check
 } from 'lucide-react';
 
-const MAX_AVATAR_MB = 8;
+const AVATAR_MAX_MB = 8;
+const AVATAR_MAX_BYTES = AVATAR_MAX_MB * 1024 * 1024;
 
 // ─── Modal de crop de avatar ──────────────────────────────────────────────────
 const ModalCropAvatar = ({ imagemSrc, onConfirmar, onCancelar, uploading }) => {
@@ -68,9 +69,9 @@ const ModalCropAvatar = ({ imagemSrc, onConfirmar, onCancelar, uploading }) => {
 
   useEffect(() => { desenhar(); }, [desenhar]);
 
-  // Drag para reposicionar (mouse) — escuta no `window`, não só no canvas, para
-  // que soltar o botão fora da área de 280x280 ainda finalize o arraste
-  // corretamente, em vez de "travar" no meio do gesto.
+  // Drag para reposicionar — usamos listeners no `document` para o arraste
+  // continuar funcionando mesmo se o cursor sair da área do canvas antes
+  // de soltar o clique (comportamento padrão em editores de crop).
   const onMouseDown = (e) => {
     setDragging(true);
     dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
@@ -82,11 +83,11 @@ const ModalCropAvatar = ({ imagemSrc, onConfirmar, onCancelar, uploading }) => {
       setOffset({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
     };
     const onUp = () => setDragging(false);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
     return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
     };
   }, [dragging]);
 
@@ -113,7 +114,7 @@ const ModalCropAvatar = ({ imagemSrc, onConfirmar, onCancelar, uploading }) => {
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm">
       <div className="bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
-        <h3 className="font-bold text-slate-800 text-center uppercase tracking-tight mb-1">Ajustar Foto</h3>
+        <h3 className="font-black text-slate-800 text-center uppercase tracking-tight mb-1">Ajustar Foto</h3>
         <p className="text-slate-400 text-xs text-center mb-5">Arraste para reposicionar • Use o zoom para ajustar</p>
 
         {/* Canvas de crop */}
@@ -185,9 +186,12 @@ const ModalLogout = ({ aberto, onConfirmar, onCancelar, loading }) => {
 };
 
 // ─── Card de estatística ──────────────────────────────────────────────────────
+// Conteúdo centralizado (ícone, número e label) para não parecer desalinhado
+// dentro do card — antes cada elemento "flutuava" à esquerda em larguras
+// diferentes, o que dava uma sensação de layout mal ajustado.
 const StatCard = ({ icon: Icon, color, label, value, sub }) => (
-  <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex flex-col gap-2">
-    <div className={`p-2.5 rounded-xl w-fit ${color}`}>
+  <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex flex-col items-center text-center gap-2">
+    <div className={`p-2.5 rounded-xl ${color}`}>
       <Icon size={18} />
     </div>
     <p className="text-3xl font-black text-slate-800 italic leading-none">{value}</p>
@@ -198,12 +202,12 @@ const StatCard = ({ icon: Icon, color, label, value, sub }) => (
   </div>
 );
 
-// ─── Skeleton dos cards de estatística (evita "sumiço" no primeiro load) ──────
+// ─── Skeleton dos cards de estatística (enquanto carrega) ─────────────────────
 const StatCardSkeleton = () => (
-  <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex flex-col gap-2 animate-pulse">
+  <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex flex-col items-center gap-2 animate-pulse">
     <div className="w-9 h-9 rounded-xl bg-slate-100" />
-    <div className="h-7 w-10 bg-slate-100 rounded" />
-    <div className="h-2.5 w-14 bg-slate-100 rounded" />
+    <div className="w-8 h-6 rounded bg-slate-100" />
+    <div className="w-14 h-2.5 rounded bg-slate-100" />
   </div>
 );
 
@@ -233,10 +237,9 @@ const Perfil = ({ onOpenBiblia }) => {
   const navigate = useNavigate();
   const { plano, isFundador, isPlus } = usePlano();
 
-  // ── View sincronizada com a URL (?view=dados) ──────────────────────────────
-  // Antes a navegação interna era só estado local — o botão/gesto de "voltar"
-  // do celular saía da página de Perfil inteira. Com a view na URL, voltar
-  // primeiro fecha a subtela atual e só depois sai do Perfil.
+  // Navegação por querystring (?view=dados) em vez de estado puro — assim o
+  // botão/gesto de voltar do celular volta para o menu do Perfil em vez de
+  // sair da página inteira.
   const [searchParams, setSearchParams] = useSearchParams();
   const view = searchParams.get('view') || 'menu';
   const setView = useCallback((novaView) => {
@@ -252,7 +255,7 @@ const Perfil = ({ onOpenBiblia }) => {
   const [feedback, setFeedback] = useState({ tipo: 'sugestao', estrelas: 5, mensagem: '' });
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackSucesso, setFeedbackSucesso] = useState(false);
-  const [feedbackErro, setFeedbackErro] = useState('');
+  const [erroFeedback, setErroFeedback] = useState('');
   const [success, setSuccess] = useState(false);
   const [erro, setErro] = useState('');
   const [modalLogout, setModalLogout] = useState(false);
@@ -284,7 +287,7 @@ const Perfil = ({ onOpenBiblia }) => {
   async function getProfile() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); setStats(s => ({ ...s, loading: false })); return; }
+      if (!user) { setLoading(false); return; }
 
       const { data: profileData } = await supabase
         .from('profiles')
@@ -299,11 +302,7 @@ const Perfil = ({ onOpenBiblia }) => {
         avatar_url: user.user_metadata?.avatar_url || '',
         role: profileData?.role || 'user'
       });
-      setLoading(false);
 
-      // Estatísticas isoladas em seu próprio try/catch: se essa parte falhar,
-      // não deve travar `stats.loading` para sempre — o card de estatísticas
-      // precisa parar de "esperar" mesmo em caso de erro.
       try {
         const [
           { count: sermoes },
@@ -323,13 +322,16 @@ const Perfil = ({ onOpenBiblia }) => {
           erro: false,
         });
       } catch (statsErr) {
-        console.error('Erro ao carregar estatísticas:', statsErr.message);
+        // Se as estatísticas falharem, ainda liberamos a tela — só marcamos
+        // o erro para não deixar os cards "presos" em loading para sempre.
+        console.error('Erro ao carregar estatísticas:', statsErr);
         setStats(s => ({ ...s, loading: false, erro: true }));
       }
     } catch (error) {
-      console.error('Erro ao carregar perfil:', error.message);
-      setLoading(false);
+      console.error('Erro ao carregar:', error.message);
       setStats(s => ({ ...s, loading: false, erro: true }));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -338,8 +340,8 @@ const Perfil = ({ onOpenBiblia }) => {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { setErro('Envie apenas imagens.'); e.target.value = ''; return; }
-    if (file.size > MAX_AVATAR_MB * 1024 * 1024) {
-      setErro(`A imagem precisa ter no máximo ${MAX_AVATAR_MB}MB.`);
+    if (file.size > AVATAR_MAX_BYTES) {
+      setErro(`A imagem precisa ter até ${AVATAR_MAX_MB}MB. Escolha uma foto menor.`);
       e.target.value = '';
       return;
     }
@@ -421,7 +423,7 @@ const Perfil = ({ onOpenBiblia }) => {
   const enviarFeedback = async () => {
     if (!feedback.mensagem.trim()) return;
     setFeedbackLoading(true);
-    setFeedbackErro('');
+    setErroFeedback('');
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase.from('feedbacks').insert({
@@ -434,7 +436,7 @@ const Perfil = ({ onOpenBiblia }) => {
       setTimeout(() => { setFeedbackSucesso(false); setView('menu'); }, 2500);
     } catch (e) {
       console.error('Erro ao enviar feedback:', e);
-      setFeedbackErro('Não foi possível enviar seu feedback agora. Tente novamente em instantes.');
+      setErroFeedback('Não foi possível enviar seu feedback agora. Tente novamente em instantes.');
     } finally {
       setFeedbackLoading(false);
     }
@@ -465,9 +467,9 @@ const Perfil = ({ onOpenBiblia }) => {
       {/* ── Header com avatar ── */}
       <header className="mt-8 mb-8 text-center">
         <div className="relative w-24 h-24 mx-auto mb-4">
-          <div className="w-24 h-24 bg-gradient-to-tr from-[#4C1D95] to-[#7C3AED] rounded-[32px] flex items-center justify-center shadow-xl border-4 border-white overflow-hidden">
+          <div className="w-24 h-24 bg-gradient-to-tr from-[#4C1D95] to-[#D946EF] rounded-[32px] flex items-center justify-center shadow-xl border-4 border-white overflow-hidden">
             {perfil.avatar_url
-              ? <img src={perfil.avatar_url} alt="Sua foto de perfil" className="w-full h-full object-cover" />
+              ? <img src={perfil.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               : <span className="text-3xl font-black text-white">{perfil.nome.charAt(0) || 'P'}</span>
             }
           </div>
@@ -480,10 +482,13 @@ const Perfil = ({ onOpenBiblia }) => {
         </div>
 
         {erro && !imagemCropSrc && view === 'menu' && (
-          <p className="text-red-500 text-xs font-bold mt-2">{erro}</p>
+          <div className="max-w-xs mx-auto mt-3 flex items-center gap-2 p-2.5 bg-red-50 rounded-xl border border-red-100">
+            <AlertTriangle size={13} className="text-red-500 shrink-0" />
+            <p className="text-[11px] font-bold text-red-600 text-left">{erro}</p>
+          </div>
         )}
 
-        <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">{perfil.nome || 'Pregador'}</h2>
+        <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase mt-3">{perfil.nome || 'Pregador'}</h2>
 
         <div className="flex items-center justify-center gap-2 mt-2">
           <BadgePlano plano={plano} />
@@ -499,23 +504,23 @@ const Perfil = ({ onOpenBiblia }) => {
       {view === 'menu' && (
         <div className="max-w-md mx-auto space-y-4 animate-in fade-in duration-500">
 
-          <div className="grid grid-cols-3 gap-3 mb-2">
-            {stats.loading ? (
-              <>
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-              </>
-            ) : (
-              <>
-                <StatCard icon={PenTool} color="bg-purple-50 text-[#4C1D95]" label="Sermões" value={stats.erro ? '—' : stats.sermoes} sub="criados" />
-                <StatCard icon={BookOpen} color="bg-green-50 text-green-500" label="Aulas" value={stats.erro ? '—' : stats.aulasCompletas} sub="concluídas" />
-                <StatCard icon={Award} color="bg-orange-50 text-orange-500" label="Certificados" value={stats.erro ? '—' : stats.certificados} sub="de conclusão" />
-              </>
-            )}
-          </div>
-          {stats.erro && (
-            <p className="text-[11px] text-slate-400 font-medium -mt-1 px-1">Não foi possível carregar suas estatísticas agora.</p>
+          {stats.loading ? (
+            <div className="grid grid-cols-3 gap-3 mb-2">
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </div>
+          ) : stats.erro ? (
+            <div className="mb-2 flex items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+              <AlertTriangle size={14} className="text-slate-400 shrink-0" />
+              <p className="text-xs font-medium text-slate-400">Não foi possível carregar suas estatísticas agora.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 mb-2">
+              <StatCard icon={PenTool} color="bg-purple-50 text-[#4C1D95]" label="Sermões" value={stats.sermoes} sub="criados" />
+              <StatCard icon={BookOpen} color="bg-green-50 text-green-500" label="Aulas" value={stats.aulasCompletas} sub="concluídas" />
+              <StatCard icon={Award} color="bg-orange-50 text-orange-500" label="Certificados" value={stats.certificados} sub="de conclusão" />
+            </div>
           )}
 
           {!isPlus && (
@@ -615,7 +620,7 @@ const Perfil = ({ onOpenBiblia }) => {
       {view === 'dados' && (
         <form onSubmit={handleUpdate} className="max-w-md mx-auto space-y-3 animate-in fade-in slide-in-from-right-4">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-bold text-slate-800 uppercase text-xs tracking-widest">Editar Informações</h3>
+            <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Editar Informações</h3>
             <button type="button" onClick={() => setView('menu')} aria-label="Fechar" className="p-2 text-gray-400"><X size={20} /></button>
           </div>
 
@@ -662,7 +667,9 @@ const Perfil = ({ onOpenBiblia }) => {
                   <input type={mostrarSenhaAtual ? 'text' : 'password'} placeholder="Sua senha atual"
                     className="w-full bg-transparent font-bold text-slate-700 outline-none text-sm"
                     value={senhaAtual} onChange={e => setSenhaAtual(e.target.value)} />
-                  <button type="button" onClick={() => setMostrarSenhaAtual(v => !v)} aria-label={mostrarSenhaAtual ? 'Ocultar senha atual' : 'Mostrar senha atual'} className="text-slate-300 hover:text-slate-500 transition-colors shrink-0">
+                  <button type="button" onClick={() => setMostrarSenhaAtual(v => !v)}
+                    aria-label={mostrarSenhaAtual ? 'Ocultar senha atual' : 'Mostrar senha atual'}
+                    className="text-slate-300 hover:text-slate-500 transition-colors shrink-0">
                     {mostrarSenhaAtual ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
@@ -675,7 +682,9 @@ const Perfil = ({ onOpenBiblia }) => {
                   <input type={mostrarNovaSenha ? 'text' : 'password'} placeholder="Mínimo 6 caracteres"
                     className="w-full bg-transparent font-bold text-slate-700 outline-none text-sm"
                     value={novaSenha} onChange={e => setNovaSenha(e.target.value)} />
-                  <button type="button" onClick={() => setMostrarNovaSenha(v => !v)} aria-label={mostrarNovaSenha ? 'Ocultar nova senha' : 'Mostrar nova senha'} className="text-slate-300 hover:text-slate-500 transition-colors shrink-0">
+                  <button type="button" onClick={() => setMostrarNovaSenha(v => !v)}
+                    aria-label={mostrarNovaSenha ? 'Ocultar nova senha' : 'Mostrar nova senha'}
+                    className="text-slate-300 hover:text-slate-500 transition-colors shrink-0">
                     {mostrarNovaSenha ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
@@ -716,14 +725,14 @@ const Perfil = ({ onOpenBiblia }) => {
       {view === 'gerador' && (
         <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 pb-10">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-slate-800 uppercase text-[10px] tracking-widest">Convite Social</h3>
+            <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-widest">Convite Social</h3>
             <button onClick={() => setView('menu')} aria-label="Fechar" className="p-2 text-gray-400"><X size={20} /></button>
           </div>
           <div className="mb-6 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
             <label className={labelClass}>Frase do Card</label>
             <input type="text" maxLength={60} className={inputClass} value={textoCard} onChange={e => setTextoCard(e.target.value)} />
           </div>
-          <div ref={cardRef} className="aspect-[4/5] w-full bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] rounded-[40px] p-8 flex flex-col items-center justify-between text-center shadow-2xl relative overflow-hidden">
+          <div ref={cardRef} className="aspect-[4/5] w-full bg-gradient-to-br from-[#4C1D95] to-[#D946EF] rounded-[40px] p-8 flex flex-col items-center justify-between text-center shadow-2xl relative overflow-hidden">
             <div className="absolute top-[-10%] right-[-10%] w-40 h-40 bg-white/10 rounded-full blur-3xl" />
             <div className="z-10">
               <div className="bg-white/20 px-4 py-1 rounded-full mx-auto backdrop-blur-md w-fit mb-2">
@@ -752,7 +761,7 @@ const Perfil = ({ onOpenBiblia }) => {
       {view === 'feedback' && (
         <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-slate-800 uppercase text-xs tracking-widest">Feedback</h3>
+            <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Feedback</h3>
             <button onClick={() => setView('menu')} aria-label="Fechar" className="p-2 text-gray-400"><X size={20} /></button>
           </div>
           {feedbackSucesso ? (
@@ -788,7 +797,9 @@ const Perfil = ({ onOpenBiblia }) => {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Sua avaliação</p>
                 <div className="flex gap-2 justify-center">
                   {[1,2,3,4,5].map(n => (
-                    <button key={n} onClick={() => setFeedback(f => ({ ...f, estrelas: n }))} aria-label={`${n} estrela${n > 1 ? 's' : ''}`} className="transition-transform active:scale-90">
+                    <button key={n} onClick={() => setFeedback(f => ({ ...f, estrelas: n }))}
+                      aria-label={`${n} estrela${n > 1 ? 's' : ''}`}
+                      className="transition-transform active:scale-90">
                       <Star size={32} className={n <= feedback.estrelas ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-100'} />
                     </button>
                   ))}
@@ -803,10 +814,10 @@ const Perfil = ({ onOpenBiblia }) => {
                 <p className="text-[10px] text-gray-300 text-right mt-1">{feedback.mensagem.length}/500</p>
               </div>
 
-              {feedbackErro && (
+              {erroFeedback && (
                 <div className="flex items-center gap-2 p-3 bg-red-50 rounded-2xl border border-red-100 animate-in fade-in duration-200">
                   <AlertTriangle size={14} className="text-red-500 shrink-0" />
-                  <p className="text-xs font-bold text-red-600">{feedbackErro}</p>
+                  <p className="text-xs font-bold text-red-600">{erroFeedback}</p>
                 </div>
               )}
 
@@ -823,7 +834,7 @@ const Perfil = ({ onOpenBiblia }) => {
       {view === 'sobre' && (
         <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="font-bold text-slate-800 uppercase text-xs tracking-widest">Sobre o Verbo</h3>
+            <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Sobre o Verbo</h3>
             <button onClick={() => setView('menu')} aria-label="Fechar" className="p-2 text-gray-400"><X size={20} /></button>
           </div>
           <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-center mb-6">

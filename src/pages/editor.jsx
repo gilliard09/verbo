@@ -5,13 +5,20 @@ import {
   Save, ArrowLeft, Book, Loader2,
   Bold, Italic, Quote, Highlighter, CheckCircle2,
   Clock, AlignLeft, RotateCcw, Maximize2, Minimize2,
-  AlertTriangle, X, Lock, WifiOff,
+  AlertTriangle, X, Lock, WifiOff, Sparkles, ArrowRight,
 } from 'lucide-react';
 
 // ── Offline layer ──────────────────────────────────────────────────────────────
 import { getSermaoLocal, upsertSermaoLocal, enqueueOp } from '../lib/db';
 import { gerarIdLocal } from '../lib/sync';
 import { useOfflineSync } from '../hooks/useOfflineSync';
+import { usePlano } from '../hooks/usePlano';
+
+// Sermão a partir do qual o modal de upgrade pode aparecer — dado mostra que
+// quem chega aqui já formou hábito real de uso (queda de engajamento acontece
+// antes disso, entre o 1º e o 2º sermão). Usamos >= (não só ===) para também
+// cobrir usuários que já tinham 3+ sermões antes deste recurso existir.
+const GATILHO_UPGRADE_SERMAO = 3;
 
 const PALAVRAS_POR_MINUTO = 120;
 const AUTO_SAVE_DELAY     = 30000;
@@ -68,6 +75,53 @@ const Toast = ({ visivel, tipo, mensagem, onFechar }) => (
   </div>
 );
 
+// ─── Modal de upgrade contextual — aparece ao salvar o 3º sermão ──────────────
+// Não bloqueia nada (o plano gratuito continua permitindo criar sermões);
+// é só uma oferta no momento em que a pessoa já demonstrou hábito de uso.
+const ModalUpgradeSermao = ({ aberto, onFechar, onVerPlanos }) => {
+  if (!aberto) return null;
+  return (
+    <div className="fixed inset-0 z-[250] flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onFechar} />
+      <div className="relative bg-white rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] p-7 text-center relative overflow-hidden">
+          <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+          <button
+            onClick={onFechar}
+            aria-label="Fechar"
+            className="absolute top-3 right-3 p-1.5 text-white/70 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+          <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Sparkles size={26} className="text-white" />
+          </div>
+          <p className="text-white font-black text-lg leading-tight">
+            Você já criou 3 mensagens com o Verbo 🎉
+          </p>
+        </div>
+        <div className="p-6">
+          <p className="text-slate-500 text-sm text-center leading-relaxed mb-6">
+            Continue evoluindo sua pregação com a Academia Verbo, sermões ilimitados e recursos exclusivos do plano Plus.
+          </p>
+          <button
+            onClick={onVerPlanos}
+            className="w-full bg-[#4C1D95] text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-[#5B21B6] active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
+          >
+            Conhecer o Plus <ArrowRight size={16} />
+          </button>
+          <button
+            onClick={onFechar}
+            className="w-full text-slate-400 text-xs font-bold py-2"
+          >
+            Continuar sem upgrade
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Botão de toolbar com alvo de toque de 44px ────────────────────────────────
 const BotaoToolbar = ({ onClick, title, active, children }) => (
   <button
@@ -94,10 +148,11 @@ const Editor = () => {
   const params = new URLSearchParams(location.search);       // ← NOVO
   const tipo   = params.get('tipo');                         // ← NOVO
 
+  const { isPlus } = usePlano();
   const podeCreiarSermao = true;
   const sermoesRestantes = null;
-  const isPlus           = true;
   const percentualUso    = 0;
+  const [modalUpgradeAberto, setModalUpgradeAberto] = useState(false);
 
   const [titulo,     setTitulo]     = useState('');
   const [conteudo,   setConteudo]   = useState('');
@@ -298,6 +353,7 @@ Oração:`
       };
 
       let salvouOnline = false;
+      const eraSermaoNovo = !id; // só sermões recém-criados contam pro gatilho de upgrade
       try {
         const res = id
           ? await supabase.from('sermoes').update(dadosSermao).eq('id', id)
@@ -316,6 +372,45 @@ Oração:`
           salvouOnline = true;
           localStorage.removeItem(RASCUNHO_KEY(id));
           mostrarToast('Sermão salvo com sucesso!', 'sucesso');
+
+          // ── Gatilho de upgrade contextual ──────────────────────────────
+          // Só verifica em criação (não edição) e só para quem ainda não é
+          // Plus. A flag de "já viu" fica no banco (profiles.viu_upgrade_sermoes),
+          // não em localStorage — assim cobre tanto usuários novos quanto
+          // quem já tinha 3+ sermões antes deste recurso existir, e continua
+          // consistente mesmo se a pessoa trocar de aparelho.
+          if (eraSermaoNovo && !isPlus) {
+            try {
+              const [{ count }, { data: perfilFlag }] = await Promise.all([
+                supabase
+                  .from('sermoes')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('user_id', user.id),
+                supabase
+                  .from('profiles')
+                  .select('viu_upgrade_sermoes')
+                  .eq('id', user.id)
+                  .maybeSingle(),
+              ]);
+
+              const jaViuUpgrade = perfilFlag?.viu_upgrade_sermoes === true;
+
+              if (count >= GATILHO_UPGRADE_SERMAO && !jaViuUpgrade) {
+                // Marca no banco antes de exibir — evita corrida entre
+                // salvamentos rápidos mostrando o modal mais de uma vez.
+                await supabase
+                  .from('profiles')
+                  .update({ viu_upgrade_sermoes: true })
+                  .eq('id', user.id);
+
+                setModalUpgradeAberto(true);
+                return; // segura a navegação — o modal decide o próximo passo
+              }
+            } catch {
+              // Se a checagem falhar, segue o fluxo normal sem o modal
+            }
+          }
+
           setTimeout(() => navigate('/'), 1200);
         }
       } catch {
@@ -396,6 +491,12 @@ Oração:`
 
       <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem}
         onFechar={() => setToast(t => ({ ...t, visivel: false }))} />
+
+      <ModalUpgradeSermao
+        aberto={modalUpgradeAberto}
+        onFechar={() => { setModalUpgradeAberto(false); navigate('/'); }}
+        onVerPlanos={() => navigate('/upgrade?motivo=3_sermoes')}
+      />
 
       {/* Header */}
       <div

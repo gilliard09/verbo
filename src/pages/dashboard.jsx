@@ -52,6 +52,41 @@ const SyncBadge = ({ isOnline, pendingCount }) => {
   );
 };
 
+// Chave de persistência do nudge de ativação — evita mostrar de novo
+// depois que a pessoa já dispensou uma vez neste dispositivo.
+const NUDGE_KEY = 'verbo_nudge_2osermao_dismissed';
+
+// ─── Nudge de ativação: aparece só para quem tem exatamente 1 sermão ──────────
+// Objetivo: puxar o usuário do 1º para o 2º sermão, que é onde os dados
+// mostram a maior queda de engajamento (73 → 17 usuários). Não é uma oferta
+// comercial — é só reforço de hábito, sem falar em plano pago.
+const NudgeAtivacao = ({ onCriar, onDispensar }) => (
+  <div className="mb-6 relative bg-gradient-to-r from-[#4C1D95] to-[#7C3AED] rounded-[28px] p-5 shadow-lg shadow-purple-100 overflow-hidden">
+    <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+    <button
+      onClick={onDispensar}
+      aria-label="Dispensar sugestão"
+      className="absolute top-3 right-3 p-1.5 text-white/60 hover:text-white transition-colors"
+    >
+      <X size={16} />
+    </button>
+    <div className="relative z-10 pr-6">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-purple-200 mb-1.5">
+        Continue por aqui
+      </p>
+      <p className="text-white font-bold text-sm leading-snug mb-4">
+        Seu primeiro sermão já está pronto. Que tal preparar o próximo enquanto a ideia está fresca?
+      </p>
+      <button
+        onClick={onCriar}
+        className="bg-white text-[#4C1D95] text-xs font-bold px-4 py-2.5 rounded-xl active:scale-95 transition-all"
+      >
+        Criar meu 2º sermão
+      </button>
+    </div>
+  </div>
+);
+
 // ✅ Toast automático de nova notificação — aparece sem precisar clicar no sino
 const ToastNotificacao = ({ notificacao, onAbrir, onFechar }) => {
   if (!notificacao) return null;
@@ -90,6 +125,17 @@ const Dashboard = () => {
   const [idsLidos, setIdsLidos] = useState(() => carregarIdsLidos());
   const [expandedId, setExpandedId] = useState(null);
   const [toastNotificacao, setToastNotificacao] = useState(null);
+  const [nudgeDispensado, setNudgeDispensado] = useState(
+    () => localStorage.getItem(NUDGE_KEY) === '1'
+  );
+
+  // Mostra o nudge só para quem tem exatamente 1 sermão e ainda não dispensou
+  const mostrarNudgeAtivacao = !loading && sermoes.length === 1 && !nudgeDispensado;
+
+  const dispensarNudge = () => {
+    setNudgeDispensado(true);
+    try { localStorage.setItem(NUDGE_KEY, '1'); } catch { /* silencioso */ }
+  };
 
   // ✅ Offline state (lazy init)
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -393,6 +439,14 @@ const Dashboard = () => {
           )}
         </div>
       </header>
+
+      {/* ── Nudge de ativação (1º → 2º sermão) ── */}
+      {mostrarNudgeAtivacao && (
+        <NudgeAtivacao
+          onCriar={() => navigate('/novosermao')}
+          onDispensar={dispensarNudge}
+        />
+      )}
 
       {/* Sermões */}
       <section>
