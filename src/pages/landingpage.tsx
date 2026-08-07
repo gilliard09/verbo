@@ -115,8 +115,8 @@ const DORES = [
 ];
 
 // Números reais de tração — atualize conforme o painel de analytics
-const TOTAL_USUARIOS = 276;
-const TOTAL_SERMOES = 239;
+const TOTAL_USUARIOS = 346;
+const TOTAL_SERMOES = 291;
 const YOUTUBE_VIDEO_ID = '2oNM9jAXOFU';
 
 // ─── Componente FAQ Item ──────────────────────────────────────────────────────
