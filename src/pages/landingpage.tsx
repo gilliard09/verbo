@@ -115,9 +115,9 @@ const DORES = [
 ];
 
 // Números reais de tração — atualize conforme o painel de analytics
-const TOTAL_USUARIOS = 346;
-const TOTAL_SERMOES = 291;
-const YOUTUBE_VIDEO_ID = '2oNM9jAXOFU';
+const TOTAL_USUARIOS = 359;
+const TOTAL_SERMOES = 306;
+const YOUTUBE_VIDEO_ID = 'FFSS5F7JSms';
 
 // ─── Componente FAQ Item ──────────────────────────────────────────────────────
 const FaqItem = ({ pergunta, resposta, delay, visivel }: { pergunta: string; resposta: string; delay: number; visivel: boolean }) => {
@@ -634,7 +634,7 @@ const LandingPageOptimized = () => {
             <Play size={28} className="text-[#4C1D95] ml-1" fill="#4C1D95" />
           </div>
           <div className="absolute bottom-5 left-5 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
-            Apresentação • 2 min
+            Apresentação • 12 min
           </div>
         </button>
       </section>
