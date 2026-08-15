@@ -1,14 +1,54 @@
+/**
+ * ANTES DE USAR:
+ * npm install react-pdf
+ * npm install pdfjs-dist@5.4.296
+ *
+ * A versão do pdfjs-dist DEVE ser exatamente a mesma que o react-pdf usa
+ * internamente (confira com `npm ls pdfjs-dist` — deve aparecer só essa
+ * versão, mesmo que aninhada dentro de react-pdf). Se o react-pdf for
+ * atualizado no futuro e passar a usar outra versão do pdfjs-dist, ajuste
+ * o número aqui também, ou volta o erro "API version does not match the
+ * Worker version".
+ *
+ * Isso resolve o bug de produção porque o leitor de PDF deixa de depender
+ * do Google Docs Viewer (interceptado/bloqueado pelo Service Worker do PWA
+ * e/ou por CSP em produção). Agora o PDF é renderizado 100% no cliente com
+ * pdf.js, sem chamadas a docs.google.com.
+ */
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { usePlano } from '../hooks/usePlano';
 import { gerarCertificado } from '../utils/gerarCertificado';
 import { supabase } from '../supabaseClient';
+import { Document, Page, pdfjs } from 'react-pdf';
+import workerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import {
   ChevronLeft, Play, CheckCircle,
   Loader2, Lightbulb, LightbulbOff, ChevronRight,
   Lock, Trophy, ShoppingCart, FileText, Eye, Download, ExternalLink,
-  RefreshCw, ChevronUp, ChevronDown
+  RefreshCw, ZoomIn, ZoomOut
 } from 'lucide-react';
+
+// Worker do pdf.js — bundlado pelo Vite via sufixo ?url.
+// IMPORTANTE — histórico de correções desse import, para não repetir os
+// mesmos erros no futuro:
+// 1) NÃO use new URL('pdfjs-dist/...', import.meta.url) — o Vite não
+//    resolve bem bare specifiers de node_modules nesse padrão.
+// 2) NÃO deixe pdfjs-dist "solto" (instalado à parte, com versão diferente
+//    da que o react-pdf usa internamente) — causa
+//    "API version does not match the Worker version".
+// 3) NÃO importe direto de 'react-pdf/node_modules/pdfjs-dist/...' — o
+//    campo "exports" do package.json do react-pdf bloqueia esse subpath
+//    e o Vite recusa resolver, mesmo o arquivo existindo fisicamente.
+// SOLUÇÃO: pdfjs-dist é reinstalado como dependência DIRETA do projeto,
+// pinada na MESMA versão que o react-pdf usa internamente (5.4.296).
+// Isso mantém o bare specifier simples funcionando e garante que API e
+// Worker sejam sempre a mesma versão.
+//   npm install pdfjs-dist@5.4.296
+pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
 // ─── Componente de Confetti ────────────────────────────────────────────────────
 const ConfettiPiece = ({ style }) => <div className="absolute rounded-sm pointer-events-none" style={style} />;
@@ -69,68 +109,74 @@ const ToastConclusao = ({ visivel, titulo }) => (
   </div>
 );
 
-// ─── Leitor de PDF com retry automático ───────────────────────────────────────
+// ─── Leitor de PDF nativo (react-pdf / pdf.js) ────────────────────────────────
 const LeitorPDF = ({ url, titulo }) => {
-  const [tentativa, setTentativa] = useState(0);
+  const [numPaginas, setNumPaginas] = useState(null);
+  const [paginaAtual, setPaginaAtual] = useState(1);
   const [carregando, setCarregando] = useState(true);
-  const [falhou, setFalhou] = useState(false);
-  const iframeRef = useRef(null);
-  const timerRef = useRef(null);
-  const carregouRef = useRef(false);
-
-  const srcViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true&t=${tentativa}`;
+  const [erro, setErro] = useState(false);
+  const [escala, setEscala] = useState(1);
+  const [tentativa, setTentativa] = useState(0);
+  const containerRef = useRef(null);
+  const [larguraContainer, setLarguraContainer] = useState(600);
 
   useEffect(() => {
-    carregouRef.current = false;
+    const atualizarLargura = () => {
+      if (containerRef.current) setLarguraContainer(containerRef.current.offsetWidth);
+    };
+    atualizarLargura();
+    window.addEventListener('resize', atualizarLargura);
+    return () => window.removeEventListener('resize', atualizarLargura);
+  }, []);
+
+  useEffect(() => {
     setCarregando(true);
-    setFalhou(false);
+    setErro(false);
+    setNumPaginas(null);
+    setPaginaAtual(1);
+    setEscala(1);
+  }, [url, tentativa]);
 
-    timerRef.current = setTimeout(() => {
-      if (!carregouRef.current) {
-        if (tentativa < 3) {
-          setTentativa(t => t + 1);
-        } else {
-          setFalhou(true);
-          setCarregando(false);
-        }
-      }
-    }, 9000);
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPaginas(numPages);
+    setCarregando(false);
+    setErro(false);
+  };
 
-    return () => clearTimeout(timerRef.current);
-  }, [tentativa]);
-
-  const handleLoad = () => {
-    carregouRef.current = true;
-    clearTimeout(timerRef.current);
+  const onDocumentLoadError = (err) => {
+    console.error('Erro ao carregar PDF:', err);
+    setErro(true);
     setCarregando(false);
   };
 
   const retentar = () => {
-    carregouRef.current = false;
-    setFalhou(false);
+    setErro(false);
     setCarregando(true);
     setTentativa(t => t + 1);
   };
 
+  const irPaginaAnterior = () => setPaginaAtual(p => Math.max(1, p - 1));
+  const irProximaPagina = () => setPaginaAtual(p => Math.min(numPaginas || 1, p + 1));
+  const aumentarZoom = () => setEscala(e => Math.min(2.5, +(e + 0.2).toFixed(2)));
+  const diminuirZoom = () => setEscala(e => Math.max(0.5, +(e - 0.2).toFixed(2)));
+
   return (
-    <div className="relative w-full h-full">
-      {carregando && !falhou && (
+    <div className="relative w-full h-full flex flex-col" ref={containerRef}>
+      {carregando && !erro && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0F0D16] rounded-2xl gap-3">
           <Loader2 className="animate-spin text-[#8B5CF6]" size={28} />
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
-            {tentativa === 0 ? 'Carregando apostila...' : `Tentando novamente... (${tentativa}/3)`}
-          </p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Carregando apostila...</p>
         </div>
       )}
 
-      {falhou ? (
+      {erro ? (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0F0D16] rounded-2xl gap-4 p-6 text-center">
           <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center">
             <FileText size={22} className="text-orange-400" />
           </div>
           <div>
-            <p className="font-black text-white text-sm mb-1">Visualizador indisponível</p>
-            <p className="text-white/40 text-xs">O Google Docs está lento. Use uma das opções abaixo.</p>
+            <p className="font-black text-white text-sm mb-1">Não foi possível carregar o PDF</p>
+            <p className="text-white/40 text-xs">Verifique sua conexão ou abra em outra aba.</p>
           </div>
           <div className="flex gap-3">
             <button onClick={retentar}
@@ -144,14 +190,57 @@ const LeitorPDF = ({ url, titulo }) => {
           </div>
         </div>
       ) : (
-        <iframe
-          ref={iframeRef}
-          key={tentativa}
-          src={srcViewer}
-          className="w-full h-full"
-          title={titulo}
-          onLoad={handleLoad}
-        />
+        <>
+          <div className="flex-1 overflow-auto flex justify-center bg-[#0F0D16] py-4">
+            <Document
+              key={tentativa}
+              file={url}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={onDocumentLoadError}
+              loading={null}
+              error={null}
+            >
+              {!carregando && (
+                <Page
+                  pageNumber={paginaAtual}
+                  width={Math.min(larguraContainer - 32, 800) * escala}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                />
+              )}
+            </Document>
+          </div>
+
+          {!carregando && numPaginas && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-[#131019] border-t border-white/10 flex-wrap">
+              <button onClick={irPaginaAnterior} disabled={paginaAtual === 1}
+                className={`p-2.5 rounded-xl transition-all ${paginaAtual === 1 ? 'opacity-30 cursor-not-allowed bg-white/5 text-white/30' : 'bg-white/10 text-white hover:bg-white/20 active:scale-95'}`}>
+                <ChevronLeft size={16} />
+              </button>
+
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40 shrink-0">
+                Página {paginaAtual} / {numPaginas}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button onClick={diminuirZoom} disabled={escala <= 0.5}
+                  className={`p-2.5 rounded-xl transition-all ${escala <= 0.5 ? 'opacity-30 cursor-not-allowed bg-white/5 text-white/30' : 'bg-white/10 text-white hover:bg-white/20 active:scale-95'}`}>
+                  <ZoomOut size={16} />
+                </button>
+                <span className="text-[10px] font-black text-white/40 w-10 text-center">{Math.round(escala * 100)}%</span>
+                <button onClick={aumentarZoom} disabled={escala >= 2.5}
+                  className={`p-2.5 rounded-xl transition-all ${escala >= 2.5 ? 'opacity-30 cursor-not-allowed bg-white/5 text-white/30' : 'bg-white/10 text-white hover:bg-white/20 active:scale-95'}`}>
+                  <ZoomIn size={16} />
+                </button>
+              </div>
+
+              <button onClick={irProximaPagina} disabled={paginaAtual === numPaginas}
+                className={`p-2.5 rounded-xl transition-all ${paginaAtual === numPaginas ? 'opacity-30 cursor-not-allowed bg-white/5 text-white/30' : 'bg-white/10 text-white hover:bg-white/20 active:scale-95'}`}>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -498,7 +587,7 @@ const Aulas = () => {
                     </div>
 
                     <div className="p-4 bg-[#0F0D16]">
-                      <div className="aspect-[1/1.4] md:aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-inner bg-[#0F0D16]">
+                      <div className="h-[70vh] md:h-[75vh] w-full rounded-2xl overflow-hidden border border-white/10 shadow-inner bg-[#0F0D16]">
                         <LeitorPDF url={aulaAtiva.material_url} titulo={aulaAtiva?.titulo} />
                       </div>
                       <div className="mt-4 flex justify-center">

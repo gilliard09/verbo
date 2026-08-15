@@ -14,84 +14,50 @@ import { gerarIdLocal } from '../lib/sync';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { usePlano } from '../hooks/usePlano';
 
+// Sermão a partir do qual o modal de upgrade pode aparecer — dado mostra que
+// quem chega aqui já formou hábito real de uso (queda de engajamento acontece
+// antes disso, entre o 1º e o 2º sermão). Usamos >= (não só ===) para também
+// cobrir usuários que já tinham 3+ sermões antes deste recurso existir.
 const GATILHO_UPGRADE_SERMAO = 3;
+
 const PALAVRAS_POR_MINUTO = 120;
 const AUTO_SAVE_DELAY     = 30000;
-const RASCUNHO_KEY  = (id) => `verbo_rascunho_${id || 'novo'}`;
+const RASCUNHO_KEY  = (id) => `verbo_rascunho_${id  || 'novo'}`;
 const HISTORICO_KEY = (id) => `verbo_historico_${id || 'novo'}`;
 
-// ─── Hook: altura REAL da viewport (contorna bug do teclado no iOS) ─────────────
-// No iOS, quando o teclado abre, a viewport visual encolhe mas elementos `fixed`
-// não recalculam. Usamos `visualViewport` que dá a altura REAL incluindo o teclado.
-// Isso garante que o container always tem a altura exata do espaço disponível.
+// ─── Hook: altura real da viewport visível (contorna o bug do teclado no iOS) ──
+// No iOS Safari, elementos `fixed` não recalculam quando o teclado abre — a
+// viewport "visual" encolhe mas o layout `fixed inset-0` continua medindo a
+// altura antiga, empurrando header/rodapé para trás do teclado. Escutamos
+// `visualViewport` (quando disponível) e usamos essa altura real no container.
 const useAlturaVisivel = () => {
-  const [altura, setAltura] = useState(() => {
-    if (typeof window === 'undefined') return 0;
-    const vv = window.visualViewport;
-    return vv ? vv.height : window.innerHeight;
-  });
+  const [altura, setAltura] = useState(
+    typeof window !== 'undefined' ? window.innerHeight : 0
+  );
 
   useEffect(() => {
-    // Função que atualiza com a altura real
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+
     const atualizar = () => {
-      if (typeof window === 'undefined') return;
-      const vv = window.visualViewport;
-      const novaAltura = vv ? vv.height : window.innerHeight;
-      setAltura(novaAltura);
+      if (vv) setAltura(vv.height);
+      else setAltura(window.innerHeight);
     };
 
-    // Initial check
     atualizar();
 
-    // ✅ IMPORTANTE: Listener em visualViewport captura QUALQUER mudança de altura
-    // Isso inclui: teclado abre, orientação muda, Safari UI sai/entra, etc
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', atualizar);
-      window.visualViewport.addEventListener('scroll', atualizar);
+    if (vv) {
+      vv.addEventListener('resize', atualizar);
+      vv.addEventListener('scroll', atualizar);
+      return () => {
+        vv.removeEventListener('resize', atualizar);
+        vv.removeEventListener('scroll', atualizar);
+      };
     }
-
-    // Fallback para orientação
-    window.addEventListener('orientationchange', atualizar);
     window.addEventListener('resize', atualizar);
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', atualizar);
-        window.visualViewport.removeEventListener('scroll', atualizar);
-      }
-      window.removeEventListener('orientationchange', atualizar);
-      window.removeEventListener('resize', atualizar);
-    };
+    return () => window.removeEventListener('resize', atualizar);
   }, []);
 
   return altura;
-};
-
-// ─── Hook: desabilita scroll global quando editor está aberto (em tela cheia) ──
-// Previne que o body suba quando teclado abre — o scroll fica APENAS no textarea
-const useLockBodyScroll = (ativo) => {
-  useEffect(() => {
-    if (!ativo) return;
-
-    // Salvar scroll anterior
-    const scrollY = window.scrollY;
-    const body = document.documentElement;
-
-    // Desabilitar scroll
-    body.style.overflow = 'hidden';
-    body.style.position = 'fixed';
-    body.style.width = '100%';
-    body.style.top = `-${scrollY}px`;
-
-    return () => {
-      // Restaurar
-      body.style.overflow = '';
-      body.style.position = '';
-      body.style.width = '';
-      body.style.top = '';
-      window.scrollTo(0, scrollY);
-    };
-  }, [ativo]);
 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -109,7 +75,9 @@ const Toast = ({ visivel, tipo, mensagem, onFechar }) => (
   </div>
 );
 
-// ─── Modal de upgrade ──────────────────────────────────────────────────────────
+// ─── Modal de upgrade contextual — aparece ao salvar o 3º sermão ──────────────
+// Não bloqueia nada (o plano gratuito continua permitindo criar sermões);
+// é só uma oferta no momento em que a pessoa já demonstrou hábito de uso.
 const ModalUpgradeSermao = ({ aberto, onFechar, onVerPlanos }) => {
   if (!aberto) return null;
   return (
@@ -146,7 +114,7 @@ const ModalUpgradeSermao = ({ aberto, onFechar, onVerPlanos }) => {
             onClick={onFechar}
             className="w-full text-slate-400 text-xs font-bold py-2"
           >
-            Continuar sem upgrade
+            Continuar no plano gratuito
           </button>
         </div>
       </div>
@@ -154,7 +122,7 @@ const ModalUpgradeSermao = ({ aberto, onFechar, onVerPlanos }) => {
   );
 };
 
-// ─── Botão de toolbar ─────────────────────────────────────────────────────────
+// ─── Botão de toolbar com alvo de toque de 44px ────────────────────────────────
 const BotaoToolbar = ({ onClick, title, active, children }) => (
   <button
     onClick={onClick}
@@ -168,26 +136,17 @@ const BotaoToolbar = ({ onClick, title, active, children }) => (
   </button>
 );
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// COMPONENTE PRINCIPAL: EDITOR
-// ═══════════════════════════════════════════════════════════════════════════════
-
+// ─── Editor ───────────────────────────────────────────────────────────────────
 const Editor = () => {
   const { id }      = useParams();
   const navigate    = useNavigate();
-  const location    = useLocation();
+  const location    = useLocation();                          // ← NOVO
   const textAreaRef = useRef(null);
+  const alturaVisivel = useAlturaVisivel();                    // ← NOVO
 
-  // ✅ ALTURA REAL (muda quando teclado abre)
-  const alturaVisivel = useAlturaVisivel();
-
-  // ✅ LOCK BODY SCROLL (previne página subir)
-  const [telaCheia, setTelaCheia] = useState(true);
-  useLockBodyScroll(telaCheia);
-
-  // ── Tipo via URL ──────────────────────────────────────────────────────────
-  const params = new URLSearchParams(location.search);
-  const tipo   = params.get('tipo');
+  // ── Tipo via URL ─────────────────────────────────────────────────────────
+  const params = new URLSearchParams(location.search);       // ← NOVO
+  const tipo   = params.get('tipo');                         // ← NOVO
 
   const { isPlus } = usePlano();
   const podeCreiarSermao = true;
@@ -199,13 +158,14 @@ const Editor = () => {
   const [conteudo,   setConteudo]   = useState('');
   const [referencia, setReferencia] = useState('');
   const [loading,    setLoading]    = useState(false);
+  const [telaCheia,  setTelaCheia]  = useState(true);
   const [autoSaveAtivo, setAutoSaveAtivo] = useState(false);
   const autoSaveRef = useRef(null);
   const [historico,       setHistorico]       = useState([]);
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [toast, setToast] = useState({ visivel: false, tipo: 'info', mensagem: '' });
 
-  // Id local para sermões offline
+  // Id local para sermões criados offline
   const localIdRef = useRef(id || null);
 
   const { isOnline, atualizarPendentes } = useOfflineSync();
@@ -220,8 +180,22 @@ const Editor = () => {
     setTimeout(() => setToast(t => ({ ...t, visivel: false })), duracao);
   }, []);
 
-  // ── Estrutura guiada pelo tipo ──────────────────────────────────────────
-  useEffect(() => {
+  // Loga clique/dispensa do modal de upgrade — sem isso, não dá para saber
+  // se a queda de conversão acontece na decisão (ninguém clica) ou depois,
+  // no checkout (clica mas não completa a compra).
+  const logEventoModal = useCallback(async (acao) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+      await supabase.from('eventos_modal_upgrade').insert({ user_id: user.id, acao });
+    } catch {
+      // Instrumentação não deve travar o fluxo do usuário se falhar
+    }
+  }, []);
+
+  // ── Estrutura guiada pelo tipo ────────────────────────────────────────────
+  useEffect(() => {                                          // ← NOVO
     if (!id && !conteudo && tipo) {
       if (tipo === 'expositivo') {
         setConteudo(
@@ -273,20 +247,21 @@ Oração:`
         );
       }
     }
-  }, [tipo, id]);
+  }, [tipo, id]);                                            // ← NOVO
 
-  // ── Foco automático no mobile ───────────────────────────────────────────
-  useEffect(() => {
+  // ── Foco automático no mobile ────────────────────────────────────────────
+  useEffect(() => {                                          // ← NOVO
     setTimeout(() => {
       textAreaRef.current?.focus();
     }, 300);
   }, []);
 
-  // ── Carregamento inicial ────────────────────────────────────────────────
+  // ── Carregamento inicial ────────────────────────────────────────────────────
   useEffect(() => {
     if (id) {
       carregarSermao(id);
     } else {
+      // Sermão novo: tenta rascunho do localStorage (só se não veio com tipo guiado)
       if (!tipo) {
         const rascunho = localStorage.getItem(RASCUNHO_KEY(null));
         if (rascunho) {
@@ -306,6 +281,7 @@ Oração:`
   }, [id, tipo]);
 
   async function carregarSermao(sermoId) {
+    // 1. Carrega do IndexedDB imediatamente (sem esperar rede)
     const local = await getSermaoLocal(sermoId);
     if (local) {
       setTitulo(local.titulo || '');
@@ -313,6 +289,7 @@ Oração:`
       setReferencia(local.referencia_biblica || '');
     }
 
+    // 2. Tenta buscar versão mais recente do Supabase
     try {
       const { data, error } = await supabase
         .from('sermoes').select('*').eq('id', sermoId).single();
@@ -334,7 +311,7 @@ Oração:`
     }
   }
 
-  // ── Auto-save ───────────────────────────────────────────────────────────
+  // ── Auto-save no localStorage (rascunho) ───────────────────────────────────
   useEffect(() => {
     if (!conteudo && !titulo) return;
     clearTimeout(autoSaveRef.current);
@@ -348,7 +325,7 @@ Oração:`
     return () => clearTimeout(autoSaveRef.current);
   }, [titulo, conteudo, referencia, id]);
 
-  // ── Formatação ──────────────────────────────────────────────────────────
+  // ── Formatação de texto ────────────────────────────────────────────────────
   const aplicarFormatacao = useCallback((prefixo, sufixo) => {
     const el = textAreaRef.current;
     if (!el) return;
@@ -362,7 +339,7 @@ Oração:`
     }, 10);
   }, [conteudo]);
 
-  // ── Salvar ──────────────────────────────────────────────────────────────
+  // ── Salvar ─────────────────────────────────────────────────────────────────
   async function salvar() {
     if (!titulo.trim()) { mostrarToast('Insira um título para salvar.', 'erro'); return; }
     setLoading(true);
@@ -390,7 +367,7 @@ Oração:`
       };
 
       let salvouOnline = false;
-      const eraSermaoNovo = !id;
+      const eraSermaoNovo = !id; // só sermões recém-criados contam pro gatilho de upgrade
       try {
         const res = id
           ? await supabase.from('sermoes').update(dadosSermao).eq('id', id)
@@ -410,7 +387,12 @@ Oração:`
           localStorage.removeItem(RASCUNHO_KEY(id));
           mostrarToast('Sermão salvo com sucesso!', 'sucesso');
 
-          // ── Gatilho de upgrade ──────────────────────────────────────────
+          // ── Gatilho de upgrade contextual ──────────────────────────────
+          // Só verifica em criação (não edição) e só para quem ainda não é
+          // Plus. A flag de "já viu" fica no banco (profiles.viu_upgrade_sermoes),
+          // não em localStorage — assim cobre tanto usuários novos quanto
+          // quem já tinha 3+ sermões antes deste recurso existir, e continua
+          // consistente mesmo se a pessoa trocar de aparelho.
           if (eraSermaoNovo && !isPlus) {
             try {
               const [{ count }, { data: perfilFlag }] = await Promise.all([
@@ -428,23 +410,30 @@ Oração:`
               const jaViuUpgrade = perfilFlag?.viu_upgrade_sermoes === true;
 
               if (count >= GATILHO_UPGRADE_SERMAO && !jaViuUpgrade) {
+                // Marca no banco antes de exibir — evita corrida entre
+                // salvamentos rápidos mostrando o modal mais de uma vez.
+                // Também registra o timestamp, para permitir análises
+                // temporais precisas (profiles não tem updated_at nativo).
                 await supabase
                   .from('profiles')
-                  .update({ viu_upgrade_sermoes: true })
+                  .update({
+                    viu_upgrade_sermoes: true,
+                    viu_upgrade_sermoes_em: new Date().toISOString(),
+                  })
                   .eq('id', user.id);
 
                 setModalUpgradeAberto(true);
-                return;
+                return; // segura a navegação — o modal decide o próximo passo
               }
             } catch {
-              // Segue sem modal
+              // Se a checagem falhar, segue o fluxo normal sem o modal
             }
           }
 
           setTimeout(() => navigate('/'), 1200);
         }
       } catch {
-        // Offline
+        // Rede indisponível — salva offline abaixo
       }
 
       if (!salvouOnline) {
@@ -491,7 +480,7 @@ Oração:`
   const formatarHora = (iso) =>
     new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-  // ── Bloqueio de criação ─────────────────────────────────────────────────
+  // ── Bloqueio de criação no limite ──────────────────────────────────────────
   if (!id && !podeCreiarSermao) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center gap-5">
@@ -515,18 +504,8 @@ Oração:`
 
   return (
     <div
-      className={`bg-white flex flex-col ${telaCheia ? 'fixed inset-x-0 top-0 z-[150]' : 'min-h-screen'}`}
-      style={
-        telaCheia
-          ? {
-              height: `${alturaVisivel}px`,
-              width: '100vw',
-              top: 0,
-              left: 0,
-              right: 0,
-            }
-          : undefined
-      }
+      className={`bg-white flex flex-col transition-all duration-300 ${telaCheia ? 'fixed inset-x-0 top-0 z-[150]' : 'min-h-screen'}`}
+      style={telaCheia ? { height: alturaVisivel ? `${alturaVisivel}px` : '100dvh' } : undefined}
     >
 
       <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem}
@@ -534,11 +513,18 @@ Oração:`
 
       <ModalUpgradeSermao
         aberto={modalUpgradeAberto}
-        onFechar={() => { setModalUpgradeAberto(false); navigate('/'); }}
-        onVerPlanos={() => navigate('/upgrade?motivo=3_sermoes')}
+        onFechar={() => {
+          logEventoModal('dispensou');
+          setModalUpgradeAberto(false);
+          navigate('/');
+        }}
+        onVerPlanos={() => {
+          logEventoModal('clicou_plus');
+          navigate('/upgrade?motivo=3_sermoes');
+        }}
       />
 
-      {/* ═══ HEADER ═══ */}
+      {/* Header */}
       <div
         className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
@@ -575,17 +561,14 @@ Oração:`
         </div>
       </div>
 
-      {/* ═══ TÍTULO E REFERÊNCIA ═══ */}
+      {/* Título e referência */}
       <div className="px-6 pt-5 shrink-0">
-        <input
-          type="text"
-          placeholder="Título da pregação..."
+        <input type="text" placeholder="Título da pregação..."
           className="w-full text-2xl font-black border-none outline-none mb-3 placeholder:text-gray-200 focus:ring-0 text-slate-800"
-          value={titulo}
-          onChange={e => setTitulo(e.target.value)}
-        />
+          value={titulo} onChange={e => setTitulo(e.target.value)} />
 
-        {tipo && !id && (
+        {/* ── Indicador de tipo guiado ── */}
+        {tipo && !id && (                                    // ← NOVO
           <p className="text-[11px] text-[#4C1D95] font-bold mb-2">
             Estrutura pronta para{' '}
             {tipo === 'expositivo' ? 'sermão expositivo'
@@ -596,15 +579,10 @@ Oração:`
 
         <div className="flex items-center gap-2 mb-4 text-[#4C1D95] bg-purple-50 p-3 rounded-2xl">
           <Book size={16} className="shrink-0" />
-          <input
-            type="text"
-            placeholder="Referência Bíblica (ex: João 3:16)"
+          <input type="text" placeholder="Referência Bíblica (ex: João 3:16)"
             className="text-sm font-bold border-none outline-none w-full bg-transparent focus:ring-0"
-            value={referencia}
-            onChange={e => setReferencia(e.target.value)}
-          />
+            value={referencia} onChange={e => setReferencia(e.target.value)} />
         </div>
-
         <div className="flex items-center gap-1 mb-3 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit">
           <BotaoToolbar onClick={() => aplicarFormatacao('**', '**')} title="Negrito"><Bold size={16} /></BotaoToolbar>
           <BotaoToolbar onClick={() => aplicarFormatacao('*', '*')} title="Itálico"><Italic size={16} /></BotaoToolbar>
@@ -613,11 +591,10 @@ Oração:`
         </div>
       </div>
 
-      {/* ═══ TEXTAREA (SCROLL INTERNO) ═══ */}
+      {/* Textarea */}
       <div className="flex-1 px-6 overflow-hidden min-h-0">
-        <textarea
-          ref={textAreaRef}
-          placeholder={
+        <textarea ref={textAreaRef}
+          placeholder={                                      // ← NOVO placeholder inteligente
             tipo === 'expositivo'
               ? 'Desenvolva o texto bíblico aqui...'
               : tipo === 'tematico'
@@ -626,13 +603,11 @@ Oração:`
               ? 'Escreva sua reflexão...'
               : 'Escreva a mensagem aqui...'
           }
-          className="w-full h-full border-none outline-none resize-none text-slate-700 leading-relaxed text-base focus:ring-0 pb-4 overflow-y-auto"
-          value={conteudo}
-          onChange={e => setConteudo(e.target.value)}
-        />
+          className="w-full h-full border-none outline-none resize-none text-slate-700 leading-relaxed text-base focus:ring-0 pb-4"
+          value={conteudo} onChange={e => setConteudo(e.target.value)} />
       </div>
 
-      {/* ═══ FOOTER ═══ */}
+      {/* Rodapé */}
       <div
         className="px-6 py-3 border-t border-slate-50 flex items-center justify-between shrink-0 gap-2"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
@@ -663,7 +638,7 @@ Oração:`
         </div>
       </div>
 
-      {/* ═══ MODAL HISTÓRICO ═══ */}
+      {/* Modal histórico */}
       {mostrarHistorico && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMostrarHistorico(false)} />
