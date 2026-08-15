@@ -643,8 +643,8 @@ const Dashboard = () => {
           </h1>
           <div className="flex items-center gap-2 mt-0.5">
             <p className="text-gray-400 text-[13px]">
-              {sermoes.length === 0
-                ? 'Nenhum sermão ainda. Que tal começar?'
+              {sermoes.length === 0 
+              ? 'Nenhum sermão ainda. Que tal começar?'
                 : `${sermoes.length} mensage${sermoes.length == 1 ? 'm' :sermoes.length > 1 ? 'ns' : ''} salva${sermoes.length > 1 ? 's' : ''}`}
             </p>
             <SyncBadge isOnline={isOnline} pendingCount={pendingCount} />

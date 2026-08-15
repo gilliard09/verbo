@@ -22,7 +22,7 @@ const Leitura = () => {
   const [sermao, setSermao]     = useState(null);
   const [fontSize, setFontSize] = useState(22);
   const [tema, setTema]         = useState('light');
-  const [fonte, setFonte]       = useState('serif');
+  const [fonte, setFonte]       = useState('manrope'); // ← nova fonte padrão do modo púlpito
   const [modoFoco, setModoFoco] = useState(false);
 
   // Wake Lock
@@ -329,7 +329,21 @@ const Leitura = () => {
 
   const bgTema  = { light: 'bg-[#FDFDFF] text-slate-900', sepia: 'bg-[#F4ECD8] text-[#5B4636]', dark: 'bg-slate-950 text-slate-100' };
   const barTema = { light: 'bg-slate-800', sepia: 'bg-[#5B4636]', dark: 'bg-purple-400' };
-  const fontFam = { poppins: "'Poppins', sans-serif", times: "'Times New Roman', serif" };
+
+  // ─── Famílias de fonte do modo púlpito ──────────────────────────────────────
+  // Todas as 5 opções têm font-family explícita agora — Manrope e Albra
+  // self-hosted (ver @font-face no <style> abaixo), Inter e Poppins via
+  // Google Fonts, Times como fonte de sistema (não precisa de import).
+  // "Padrão" no seletor = Manrope, que é a fonte com que a tela abre
+  // (ver useState de `fonte` no topo do componente).
+  const fontFam = {
+    manrope: "'Manrope', sans-serif",
+    poppins: "'Poppins', sans-serif",
+    inter:   "'Inter', sans-serif",
+    times:   "'Times New Roman', serif",
+    albra:   "'Albra', serif",
+  };
+
   const menuBg  = { light: 'bg-white border border-slate-200 shadow-xl', sepia: 'bg-[#EDE0C8] border border-[#c8aa85] shadow-lg', dark: 'bg-slate-800 border border-slate-700 shadow-2xl' };
   const painelBg= { light: 'bg-white border-l border-slate-200', sepia: 'bg-[#EDE0C8] border-l border-[#c8aa85]', dark: 'bg-slate-900 border-l border-slate-700' };
   const txSub   = { light: 'text-slate-500', sepia: 'text-[#7a6248]', dark: 'text-slate-400' };
@@ -346,7 +360,101 @@ const Leitura = () => {
       onTouchEnd={handleSoltar}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;700&display=swap');
+
+        /*
+          Manrope — carregada localmente a partir dos arquivos .ttf em
+          /public/fonts/manrope/. Esta é a fonte PADRÃO do modo púlpito
+          (value="manrope", label "Padrão" no seletor). Se os nomes dos
+          seus arquivos forem diferentes dos listados abaixo, ajuste os
+          caminhos — o padrão de nomenclatura aqui segue o mesmo export
+          usado pela Albra (Light/Regular/Medium/SemiBold/Bold).
+        */
+        @font-face {
+          font-family: 'Manrope';
+          src: url('/fonts/manrope/Manrope-Light.ttf') format('truetype');
+          font-weight: 300;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Manrope';
+          src: url('/fonts/manrope/Manrope-Regular.ttf') format('truetype');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Manrope';
+          src: url('/fonts/manrope/Manrope-Medium.ttf') format('truetype');
+          font-weight: 500;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Manrope';
+          src: url('/fonts/manrope/Manrope-SemiBold.ttf') format('truetype');
+          font-weight: 600;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Manrope';
+          src: url('/fonts/manrope/Manrope-Bold.ttf') format('truetype');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+
+        /*
+          Albra (Production Type) — carregada localmente a partir dos
+          arquivos .otf licenciados em /public/fonts/albra/. .otf funciona
+          direto em @font-face (format('opentype')) — não precisa
+          converter pra woff2.
+
+          IMPORTANTE sobre pesos: o título usa font-black (900, classe do
+          Tailwind). Se não houver um arquivo Black/ExtraBold da Albra, o
+          navegador vai "negritar" sinteticamente o título (faux bold) —
+          funciona, mas fica menos fiel ao desenho da fonte. Se tiverem
+          esse peso, adicionem mais um bloco @font-face abaixo com
+          font-weight: 900.
+        */
+        @font-face {
+          font-family: 'Albra';
+          src: url('/fonts/albra/Albra-Light.otf') format('opentype');
+          font-weight: 300;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Albra';
+          src: url('/fonts/albra/Albra-Regular.otf') format('opentype');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Albra';
+          src: url('/fonts/albra/Albra-Medium.otf') format('opentype');
+          font-weight: 500;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Albra';
+          src: url('/fonts/albra/Albra-SemiBold.otf') format('opentype');
+          font-weight: 600;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Albra';
+          src: url('/fonts/albra/Albra-Bold.otf') format('opentype');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+
         [data-hl-id] { cursor: pointer; transition: opacity .15s; }
         [data-hl-id]:hover { opacity: .65; }
         @keyframes hlMenuIn { from { opacity:0; transform:translateY(6px) scale(.97); } to { opacity:1; transform:none; } }
@@ -388,9 +496,10 @@ const Leitura = () => {
 
         <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-2xl shadow-inner overflow-x-auto max-w-full">
           <select value={fonte} onChange={e => setFonte(e.target.value)} className="bg-transparent text-[11px] font-bold uppercase tracking-tighter border-none focus:ring-0 cursor-pointer opacity-70 min-h-[40px] shrink-0">
-            <option value="serif">Padrão</option>
-            <option value="inter">Inter</option>
+            <option value="manrope">Padrão</option>
             <option value="poppins">Poppins</option>
+            <option value="inter">Inter</option>
+            <option value="albra">Albra</option>
             <option value="times">Times</option>
           </select>
 
@@ -449,9 +558,9 @@ const Leitura = () => {
           onClick={handleClickTexto}
           style={{
             fontSize: `${fontSize}px`,
-            fontFamily: (fonte === 'serif' || fonte === 'inter') ? undefined : fontFam[fonte],
+            fontFamily: fontFam[fonte],
           }}
-          className={`leading-relaxed whitespace-pre-wrap text-left break-words [hyphens:auto] select-text ${fonte === 'serif' ? 'font-serif' : ''} ${fonte === 'inter' ? 'font-sans' : ''}`}
+          className="leading-relaxed whitespace-pre-wrap text-left break-words [hyphens:auto] select-text"
           // ✅ SEM dangerouslySetInnerHTML aqui — injetado via useEffect
         />
       </div>
