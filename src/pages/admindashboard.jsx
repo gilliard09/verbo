@@ -8,6 +8,7 @@ import {
   Edit3, Check, GripVertical, AlertTriangle, UserCheck, BookOpen,
   Activity, MessageSquare, Star, Bug, Smile, Eye, EyeOff, Trophy, Flag,
   Zap, RefreshCw, DollarSign, Percent, TrendingDown, Calendar, List, Eye as EyeIcon,
+  ZoomIn, ZoomOut,
 } from 'lucide-react';
 
 const LS_METAS_KEY = 'verbo_admin_metas_celebradas';
@@ -36,7 +37,6 @@ const TelaLeituraPreview = ({ devocional, onFechar, dark }) => {
   }, [tocandoAudio, devocional]);
 
   const bg     = dark ? '#0d0d0f' : '#faf9f7';
-  const bgCard = dark ? '#161618' : '#ffffff';
   const textMain = dark ? '#f1f5f9' : '#1a1a1a';
   const textSub  = dark ? '#cbd5e1' : '#6b7280';
   const acento   = '#4C1D95';
@@ -57,9 +57,13 @@ const TelaLeituraPreview = ({ devocional, onFechar, dark }) => {
           </button>
           <span className="text-xs font-bold text-slate-400 uppercase">PREVIEW</span>
           <div className="flex items-center gap-2">
+            {/* CORRIGIDO: ZoomIn/ZoomOut agora vêm de lucide-react (ícones reais e distintos),
+                antes ambos renderizavam a mesma lupa 🔍 e ficava impossível diferenciar
+                qual botão aumenta e qual diminui a fonte. */}
             <button
               onClick={() => setFontSize(Math.max(14, fontSize - 1))}
               className="p-2 hover:bg-white/10 rounded-lg transition"
+              aria-label="Diminuir fonte"
             >
               <ZoomOut size={18} style={{ color: textMain }} />
             </button>
@@ -67,6 +71,7 @@ const TelaLeituraPreview = ({ devocional, onFechar, dark }) => {
             <button
               onClick={() => setFontSize(Math.min(22, fontSize + 1))}
               className="p-2 hover:bg-white/10 rounded-lg transition"
+              aria-label="Aumentar fonte"
             >
               <ZoomIn size={18} style={{ color: textMain }} />
             </button>
@@ -193,7 +198,7 @@ const FeedbackCard = ({ fb, onMarcarLido, onDeletar }) => {
   return (<div className={`bg-white p-5 rounded-[24px] border transition-all hover:shadow-sm ${fb.lido?'border-slate-100 opacity-60':'border-[#4C1D95/20 shadow-sm shadow-purple-50'}`}><div className="flex items-start justify-between gap-3 mb-3"><div className="flex items-center gap-3"><div className={`p-2.5 rounded-2xl shrink-0 ${corMap[cfg.cor]}`}><Icon size={16}/></div><div><p className="font-black text-slate-700 text-xs uppercase tracking-widest">{cfg.label}</p><p className="text-[10px] text-slate-400">{fb.email||'Usuário anônimo'}</p></div></div><div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} size={11} className={n<=fb.estrelas?'text-yellow-400 fill-yellow-400':'text-slate-200 fill-slate-100'}/>)}</div></div><p className="text-sm text-slate-600 leading-relaxed mb-3">{fb.mensagem}</p><div className="flex items-center justify-between"><span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{new Date(fb.criado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}</span><div className="flex gap-2"><button onClick={()=>onMarcarLido(fb.id,!fb.lido)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase transition-all ${fb.lido?'bg-slate-100 text-slate-400 hover:bg-slate-200':'bg-purple-50 text-[#4C1D95] hover:bg-purple-100'}`}>{fb.lido?<><EyeOff size={10}/>Reabrir</>:<><Eye size={10}/>Marcar lido</>}</button><button onClick={()=>onDeletar(fb.id)} className="p-1.5 text-slate-200 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50"><Trash2 size={14}/></button></div></div></div>);
 };
 
-// ── Componente de Card de Devocional Atualizado com melhorias visuais ──────────
+// ── Componente de Card de Devocional ────────────────────────────────────────
 const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, onSalvarEdicao }) => {
   const [dadosEdicao, setDadosEdicao] = useState({
     titulo: devocional.titulo,
@@ -205,7 +210,6 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, 
     data_publicacao: devocional.data_publicacao?.split('T')[0] || new Date().toISOString().split('T')[0]
   });
 
-  // ✅ Verificar se é recente (últimos 2 dias)
   const ehRecente = () => {
     const dias = Math.floor((Date.now() - new Date(devocional.data_publicacao)) / 86400000);
     return dias <= 2;
@@ -219,8 +223,6 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, 
     salmos: { label: 'Salmos', emoji: '🎵', cor: 'bg-pink-100 text-pink-700' },
     oração: { label: 'Oração', emoji: '🙏', cor: 'bg-green-100 text-green-700' },
   };
-
-  const temaSelecionado = temaConfig[dadosEdicao.tema] || temaConfig.geral;
 
   return (
     <div className={`bg-white p-5 rounded-[24px] border transition-all ${editando ? 'border-[#4C1D95]/30 shadow-lg shadow-purple-50' : 'border-slate-100 hover:shadow-sm'}`}>
@@ -252,13 +254,12 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, 
             className="w-full p-3 bg-slate-50 rounded-xl text-sm resize-none border-none focus:ring-2 focus:ring-purple-200 outline-none"
             placeholder="Pergunta para reflexão (opcional)"
           />
-          {/* ✅ Input de categoria customizável com datalist */}
           <div>
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
               Categoria
             </label>
-            <input 
-              placeholder="Ex: Liderança, Fé, Salmos, Geral..." 
+            <input
+              placeholder="Ex: Liderança, Fé, Salmos, Geral..."
               className="w-full p-3 bg-slate-50 rounded-xl text-sm border-none focus:ring-2 focus:ring-purple-200 outline-none font-medium"
               value={dadosEdicao.tema}
               onChange={e => setDadosEdicao(d => ({ ...d, tema: e.target.value.toLowerCase().trim() }))}
@@ -274,8 +275,8 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, 
             </datalist>
           </div>
           <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer border border-amber-100 hover:bg-amber-100 transition">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={dadosEdicao.destaque_dia}
               onChange={e => setDadosEdicao(d => ({ ...d, destaque_dia: e.target.checked }))}
               className="w-5 h-5 cursor-pointer"
@@ -326,7 +327,6 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, 
                     ✨ Destaque
                   </span>
                 )}
-                {/* ✅ Badge "Novo" para devocionais dos últimos 2 dias */}
                 {ehRecente() && (
                   <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full animate-pulse" style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
                     🆕 Novo
@@ -382,9 +382,19 @@ const DevocionalCard = ({ devocional, onEditar, onDeletar, onPreview, editando, 
   );
 };
 
-// ── Novos componentes de analytics ────────────────────────────────────────────
+// ── Componentes de analytics ──────────────────────────────────────────────────
 
-const FunilCard = ({ funil }) => {
+// Cabeçalho de seção usado só na aba Analytics (modo cockpit), para agrupar
+// cards relacionados em vez de empilhar tudo numa lista linear.
+const SectionHeader = ({ icon: Icon, title, subtitle }) => (
+  <div className="flex items-center gap-2 pt-2">
+    <Icon size={14} className="text-purple-400" />
+    <h3 className="text-[11px] font-black text-purple-300 uppercase tracking-[0.2em]">{title}</h3>
+    {subtitle && <span className="text-[9px] text-slate-600 font-bold ml-1 normal-case tracking-normal">— {subtitle}</span>}
+  </div>
+);
+
+const FunilCard = ({ funil, estimado }) => {
   const etapas = [
     {label:'Visitantes',valor:funil.visitantes,cor:'bg-slate-400',emoji:'👀'},
     {label:'Cadastros',valor:funil.cadastros,cor:'bg-blue-400',emoji:'✍️'},
@@ -409,8 +419,16 @@ const FunilCard = ({ funil }) => {
               <div className="flex items-center gap-3">
                 <span className="text-base w-6 shrink-0">{etapa.emoji}</span>
                 <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{etapa.label}</span>
+                  <div className="flex justify-between mb-1 items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      {etapa.label}
+                      {/* Sinaliza quando o número de visitantes é uma estimativa (fallback ×3 sobre
+                          cadastros) porque a função vercel-analytics não retornou dado real —
+                          sem isso, o número parecia um dado medido de verdade. */}
+                      {etapa.label==='Visitantes' && estimado && (
+                        <span className="text-[7px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-black uppercase tracking-widest">Estimado</span>
+                      )}
+                    </span>
                     <span className="text-[10px] font-black text-white">{etapa.valor.toLocaleString('pt-BR')}</span>
                   </div>
                   <div className="h-2 bg-white/5 rounded-full overflow-hidden">
@@ -422,6 +440,57 @@ const FunilCard = ({ funil }) => {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+};
+
+// NOVO: Funil do modal de upgrade — exposição → clique → assinatura.
+// Antes esse dado só existia como investigação manual via SQL a cada revisão;
+// agora fica visível de forma permanente no dashboard.
+const FunilUpgradeCard = ({ funil }) => {
+  const etapas = [
+    {label:'Viram o Modal',valor:funil.exibiram,cor:'bg-pink-400',emoji:'👁️'},
+    {label:'Clicaram em Upgrade',valor:funil.clicaram,cor:'bg-fuchsia-400',emoji:'👆'},
+    {label:'Assinaram',valor:funil.assinaram,cor:'bg-green-400',emoji:'💎'},
+  ];
+  const max = etapas[0].valor || 1;
+  const pctClique = etapas[0].valor > 0 ? Math.round((etapas[1].valor/etapas[0].valor)*100) : 0;
+  const pctConversao = etapas[1].valor > 0 ? Math.round((etapas[2].valor/etapas[1].valor)*100) : 0;
+  return (
+    <div className="bg-white/5 border border-white/10 p-7 rounded-[32px] backdrop-blur-md">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2.5 bg-pink-500/20 rounded-2xl"><Sparkles size={20} className="text-pink-400"/></div>
+        <div><h3 className="font-black text-white text-sm uppercase tracking-tight">Funil do Modal de Upgrade</h3><p className="text-[10px] text-slate-500 font-bold">Exposição → clique → assinatura</p></div>
+      </div>
+      <div className="space-y-3">
+        {etapas.map((etapa) => {
+          const pct = max > 0 ? Math.round((etapa.valor/max)*100) : 0;
+          return (
+            <div key={etapa.label} className="flex items-center gap-3">
+              <span className="text-base w-6 shrink-0">{etapa.emoji}</span>
+              <div className="flex-1">
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{etapa.label}</span>
+                  <span className="text-[10px] font-black text-white">{etapa.valor.toLocaleString('pt-BR')}</span>
+                </div>
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${etapa.cor} transition-all duration-1000`} style={{width:`${pct}%`,opacity:0.85}}/>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="grid grid-cols-2 gap-3 mt-5">
+        <div className="bg-white/5 rounded-2xl p-3 text-center border border-white/5">
+          <p className="text-lg font-black text-pink-400">{pctClique}%</p>
+          <p className="text-[8px] font-black text-slate-500 uppercase mt-1">taxa de clique</p>
+        </div>
+        <div className="bg-white/5 rounded-2xl p-3 text-center border border-white/5">
+          <p className="text-lg font-black text-green-400">{pctConversao}%</p>
+          <p className="text-[8px] font-black text-slate-500 uppercase mt-1">clique → assinatura</p>
+        </div>
       </div>
     </div>
   );
@@ -531,7 +600,16 @@ const ReceitaCard = ({ receita }) => (
         {label:'MR Mensal',valor:receita.mr.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),cor:'text-green-400',bg:'bg-green-500/10',sub:'receita recorrente'},
         {label:'Ticket Médio',valor:receita.ticketMedio.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),cor:'text-blue-400',bg:'bg-blue-500/10',sub:'por assinante'},
         {label:'LTV Estimado',valor:receita.ltv.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),cor:'text-purple-400',bg:'bg-purple-500/10',sub:'12 meses × ticket'},
-        {label:'Churn Estimado',valor:`${receita.churn}%`,cor:receita.churn>5?'text-red-400':'text-yellow-400',bg:receita.churn>5?'bg-red-500/10':'bg-yellow-500/10',sub:'cancelamento/mês'},
+        // CORRIGIDO: antes churn vinha hardcoded como 0%, parecendo um dado real calculado.
+        // Sem fonte de cancelamentos (webhook da Cakto, por ex.) isso é mostrado como N/A,
+        // deixando claro que ainda não é medido em vez de mentir "0% de churn".
+        {
+          label:'Churn Estimado',
+          valor: receita.churn===null ? 'N/A' : `${receita.churn}%`,
+          cor: receita.churn===null ? 'text-slate-400' : (receita.churn>5?'text-red-400':'text-yellow-400'),
+          bg: receita.churn===null ? 'bg-white/5' : (receita.churn>5?'bg-red-500/10':'bg-yellow-500/10'),
+          sub: receita.churn===null ? 'sem dados de cancelamento' : 'cancelamento/mês',
+        },
       ].map(item=>(
         <div key={item.label} className={`${item.bg} rounded-2xl p-4 border border-white/5`}>
           <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">{item.label}</p>
@@ -543,9 +621,36 @@ const ReceitaCard = ({ receita }) => (
   </div>
 );
 
-// Import para icones faltantes
-const ZoomIn = ({ size, style, className }) => <span className={className} style={style}>🔍</span>;
-const ZoomOut = ({ size, style, className }) => <span className={className} style={style}>🔍</span>;
+// NOVO: split Fundador vs Plus — os dados já eram buscados (totalFundadores/totalPlus,
+// usados pra calcular o MR) mas nunca apareciam na UI. Sem isso não dava pra saber se
+// as pessoas estão travando no plano de entrada ou avançando pro Plus.
+const PlanosCard = ({ planos }) => {
+  const total = (planos.fundador + planos.plus) || 1;
+  const pctFundador = Math.round((planos.fundador/total)*100);
+  const pctPlus = 100 - pctFundador;
+  return (
+    <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]">
+      <div className="flex items-center gap-2 mb-3">
+        <Award size={14} className="text-amber-400"/>
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Fundador vs Plus</span>
+      </div>
+      <div className="flex items-end gap-5 mb-3">
+        <div>
+          <p className="text-2xl font-black text-amber-400">{planos.fundador}</p>
+          <p className="text-[8px] text-slate-500 uppercase font-bold">Fundador · R$9,90</p>
+        </div>
+        <div>
+          <p className="text-2xl font-black text-purple-400">{planos.plus}</p>
+          <p className="text-[8px] text-slate-500 uppercase font-bold">Plus · R$47</p>
+        </div>
+      </div>
+      <div className="h-2 rounded-full overflow-hidden flex bg-white/5">
+        <div className="h-full bg-amber-400" style={{width:`${pctFundador}%`}}/>
+        <div className="h-full bg-purple-400" style={{width:`${pctPlus}%`}}/>
+      </div>
+    </div>
+  );
+};
 
 // ── Componente principal ──────────────────────────────────────────────────────
 const AdminDashboard = () => {
@@ -559,8 +664,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [uploadingPDF, setUploadingPDF] = useState(false);
-  
-  // Estados para devocionais
+
   const [devocionais, setDevocionais] = useState([]);
   const [loadingDevocionais, setLoadingDevocionais] = useState(false);
   const [devocionalEditando, setDevocionalEditando] = useState(null);
@@ -574,16 +678,20 @@ const AdminDashboard = () => {
     destaque_dia: false,
     data_publicacao: new Date().toISOString().split('T')[0]
   });
-  
+
   const [stats, setStats] = useState({totalUsuarios:0,totalSermoes:0,totalAssinaturas:0,totalProgresso:0,taxaConclusao:0,mr:0,loadingStats:true});
   const [dadosGrafico, setDadosGrafico] = useState([]);
   const [dadosCrescimento, setDadosCrescimento] = useState([]);
   const [matriculasRecentes, setMatriculasRecentes] = useState([]);
   const [funil, setFunil] = useState({visitantes:0,cadastros:0,usaram:0,voltaram:0,assinaram:0});
+  const [visitantesEstimados, setVisitantesEstimados] = useState(false);
   const [taxas, setTaxas] = useState({visitanteCadastro:0,cadastroUso:0,usoAssinatura:0});
   const [ativacao, setAtivacao] = useState({pct1Sermao:0,pct3Sermoes:0,pct7Dias:0});
   const [retencao, setRetencao] = useState({dau:0,wau:0});
-  const [receita, setReceita] = useState({mr:0,ticketMedio:0,ltv:0,churn:0});
+  const [receita, setReceita] = useState({mr:0,ticketMedio:0,ltv:0,churn:null});
+  const [planos, setPlanos] = useState({fundador:0,plus:0});
+  // NOVO: funil do modal de upgrade (exibido → clicou_upgrade/clicou_plus → assinou)
+  const [funilUpgrade, setFunilUpgrade] = useState({exibiram:0,clicaram:0,assinaram:0});
   const [metas, setMetas] = useState(()=>{try{const s=JSON.parse(localStorage.getItem('verbo_admin_metas')||'{}');return{usuarios:s.usuarios??50,sermoes:s.sermoes??100,assinaturas:s.assinaturas??50,sermoesDiarios:s.sermoesDiarios??14};}catch{return{usuarios:50,sermoes:100,assinaturas:50,sermoesDiarios:14};}});
   const [editandoMeta, setEditandoMeta] = useState(null);
   const [metaTemp, setMetaTemp] = useState('');
@@ -602,23 +710,20 @@ const AdminDashboard = () => {
   const [modal, setModal] = useState({aberto:false,titulo:'',descricao:'',onConfirmar:null});
   const [modalLoading, setModalLoading] = useState(false);
 
-  // ✅ NOVO: Carregamento inicial LEVE: apenas Analytics
   useEffect(() => {
     carregarAnalytics();
   }, []);
 
-  // ✅ NOVO: Carregamento por aba: cada aba puxa seus próprios dados
   useEffect(() => {
     switch (aba) {
       case 'analytics':
         carregarAnalytics();
-        carregarMatriculasRecentes(); // dados importantes para esta visão
+        carregarMatriculasRecentes();
         break;
       case 'cursos':
         carregarCursos();
         break;
       case 'aulas':
-        // aulas são carregadas automaticamente via useEffect abaixo quando cursoSelecionadoAulas muda
         if (cursos.length === 0) carregarCursos();
         break;
       case 'comunicados':
@@ -635,7 +740,6 @@ const AdminDashboard = () => {
     }
   }, [aba]);
 
-  // ✅ NOVO: Carregamento específico quando curso é selecionado
   useEffect(() => {
     if (cursoSelecionadoAulas) carregarAulasDoCurso(cursoSelecionadoAulas);
   }, [cursoSelecionadoAulas]);
@@ -671,7 +775,6 @@ const AdminDashboard = () => {
     if (data) setFeedbacks(data);
   };
 
-  // Funções para devocionais
   const carregarDevocionais = async () => {
     setLoadingDevocionais(true);
     const { data } = await supabase
@@ -684,11 +787,10 @@ const AdminDashboard = () => {
     setLoadingDevocionais(false);
   };
 
-  // ✅ FUNÇÃO CORRIGIDA - Salvar devocional com timezone correto
   const salvarDevocional = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -697,7 +799,6 @@ const AdminDashboard = () => {
         return;
       }
 
-      // ✅ Ajustar para midnight da timezone local (sem o "Z")
       const [ano, mes, dia] = novoDevocional.data_publicacao.split('-');
       const dataMidnight = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
       const dataISO = dataMidnight.toISOString();
@@ -717,7 +818,7 @@ const AdminDashboard = () => {
       };
 
       const { error } = await supabase.from('devocionais').insert([dadosDevocional]);
-      
+
       if (error) {
         console.error('Erro do Supabase:', error);
         alert(`Erro ao publicar: ${error.message}`);
@@ -740,12 +841,11 @@ const AdminDashboard = () => {
       console.error('Erro ao salvar devocional:', err);
       alert('Erro inesperado ao publicar devocional');
     }
-    
+
     setLoading(false);
   };
 
   const salvarEdicaoDevocional = async (id, dados) => {
-    // ✅ Ajustar data de edição também
     const [ano, mes, dia] = dados.data_publicacao.split('-');
     const dataMidnight = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
     const dataISO = dataMidnight.toISOString();
@@ -819,11 +919,17 @@ const AdminDashboard = () => {
       setStats(novoStats);
       setMetas(m=>{verificarMetas(novoStats,m);return m;});
 
+      // NOVO: split Fundador vs Plus, já buscado acima pro cálculo de MR — só faltava expor na UI
+      setPlanos({fundador: totalFundadores||0, plus: totalPlus||0});
+
       const totalCadastros = usuarios||0;
       const totalUsaram    = com1Sermao;
       const totalVoltaram  = voltaram2x;
       const totalAssinaram = assinaturas||0;
       const totalVisitantes = totalVisitantesVercel > 0 ? totalVisitantesVercel : totalCadastros * 3;
+      // CORRIGIDO: sinaliza quando o número de visitantes é estimado (Vercel Analytics
+      // não respondeu), pra não passar como se fosse dado medido de verdade
+      setVisitantesEstimados(totalVisitantesVercel <= 0);
 
       setFunil({visitantes:totalVisitantes,cadastros:totalCadastros,usaram:totalUsaram,voltaram:totalVoltaram,assinaram:totalAssinaram});
       setTaxas({
@@ -838,7 +944,39 @@ const AdminDashboard = () => {
       });
       setRetencao({dau:dau||0,wau:wau||0});
       const ticketMedio = totalAssinaram>0?mr/totalAssinaram:0;
-      setReceita({mr,ticketMedio,ltv:ticketMedio*12,churn:0});
+      // CORRIGIDO: churn não é medido ainda (sem fonte de cancelamentos) — usar null
+      // em vez de 0 fixo, pra não fingir que é um dado real calculado.
+      setReceita({mr,ticketMedio,ltv:ticketMedio*12,churn:null});
+
+      // NOVO: funil do modal de upgrade (exposição → clique → assinatura).
+      // Antes isso só existia como investigação manual via SQL a cada revisão semanal;
+      // agora fica calculado e exibido direto no dashboard.
+      try {
+        const { data: eventosModal } = await supabase
+          .from('eventos_modal_upgrade')
+          .select('user_id,acao');
+        const usuariosExibiram = new Set((eventosModal||[]).filter(e=>e.acao==='exibido').map(e=>e.user_id));
+        // aceita tanto 'clicou_upgrade' (nome novo) quanto 'clicou_plus' (nome antigo, legado)
+        const usuariosClicaram = new Set((eventosModal||[]).filter(e=>e.acao==='clicou_upgrade'||e.acao==='clicou_plus').map(e=>e.user_id));
+
+        let assinaramAposClicar = 0;
+        if (usuariosClicaram.size > 0) {
+          const { count: countAssinantes } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .in('id', [...usuariosClicaram])
+            .in('plano', ['fundador','plus']);
+          assinaramAposClicar = countAssinantes || 0;
+        }
+
+        setFunilUpgrade({
+          exibiram: usuariosExibiram.size,
+          clicaram: usuariosClicaram.size,
+          assinaram: assinaramAposClicar,
+        });
+      } catch (e) {
+        console.error('Erro ao calcular funil do modal de upgrade:', e);
+      }
 
       const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       const [ultimos7,ultimos7U] = await Promise.all([
@@ -885,7 +1023,7 @@ const AdminDashboard = () => {
       <ModalConfirmacao aberto={modal.aberto} titulo={modal.titulo} descricao={modal.descricao} onConfirmar={modal.onConfirmar} onCancelar={()=>setModal(m=>({...m,aberto:false}))} loading={modalLoading}/>
 
       {devocionalPreview && (
-        <TelaLeituraPreview 
+        <TelaLeituraPreview
           devocional={devocionalPreview}
           onFechar={() => setDevocionalPreview(null)}
           dark={true}
@@ -909,12 +1047,14 @@ const AdminDashboard = () => {
 
       <div className="max-w-5xl mx-auto p-6 space-y-8">
 
-        {/* ════ ABA ANALYTICS ════ */}
+        {/* ════ ABA ANALYTICS — modo cockpit, organizado em 3 seções ════ */}
         {aba==='analytics'&&(
-          <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-3"><TrendingUp className="text-purple-400" size={20}/><h2 className="text-white font-black uppercase tracking-tighter text-lg italic">Visão Estratégica</h2></div>
 
-            {/* Cards principais */}
+            {/* ── Seção: Aquisição ── */}
+            <SectionHeader icon={Users} title="Aquisição" subtitle="de onde vêm e quantos ficam" />
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[{icon:Users,color:'purple',label:'Total Usuários',value:stats.totalUsuarios,meta:{atual:stats.totalUsuarios,alvo:metas.usuarios,label:'Meta Usuários',icon:Target,color:'text-purple-400',chave:'usuarios'}},{icon:PenTool,color:'blue',label:'Sermões Gerados',value:stats.totalSermoes,meta:{atual:stats.totalSermoes,alvo:metas.sermoes,label:'Meta Sermões',icon:BarChart3,color:'text-blue-400',chave:'sermoes'}},{icon:Award,color:'green',label:'Assinaturas Ativas',value:stats.totalAssinaturas,meta:{atual:stats.totalAssinaturas,alvo:metas.assinaturas,label:'Meta Assinaturas',icon:ShoppingCart,color:'text-green-400',chave:'assinaturas'}}].map(({icon:Icon,color,label,value,meta})=>(
                 <div key={label} className="bg-white/5 border border-white/10 p-6 rounded-[32px] backdrop-blur-md">
@@ -926,40 +1066,46 @@ const AdminDashboard = () => {
               ))}
             </div>
 
-            {/* Cards secundários */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]"><div className="flex items-center gap-2 mb-2"><Activity size={14} className="text-orange-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Taxa Conclusão</span></div><p className="text-3xl font-black text-white italic">{stats.taxaConclusao}%</p><p className="text-[9px] text-slate-500 mt-1">aulas concluídas / esperadas</p></div>
-              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]"><div className="flex items-center gap-2 mb-2"><TrendingUp size={14} className="text-green-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Receita Recorrente</span></div><p className="font-black text-white italic leading-tight" style={{fontSize:'clamp(1.1rem,5vw,1.875rem)'}}>{stats.mr.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p><p className="text-[9px] text-slate-500 mt-1">MR mensal estimado</p></div>
-              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px] col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-2"><Star size={14} className="text-yellow-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nota Média</span></div><p className="text-3xl font-black text-white italic">{mediaEstrelas}★</p><p className="text-[9px] text-slate-500 mt-1">{feedbacks.length} feedbacks recebidos</p></div>
-            </div>
-
-            {/* Funil + Taxas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FunilCard funil={funil}/>
-              <TaxasCard taxas={taxas}/>
+              <FunilCard funil={funil} estimado={visitantesEstimados}/>
+              <FunilUpgradeCard funil={funilUpgrade}/>
             </div>
 
-            {/* Ativação + Retenção */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <AtivacaoCard ativacao={ativacao}/>
-              <RetencaoCard retencao={retencao}/>
-            </div>
+            <TaxasCard taxas={taxas}/>
 
-            {/* Receita inteligente */}
-            <ReceitaCard receita={receita}/>
-
-            {/* Gráficos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]"><h4 className="text-white font-bold text-sm mb-5 flex items-center gap-2"><PenTool size={16} className="text-purple-400"/>Sermões — 7 dias</h4><div className="h-36 flex items-end gap-2">{dadosGrafico.map((dia,i)=>(<div key={i} className="flex-1 flex flex-col items-center gap-1.5"><span className="text-[8px] text-purple-400 font-black">{dia.valor>0?dia.valor:''}</span><div className="w-full bg-purple-500/30 rounded-t-lg border-t border-purple-400 transition-all duration-700" style={{height:`${(dia.valor/maxGrafico)*100}%`,minHeight:dia.valor>0?'4px':'2px'}}/><span className="text-[9px] font-black text-slate-500 uppercase">{dia.label}</span></div>))}</div></div>
               <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]"><h4 className="text-white font-bold text-sm mb-5 flex items-center gap-2"><TrendingUp size={16} className="text-green-400"/>Novos Usuários — 7 dias</h4><div className="h-36 flex items-end gap-2">{dadosCrescimento.map((sem,i)=>(<div key={i} className="flex-1 flex flex-col items-center gap-1.5"><span className="text-[8px] text-green-400 font-black">{sem.valor>0?sem.valor:''}</span><div className="w-full bg-green-500/30 rounded-t-lg border-t border-green-400 transition-all duration-700" style={{height:`${(sem.valor/maxCrescimento)*100}%`,minHeight:sem.valor>0?'4px':'2px'}}/><span className="text-[9px] font-black text-slate-500 uppercase">{sem.label}</span></div>))}</div></div>
             </div>
 
-            {/* Assinantes recentes */}
+            {/* ── Seção: Ativação & Retenção ── */}
+            <SectionHeader icon={Zap} title="Ativação & Retenção" subtitle="o produto está grudando?" />
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]"><div className="flex items-center gap-2 mb-2"><Activity size={14} className="text-orange-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Taxa Conclusão</span></div><p className="text-3xl font-black text-white italic">{stats.taxaConclusao}%</p><p className="text-[9px] text-slate-500 mt-1">aulas concluídas / esperadas</p></div>
+              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px] col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-2"><Star size={14} className="text-yellow-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nota Média</span></div><p className="text-3xl font-black text-white italic">{mediaEstrelas}★</p><p className="text-[9px] text-slate-500 mt-1">{feedbacks.length} feedbacks recebidos</p></div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <AtivacaoCard ativacao={ativacao}/>
+              <RetencaoCard retencao={retencao}/>
+            </div>
+
+            {/* ── Seção: Receita ── */}
+            <SectionHeader icon={DollarSign} title="Receita" subtitle="quem paga e o que paga" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]"><div className="flex items-center gap-2 mb-2"><TrendingUp size={14} className="text-green-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Receita Recorrente</span></div><p className="font-black text-white italic leading-tight" style={{fontSize:'clamp(1.1rem,5vw,1.875rem)'}}>{stats.mr.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p><p className="text-[9px] text-slate-500 mt-1">MR mensal estimado</p></div>
+              <PlanosCard planos={planos}/>
+            </div>
+
+            <ReceitaCard receita={receita}/>
+
             <div className="bg-white/5 border border-white/10 rounded-[32px] overflow-hidden"><div className="p-6 border-b border-white/5 flex items-center justify-between"><h4 className="text-white font-bold text-sm flex items-center gap-2"><UserCheck size={16} className="text-orange-400"/>Assinantes Recentes</h4><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{matriculasRecentes.length} registros</span></div><div className="divide-y divide-white/5">{matriculasRecentes.length===0?<p className="p-6 text-center text-slate-500 text-xs">Nenhum assinante ainda.</p>:matriculasRecentes.map((m,i)=>(<div key={i} className="flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-purple-500/20 rounded-2xl flex items-center justify-center shrink-0"><span className="text-[10px] font-black text-purple-400">{(m.full_name||m.email||'?')[0].toUpperCase()}</span></div><div><p className="text-xs font-bold text-white">{m.full_name||m.email||'Usuário'}</p><span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${m.plano==='plus'?'bg-purple-500/20 text-purple-400':'bg-amber-500/20 text-amber-400'}`}>{m.plano}</span></div></div><span className="text-[9px] font-black text-slate-500 uppercase">{new Date(m.plano_atualizado_em||m.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span></div>))}</div></div>
           </div>
         )}
 
-        {/* ════ ABA CURSOS ════ */}
+        {/* ════ ABA CURSOS — modo gestão de conteúdo ════ */}
         {aba==='cursos'&&(
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in slide-in-from-bottom-4 duration-500">
             <div className="md:col-span-1"><div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm sticky top-24"><h2 className="font-black text-slate-800 uppercase text-sm mb-6 flex items-center gap-2"><Plus size={18} className="text-[#4C1D95]"/>Novo Curso</h2><form onSubmit={salvarCurso} className="space-y-3"><input placeholder="Título" className={inputClass} value={novoCurso.titulo} onChange={e=>setNovoCurso(c=>({...c,titulo:e.target.value}))} required/><textarea placeholder="Descrição" className={`${inputClass} min-h-[70px] resize-none`} value={novoCurso.descricao} onChange={e=>setNovoCurso(c=>({...c,descricao:e.target.value}))}/><div className="grid grid-cols-2 gap-3"><input placeholder="ID Hotmart" className={`${inputClass} text-[#4C1D95] bg-purple-50`} value={novoCurso.hotmart_id} onChange={e=>setNovoCurso(c=>({...c,hotmart_id:e.target.value}))} required/><input placeholder="Checkout URL" className={`${inputClass} text-orange-600 bg-orange-50`} value={novoCurso.checkout_url} onChange={e=>setNovoCurso(c=>({...c,checkout_url:e.target.value}))} required/></div><div><input placeholder="URL da Capa" className={inputClass} value={novoCurso.capa_url} onChange={e=>setNovoCurso(c=>({...c,capa_url:e.target.value}))}/><PreviewCapa url={novoCurso.capa_url}/></div><button disabled={loading} className="w-full py-4 bg-[#4C1D95] text-white rounded-2xl font-black text-xs uppercase shadow-lg flex items-center justify-center gap-2 hover:bg-[#4a22e0] transition-all">{loading?<Loader2 className="animate-spin" size={16}/>:<><Plus size={14}/>Cadastrar Curso</>}</button></form></div></div>
@@ -1001,40 +1147,39 @@ const AdminDashboard = () => {
                   <Plus size={18} className="text-[#4C1D95]"/>Novo Devocional
                 </h2>
                 <form onSubmit={salvarDevocional} className="space-y-3">
-                  <input 
-                    placeholder="Título do devocional" 
-                    className={inputClass} 
-                    value={novoDevocional.titulo} 
-                    onChange={e=>setNovoDevocional(d=>({...d,titulo:e.target.value}))} 
+                  <input
+                    placeholder="Título do devocional"
+                    className={inputClass}
+                    value={novoDevocional.titulo}
+                    onChange={e=>setNovoDevocional(d=>({...d,titulo:e.target.value}))}
                     required
                   />
-                  <input 
-                    placeholder="Versículo-chave (ex: João 3:16)" 
-                    className={inputClass} 
-                    value={novoDevocional.versiculo_chave} 
-                    onChange={e=>setNovoDevocional(d=>({...d,versiculo_chave:e.target.value}))} 
+                  <input
+                    placeholder="Versículo-chave (ex: João 3:16)"
+                    className={inputClass}
+                    value={novoDevocional.versiculo_chave}
+                    onChange={e=>setNovoDevocional(d=>({...d,versiculo_chave:e.target.value}))}
                     required
                   />
-                  <textarea 
-                    placeholder="Conteúdo do devocional..." 
-                    className={`${inputClass} min-h-[140px] resize-none`} 
-                    value={novoDevocional.conteudo} 
+                  <textarea
+                    placeholder="Conteúdo do devocional..."
+                    className={`${inputClass} min-h-[140px] resize-none`}
+                    value={novoDevocional.conteudo}
                     onChange={e=>setNovoDevocional(d=>({...d,conteudo:e.target.value}))}
                     required
                   />
-                  <textarea 
-                    placeholder="Pergunta para reflexão (opcional)" 
-                    className={`${inputClass} min-h-[80px] resize-none`} 
-                    value={novoDevocional.reflexao} 
+                  <textarea
+                    placeholder="Pergunta para reflexão (opcional)"
+                    className={`${inputClass} min-h-[80px] resize-none`}
+                    value={novoDevocional.reflexao}
                     onChange={e=>setNovoDevocional(d=>({...d,reflexao:e.target.value}))}
                   />
-                  {/* ✅ Input de categoria customizável com datalist */}
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
                       Categoria
                     </label>
-                    <input 
-                      placeholder="Ex: Liderança, Fé, Salmos, Geral..." 
+                    <input
+                      placeholder="Ex: Liderança, Fé, Salmos, Geral..."
                       className={inputClass}
                       value={novoDevocional.tema}
                       onChange={e => setNovoDevocional(d => ({ ...d, tema: e.target.value.toLowerCase().trim() }))}
@@ -1050,8 +1195,8 @@ const AdminDashboard = () => {
                     </datalist>
                   </div>
                   <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer border border-amber-100 hover:bg-amber-100 transition">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={novoDevocional.destaque_dia}
                       onChange={e=>setNovoDevocional(d=>({...d,destaque_dia:e.target.checked}))}
                       className="w-5 h-5 cursor-pointer"
@@ -1062,7 +1207,7 @@ const AdminDashboard = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
                       Data de Publicação
                     </label>
-                    <input 
+                    <input
                       type="date"
                       className={inputClass}
                       value={novoDevocional.data_publicacao}
@@ -1070,8 +1215,8 @@ const AdminDashboard = () => {
                       required
                     />
                   </div>
-                  <button 
-                    disabled={loading} 
+                  <button
+                    disabled={loading}
                     className="w-full py-4 bg-[#4C1D95] text-white rounded-2xl font-black text-xs uppercase shadow-lg flex items-center justify-center gap-2 hover:bg-[#4a22e0] transition-all"
                   >
                     {loading ? <Loader2 className="animate-spin" size={16}/> : <><Plus size={14}/>Publicar Devocional</>}
@@ -1079,7 +1224,7 @@ const AdminDashboard = () => {
                 </form>
               </div>
             </div>
-            
+
             <div className="md:col-span-2 space-y-4">
               <div className="flex items-center justify-between px-2">
                 <h2 className="font-black text-slate-400 uppercase text-[10px] tracking-widest">
@@ -1087,7 +1232,7 @@ const AdminDashboard = () => {
                 </h2>
                 {loadingDevocionais && <Loader2 className="animate-spin text-slate-300" size={16}/>}
               </div>
-              
+
               {devocionais.length === 0 ? (
                 <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center">
                   <BookOpen size={32} className="text-slate-200 mx-auto mb-3"/>

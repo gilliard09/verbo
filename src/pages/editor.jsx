@@ -25,22 +25,30 @@ const AUTO_SAVE_DELAY     = 30000;
 const RASCUNHO_KEY  = (id) => `verbo_rascunho_${id  || 'novo'}`;
 const HISTORICO_KEY = (id) => `verbo_historico_${id || 'novo'}`;
 
-// ─── Hook: altura real da viewport visível (contorna o bug do teclado no iOS) ──
+// ─── Hook: altura + offset real da viewport visível (contorna o bug do teclado no iOS) ──
 // No iOS Safari, elementos `fixed` não recalculam quando o teclado abre — a
 // viewport "visual" encolhe mas o layout `fixed inset-0` continua medindo a
-// altura antiga, empurrando header/rodapé para trás do teclado. Escutamos
-// `visualViewport` (quando disponível) e usamos essa altura real no container.
+// altura antiga, empurrando header/rodapé para trás do teclado.
+//
+// CORRIGIDO: só ajustar a altura não bastava. Quando o teclado abre, o Safari
+// pode deslocar o viewport visual para cima dentro do viewport de layout
+// (`visualViewport.offsetTop` deixa de ser 0). Elementos `position: fixed`
+// ficam ancorados ao viewport de LAYOUT, não ao visual — então mesmo com a
+// altura certa, o container ficava desalinhado verticalmente, sobrando um
+// espaço em branco entre o conteúdo e o teclado. Agora rastreamos também o
+// `offsetTop` e compensamos com `translateY` no container.
 const useAlturaVisivel = () => {
-  const [altura, setAltura] = useState(
-    typeof window !== 'undefined' ? window.innerHeight : 0
-  );
+  const [viewport, setViewport] = useState({
+    altura: typeof window !== 'undefined' ? window.innerHeight : 0,
+    offsetTop: 0,
+  });
 
   useEffect(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
 
     const atualizar = () => {
-      if (vv) setAltura(vv.height);
-      else setAltura(window.innerHeight);
+      if (vv) setViewport({ altura: vv.height, offsetTop: vv.offsetTop });
+      else setViewport({ altura: window.innerHeight, offsetTop: 0 });
     };
 
     atualizar();
@@ -57,7 +65,7 @@ const useAlturaVisivel = () => {
     return () => window.removeEventListener('resize', atualizar);
   }, []);
 
-  return altura;
+  return viewport;
 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -140,15 +148,24 @@ const BotaoToolbar = ({ onClick, title, active, children }) => (
 const Editor = () => {
   const { id }      = useParams();
   const navigate    = useNavigate();
-  const location    = useLocation();                          // ← NOVO
+  const location    = useLocation();
   const textAreaRef = useRef(null);
-  const alturaVisivel = useAlturaVisivel();                    // ← NOVO
+  // CORRIGIDO: agora também extraímos offsetTop, usado no translateY do container
+  const { altura: alturaVisivel, offsetTop } = useAlturaVisivel();
 
   // ── Tipo via URL ─────────────────────────────────────────────────────────
-  const params = new URLSearchParams(location.search);       // ← NOVO
-  const tipo   = params.get('tipo');                         // ← NOVO
+  const params = new URLSearchParams(location.search);
+  const tipo   = params.get('tipo');
 
-  const { isPlus } = usePlano();
+  // ── CORREÇÃO (Fundador vs Plus) ─────────────────────────────────────────
+  // Antes usávamos só `isPlus` para decidir se mostra o modal/indicador de
+  // upgrade. Isso é um bug: Fundador é plano PAGO (entrada, R$9,90) mas
+  // isPlus = false para ele — então o modal de "vire assinante" continuava
+  // aparecendo pra quem já é assinante Fundador. `isAssinante` (Fundador OU
+  // Plus) é o conceito certo aqui, já que o modal oferece "virar pagante",
+  // não especificamente "virar Plus". Mantemos `isPlus` disponível caso
+  // outras partes do componente precisem da distinção específica de tier.
+  const { isPlus, isAssinante } = usePlano();
   const podeCreiarSermao = true;
   const sermoesRestantes = null;
   const percentualUso    = 0;
@@ -195,7 +212,7 @@ const Editor = () => {
   }, []);
 
   // ── Estrutura guiada pelo tipo ────────────────────────────────────────────
-  useEffect(() => {                                          // ← NOVO
+  useEffect(() => {
     if (!id && !conteudo && tipo) {
       if (tipo === 'expositivo') {
         setConteudo(
@@ -247,10 +264,10 @@ Oração:`
         );
       }
     }
-  }, [tipo, id]);                                            // ← NOVO
+  }, [tipo, id]);
 
   // ── Foco automático no mobile ────────────────────────────────────────────
-  useEffect(() => {                                          // ← NOVO
+  useEffect(() => {
     setTimeout(() => {
       textAreaRef.current?.focus();
     }, 300);
@@ -388,12 +405,16 @@ Oração:`
           mostrarToast('Sermão salvo com sucesso!', 'sucesso');
 
           // ── Gatilho de upgrade contextual ──────────────────────────────
-          // Só verifica em criação (não edição) e só para quem ainda não é
-          // Plus. A flag de "já viu" fica no banco (profiles.viu_upgrade_sermoes),
-          // não em localStorage — assim cobre tanto usuários novos quanto
-          // quem já tinha 3+ sermões antes deste recurso existir, e continua
-          // consistente mesmo se a pessoa trocar de aparelho.
-          if (eraSermaoNovo && !isPlus) {
+          // Só verifica em criação (não edição) e só para quem NÃO é
+          // assinante (nem Fundador, nem Plus) — CORRIGIDO: antes checava
+          // `!isPlus`, o que deixava passar usuários Fundador (plano pago
+          // de entrada) para o modal de "vire assinante", já que Fundador
+          // tem isPlus = false. A flag de "já viu" fica no banco
+          // (profiles.viu_upgrade_sermoes), não em localStorage — assim
+          // cobre tanto usuários novos quanto quem já tinha 3+ sermões
+          // antes deste recurso existir, e continua consistente mesmo se
+          // a pessoa trocar de aparelho.
+          if (eraSermaoNovo && !isAssinante) {
             try {
               const [{ count }, { data: perfilFlag }] = await Promise.all([
                 supabase
@@ -505,7 +526,14 @@ Oração:`
   return (
     <div
       className={`bg-white flex flex-col transition-all duration-300 ${telaCheia ? 'fixed inset-x-0 top-0 z-[150]' : 'min-h-screen'}`}
-      style={telaCheia ? { height: alturaVisivel ? `${alturaVisivel}px` : '100dvh' } : undefined}
+      style={telaCheia ? {
+        height: alturaVisivel ? `${alturaVisivel}px` : '100dvh',
+        // CORRIGIDO: compensa o deslocamento do viewport visual no iOS Safari
+        // quando o teclado abre (visualViewport.offsetTop > 0). Sem isso, o
+        // container tinha a altura certa mas ficava na posição errada,
+        // deixando espaço em branco entre o conteúdo e o teclado.
+        transform: `translateY(${offsetTop}px)`,
+      } : undefined}
     >
 
       <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem}
@@ -568,7 +596,7 @@ Oração:`
           value={titulo} onChange={e => setTitulo(e.target.value)} />
 
         {/* ── Indicador de tipo guiado ── */}
-        {tipo && !id && (                                    // ← NOVO
+        {tipo && !id && (
           <p className="text-[11px] text-[#4C1D95] font-bold mb-2">
             Estrutura pronta para{' '}
             {tipo === 'expositivo' ? 'sermão expositivo'
@@ -594,7 +622,7 @@ Oração:`
       {/* Textarea */}
       <div className="flex-1 px-6 overflow-hidden min-h-0">
         <textarea ref={textAreaRef}
-          placeholder={                                      // ← NOVO placeholder inteligente
+          placeholder={
             tipo === 'expositivo'
               ? 'Desenvolva o texto bíblico aqui...'
               : tipo === 'tematico'
@@ -623,7 +651,8 @@ Oração:`
           </div>
         </div>
 
-        {!isPlus && sermoesRestantes !== null && sermoesRestantes <= 10 && (
+        {/* CORRIGIDO: !isPlus → !isAssinante, pelo mesmo motivo do gatilho acima */}
+        {!isAssinante && sermoesRestantes !== null && sermoesRestantes <= 10 && (
           <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')} className="flex items-center gap-1.5 text-amber-500 shrink-0">
             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-amber-400 rounded-full" style={{ width: `${percentualUso}%` }} />
