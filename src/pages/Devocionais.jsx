@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
+import { track } from '../lib/analytics';
 import {
   Check, Loader2, Share2, BookOpen, Calendar, Flame, 
   Instagram, Facebook, MessageCircle, X, Volume2, Pause, Play,
@@ -859,6 +860,16 @@ const Devocionais = () => {
     }
   };
 
+  // ── Analytics + navegação: abrir um devocional para leitura ────────────────
+  // Centralizado aqui (em vez de passar setTelaLeituraAberta direto pro
+  // onAbrir do card) porque é o único ponto de entrada da TelaLeitura hoje —
+  // se no futuro surgir outro (ex.: abrir via notificação/deep link), basta
+  // reaproveitar esta função.
+  const abrirDevocional = useCallback((devocional) => {
+    track('devotional_opened', { devotional_id: devocional.id });
+    setTelaLeituraAberta(devocional);
+  }, []);
+
   const inicioSemana = new Date();
   inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
   inicioSemana.setHours(0, 0, 0, 0);
@@ -976,7 +987,7 @@ const Devocionais = () => {
                 onMarcarCompleto={marcarCompleto}
                 completado={completados.includes(devocional.id)}
                 onCompartilhar={setModalCompartilhar}
-                onAbrir={setTelaLeituraAberta}
+                onAbrir={abrirDevocional}
                 peopleCount={Math.floor(Math.random() * 150) + 20}
               />
             ))

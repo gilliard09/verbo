@@ -589,6 +589,69 @@ const RetencaoCard = ({ retencao }) => {
   );
 };
 
+// NOVO: breakdown de uso por funcionalidade, direto da tabela `events` —
+// mostra quais telas/ações do produto as pessoas realmente usam nos últimos
+// 7 dias. Antes disso não existia NENHUMA visão de comportamento dentro do
+// produto no AdminDashboard; só contagens totais de linhas em tabelas.
+const EVENTO_LABELS = {
+  dashboard_viewed:      { label: 'Dashboard',        emoji: '🏠' },
+  editor_opened:         { label: 'Editor',           emoji: '✍️' },
+  pulpit_mode_opened:    { label: 'Modo Púlpito',      emoji: '🎤' },
+  sermon_opened:         { label: 'Abriu Sermão',      emoji: '📖' },
+  sermon_created:        { label: 'Sermão Criado',     emoji: '📝' },
+  sermon_edited:         { label: 'Sermão Editado',    emoji: '✏️' },
+  sermon_deleted:        { label: 'Sermão Excluído',   emoji: '🗑️' },
+  first_sermon_created:  { label: '1º Sermão',         emoji: '⚡' },
+  devotional_opened:     { label: 'Devocional',        emoji: '🙏' },
+  bible_opened:          { label: 'Bíblia',            emoji: '📚' },
+  sermon_exported:       { label: 'Exportou Sermão',   emoji: '📤' },
+  signup:                { label: 'Cadastro',          emoji: '✨' },
+  login:                 { label: 'Login',             emoji: '🔑' },
+  onboarding_completed:  { label: 'Onboarding',        emoji: '🎯' },
+};
+
+const UsoRecursoCard = ({ usoPorRecurso }) => {
+  const entradas = Object.entries(usoPorRecurso).sort((a, b) => b[1] - a[1]);
+  const max = entradas.length > 0 ? entradas[0][1] : 1;
+  const total = entradas.reduce((s, [, v]) => s + v, 0);
+
+  return (
+    <div className="bg-white/5 border border-white/10 p-7 rounded-[32px] backdrop-blur-md">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2.5 bg-cyan-500/20 rounded-2xl"><Activity size={20} className="text-cyan-400"/></div>
+        <div>
+          <h3 className="font-black text-white text-sm uppercase tracking-tight">Uso por Recurso</h3>
+          <p className="text-[10px] text-slate-500 font-bold">Últimos 7 dias · {total.toLocaleString('pt-BR')} eventos</p>
+        </div>
+      </div>
+      {entradas.length === 0 ? (
+        <p className="text-slate-500 text-xs text-center py-6">Sem eventos registrados nos últimos 7 dias.</p>
+      ) : (
+        <div className="space-y-3">
+          {entradas.map(([nome, valor]) => {
+            const cfg = EVENTO_LABELS[nome] || { label: nome, emoji: '•' };
+            const pct = Math.round((valor / max) * 100);
+            return (
+              <div key={nome} className="flex items-center gap-3">
+                <span className="text-base w-6 shrink-0">{cfg.emoji}</span>
+                <div className="flex-1">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{cfg.label}</span>
+                    <span className="text-[10px] font-black text-white">{valor.toLocaleString('pt-BR')}</span>
+                  </div>
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-cyan-400 transition-all duration-1000" style={{ width: `${pct}%`, opacity: 0.85 }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ReceitaCard = ({ receita }) => (
   <div className="bg-white/5 border border-white/10 p-7 rounded-[32px] backdrop-blur-md">
     <div className="flex items-center gap-3 mb-6">
@@ -688,6 +751,9 @@ const AdminDashboard = () => {
   const [taxas, setTaxas] = useState({visitanteCadastro:0,cadastroUso:0,usoAssinatura:0});
   const [ativacao, setAtivacao] = useState({pct1Sermao:0,pct3Sermoes:0,pct7Dias:0});
   const [retencao, setRetencao] = useState({dau:0,wau:0});
+  // NOVO: breakdown de eventos (event_name → contagem) dos últimos 7 dias,
+  // usado pelo card "Uso por Recurso"
+  const [usoPorRecurso, setUsoPorRecurso] = useState({});
   const [receita, setReceita] = useState({mr:0,ticketMedio:0,ltv:0,churn:null});
   const [planos, setPlanos] = useState({fundador:0,plus:0});
   // NOVO: funil do modal de upgrade (exibido → clicou_upgrade/clicou_plus → assinou)
@@ -888,7 +954,7 @@ const AdminDashboard = () => {
       const [
         {count:usuarios},{count:sermoes},{count:assinaturas},{count:progresso},
         {count:totalAulas},{count:totalFundadores},{count:totalPlus},
-        {count:dau},{count:wau},
+        {data:eventosHoje},{data:eventosSemana},{data:eventosUso},
         vercelRes,
       ] = await Promise.all([
         supabase.from('profiles').select('*',{count:'exact',head:true}),
@@ -898,10 +964,25 @@ const AdminDashboard = () => {
         supabase.from('aulas').select('*',{count:'exact',head:true}),
         supabase.from('profiles').select('*',{count:'exact',head:true}).eq('plano','fundador'),
         supabase.from('profiles').select('*',{count:'exact',head:true}).eq('plano','plus'),
-        supabase.from('sessoes').select('*',{count:'exact',head:true}).gte('criado_em',`${hoje.toISOString().split('T')[0]}T00:00:00`),
-        supabase.from('sessoes').select('*',{count:'exact',head:true}).gte('criado_em',seteDiasAtras.toISOString()),
+        // CORRIGIDO: DAU/WAU agora vêm da tabela `events` (analytics real,
+        // populada desde a instrumentação do app) em vez de `sessoes`, que não
+        // estava sendo gravada e sempre retornava 0. Trazemos user_id e
+        // contamos distintos no client, já que o Supabase JS não faz
+        // COUNT(DISTINCT) direto via select.
+        supabase.from('events').select('user_id').gte('created_at',`${hoje.toISOString().split('T')[0]}T00:00:00`).not('user_id','is',null),
+        supabase.from('events').select('user_id').gte('created_at',seteDiasAtras.toISOString()).not('user_id','is',null),
+        // NOVO: eventos dos últimos 7 dias, usados pro card "Uso por Recurso" —
+        // mostra quais funcionalidades do produto estão realmente sendo usadas.
+        supabase.from('events').select('event_name').gte('created_at',seteDiasAtras.toISOString()),
         supabase.functions.invoke('vercel-analytics').catch(() => ({ data: null })),
       ]);
+
+      const dau = new Set((eventosHoje||[]).map(e=>e.user_id)).size;
+      const wau = new Set((eventosSemana||[]).map(e=>e.user_id)).size;
+
+      const contagemUso = {};
+      (eventosUso||[]).forEach(e => { contagemUso[e.event_name] = (contagemUso[e.event_name]||0)+1; });
+      setUsoPorRecurso(contagemUso);
 
       const vercelData = vercelRes?.data;
       const totalVisitantesVercel = vercelData?.totalVisitantes || 0;
@@ -1082,14 +1163,15 @@ const AdminDashboard = () => {
             <SectionHeader icon={Zap} title="Ativação & Retenção" subtitle="o produto está grudando?" />
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px]"><div className="flex items-center gap-2 mb-2"><Activity size={14} className="text-orange-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Taxa Conclusão</span></div><p className="text-3xl font-black text-white italic">{stats.taxaConclusao}%</p><p className="text-[9px] text-slate-500 mt-1">aulas concluídas / esperadas</p></div>
-              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px] col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-2"><Star size={14} className="text-yellow-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nota Média</span></div><p className="text-3xl font-black text-white italic">{mediaEstrelas}★</p><p className="text-[9px] text-slate-500 mt-1">{feedbacks.length} feedbacks recebidos</p></div>
+              <div className="bg-white/5 border border-white/10 p-5 rounded-[24px] col-span-2 md:col-span-1"><div className="flex items-center gap-2 mb-2"><Activity size={14} className="text-orange-400"/><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Taxa Conclusão</span></div><p className="text-3xl font-black text-white italic">{stats.taxaConclusao}%</p><p className="text-[9px] text-slate-500 mt-1">aulas concluídas / esperadas</p></div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <AtivacaoCard ativacao={ativacao}/>
               <RetencaoCard retencao={retencao}/>
             </div>
+
+            <UsoRecursoCard usoPorRecurso={usoPorRecurso}/>
 
             {/* ── Seção: Receita ── */}
             <SectionHeader icon={DollarSign} title="Receita" subtitle="quem paga e o que paga" />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { track } from '../lib/analytics';
 import { supabase } from '../supabaseClient';
 import {
   Save, ArrowLeft, Book, Loader2,
@@ -273,6 +274,11 @@ Oração:`
     }, 300);
   }, []);
 
+  // ── Analytics: registro de abertura do editor ─────────────────────────────
+  useEffect(() => {
+    track('editor_opened', { sermon_id: id || null, tipo: tipo || null });
+  }, [id, tipo]);
+
   // ── Carregamento inicial ────────────────────────────────────────────────────
   useEffect(() => {
     if (id) {
@@ -404,6 +410,29 @@ Oração:`
           localStorage.removeItem(RASCUNHO_KEY(id));
           mostrarToast('Sermão salvo com sucesso!', 'sucesso');
 
+          // ── Analytics: sermon_created / sermon_edited / first_sermon_created ──
+          // Reaproveitamos a contagem de sermões do usuário tanto pra saber se é
+          // o primeiro sermão (analytics) quanto pro gatilho do modal de upgrade
+          // logo abaixo — evita rodar a mesma query duas vezes.
+          let totalSermoesUsuario = null;
+          if (eraSermaoNovo) {
+            try {
+              const { count } = await supabase
+                .from('sermoes')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+              totalSermoesUsuario = count;
+            } catch {
+              // Se a contagem falhar, seguimos sem travar o save
+            }
+            track('sermon_created', { sermon_id: idFinal });
+            if (totalSermoesUsuario === 1) {
+              track('first_sermon_created', { sermon_id: idFinal });
+            }
+          } else {
+            track('sermon_edited', { sermon_id: id });
+          }
+
           // ── Gatilho de upgrade contextual ──────────────────────────────
           // Só verifica em criação (não edição) e só para quem NÃO é
           // assinante (nem Fundador, nem Plus) — CORRIGIDO: antes checava
@@ -416,19 +445,22 @@ Oração:`
           // a pessoa trocar de aparelho.
           if (eraSermaoNovo && !isAssinante) {
             try {
-              const [{ count }, { data: perfilFlag }] = await Promise.all([
-                supabase
-                  .from('sermoes')
-                  .select('*', { count: 'exact', head: true })
-                  .eq('user_id', user.id),
-                supabase
-                  .from('profiles')
-                  .select('viu_upgrade_sermoes')
-                  .eq('id', user.id)
-                  .maybeSingle(),
-              ]);
+              const { data: perfilFlag } = await supabase
+                .from('profiles')
+                .select('viu_upgrade_sermoes')
+                .eq('id', user.id)
+                .maybeSingle();
 
               const jaViuUpgrade = perfilFlag?.viu_upgrade_sermoes === true;
+
+              // Reaproveita a contagem já feita acima; se por algum motivo
+              // não tiver vindo (ex.: falha na query), busca de novo aqui.
+              const count = totalSermoesUsuario ?? (
+                await supabase
+                  .from('sermoes')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('user_id', user.id)
+              ).count;
 
               if (count >= GATILHO_UPGRADE_SERMAO && !jaViuUpgrade) {
                 // Marca no banco antes de exibir — evita corrida entre

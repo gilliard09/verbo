@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { track } from '../lib/analytics';
 import {
   ArrowLeft, Type, Palette, Minus, Plus,
   Maximize2, Minimize2, WifiOff, Highlighter, X, Trash2
@@ -43,6 +44,11 @@ const Leitura = () => {
   const [menuPos, setMenuPos]       = useState(null);
   const [painel, setPainel]         = useState(false);
   const jaRestaurado                = useRef(false);
+
+  // ── Analytics: registro de abertura do modo púlpito ───────────────────────
+  useEffect(() => {
+    track('pulpit_mode_opened', { sermon_id: id });
+  }, [id]);
 
   // ─── ✅ WAKE LOCK CORRIGIDO ────────────────────────────────────────────────
   // Só ativa quando a página está visível; silencia o erro NotAllowedError

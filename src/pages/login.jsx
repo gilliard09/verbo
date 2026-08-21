@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { track } from '../lib/analytics';
 import { Mail, Lock, LogIn, UserPlus, User, AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 // Traduz as mensagens mais comuns do Supabase Auth para português
@@ -71,6 +72,7 @@ const Login = () => {
           }
         });
         if (error) throw error;
+        track('signup');
         setFeedback({ tipo: 'sucesso', mensagem: 'Conta criada com sucesso! Agora você já pode entrar.' });
         setIsSignUp(false);
         setPassword('');
@@ -81,6 +83,7 @@ const Login = () => {
           password,
         });
         if (error) throw error;
+        track('login');
       }
     } catch (error) {
       setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });

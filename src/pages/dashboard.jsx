@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
+import { track } from '../lib/analytics';
 import { useNavigate } from 'react-router-dom';
 import {
   Loader2, Trash2, Edit3, Eye, Search,
@@ -416,6 +417,11 @@ const Dashboard = () => {
     return sermoes.filter(s => normalizar(s.titulo).includes(alvo));
   }, [sermoes, busca]);
 
+  // ── Analytics: visualização do dashboard ───────────────────────────────
+  useEffect(() => {
+    track('dashboard_viewed');
+  }, []);
+
   // ✅ Detectar online/offline
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -571,6 +577,15 @@ const Dashboard = () => {
     });
   }, [notificacoes]);
 
+  // ── Analytics + navegação: abrir um sermão para leitura ────────────────
+  // Centralizado aqui porque existem dois pontos de entrada pro modo
+  // leitura (tap na linha e "Abrir" no menu de contexto) — assim o evento
+  // é disparado do mesmo jeito nos dois casos.
+  const abrirSermao = useCallback((id) => {
+    track('sermon_opened', { sermon_id: id });
+    navigate(`/leitura/${id}`);
+  }, [navigate]);
+
   /**
    * ✅ Excluir sermão (otimizado offline)
    */
@@ -583,10 +598,15 @@ const Dashboard = () => {
     if (navigator.onLine) {
       try {
         await supabase.from('sermoes').delete().eq('id', id);
+        track('sermon_deleted', { sermon_id: id });
       } catch (err) {
         console.error('Erro ao excluir:', err);
         carregarDados(abortControllerRef.current?.signal);
       }
+    } else {
+      // Exclusão feita offline — ainda vale registrar a intenção do usuário;
+      // o item some da UI imediatamente mesmo sem confirmação do servidor.
+      track('sermon_deleted', { sermon_id: id, offline: true });
     }
   }
 
@@ -630,7 +650,7 @@ const Dashboard = () => {
       <MenuContexto
         menu={menuContexto}
         onFechar={() => setMenuContexto(null)}
-        onAbrir={(id) => navigate(`/leitura/${id}`)}
+        onAbrir={abrirSermao}
         onEditar={(id) => navigate(`/editor/${id}`)}
         onExcluir={excluirSermao}
       />
@@ -765,7 +785,7 @@ const Dashboard = () => {
                     sermao={sermao}
                     isOpen={openSwipeId === sermao.id}
                     onOpenChange={(id) => setOpenSwipeId(id)}
-                    onNavigate={(id) => navigate(`/leitura/${id}`)}
+                    onNavigate={abrirSermao}
                     onEdit={(id) => navigate(`/editor/${id}`)}
                     onDelete={excluirSermao}
                     onLongPress={(sermaoAlvo, x, y) => {
