@@ -15,16 +15,48 @@ import { gerarIdLocal } from '../lib/sync';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { usePlano } from '../hooks/usePlano';
 
-// Sermão a partir do qual o modal de upgrade pode aparecer — dado mostra que
-// quem chega aqui já formou hábito real de uso (queda de engajamento acontece
-// antes disso, entre o 1º e o 2º sermão). Usamos >= (não só ===) para também
-// cobrir usuários que já tinham 3+ sermões antes deste recurso existir.
-const GATILHO_UPGRADE_SERMAO = 3;
-
 const PALAVRAS_POR_MINUTO = 120;
 const AUTO_SAVE_DELAY     = 30000;
 const RASCUNHO_KEY  = (id) => `verbo_rascunho_${id  || 'novo'}`;
 const HISTORICO_KEY = (id) => `verbo_historico_${id || 'novo'}`;
+
+// ── Conteúdo dos modais de upgrade por degrau (usuários gratuitos) ────────────
+// A mensagem escala em intensidade conforme o número de sermões criados:
+// 1º sermão é só um "oi, existe um plano melhor" sem pressão; 2º já reforça
+// o hábito formado e mostra o benefício concreto (ilimitado + Academia);
+// 3º é a oferta mais direta, porque nesse ponto o usuário já provou que usa
+// o produto de verdade — dado mostra que quem vê o modal aqui converte
+// ~23,5% vs ~4% de quem nunca vê.
+const CONTEUDO_DEGRAU = {
+  1: {
+    emoji: '🎉',
+    titulo: 'Seu primeiro sermão está pronto!',
+    corpo: 'Continue preparando suas mensagens gratuitamente ou conheça os recursos do Verbo. Sem pressão.',
+  },
+  2: {
+    emoji: '📚',
+    titulo: 'Você já está construindo sua biblioteca de mensagens.',
+    corpo: 'No Plus, seus sermões são ilimitados e você ainda tem acesso a toda a Academia Verbo.',
+  },
+  3: {
+    emoji: '✨',
+    titulo: 'Você já utilizou seus 3 sermões gratuitos.',
+    corpo: 'Continue preparando suas mensagens com o Verbo. Conheça o Plus e tenha sermões ilimitados + todos os cursos da Academia Verbo.',
+  },
+};
+
+// Recursos da Academia Verbo mostrados no convite de upgrade do Fundador —
+// Fundador não é o destino, é o primeiro degrau. Esse modal é independente
+// do fluxo de degraus acima: dispara pra quem já é assinante Fundador,
+// focado em cursos (o que o Fundador não tem acesso), não em "sermões
+// ilimitados" (que ele já tem).
+const RECURSOS_ACADEMIA = [
+  'Teologia Fundamental',
+  'Método Pregação Impactante',
+  'Novo Testamento Explicado',
+  'Discipulado Cristão',
+  'Sermões ilimitados',
+];
 
 // ─── Hook: altura + offset real da viewport visível (contorna o bug do teclado no iOS) ──
 // No iOS Safari, elementos `fixed` não recalculam quando o teclado abre — a
@@ -84,11 +116,71 @@ const Toast = ({ visivel, tipo, mensagem, onFechar }) => (
   </div>
 );
 
-// ─── Modal de upgrade contextual — aparece ao salvar o 3º sermão ──────────────
+// ─── Modal de upgrade — cobre dois públicos com o mesmo componente ────────────
 // Não bloqueia nada (o plano gratuito continua permitindo criar sermões);
-// é só uma oferta no momento em que a pessoa já demonstrou hábito de uso.
-const ModalUpgradeSermao = ({ aberto, onFechar, onVerPlanos }) => {
-  if (!aberto) return null;
+// é só uma oferta no momento em que a pessoa demonstrou algum nível de uso.
+//
+// `estado.tipo === 'degrau'` → usuário gratuito, mensagem escala com
+// `estado.degrau` (1, 2 ou 3).
+// `estado.tipo === 'fundador'` → usuário já assinante Fundador, convite
+// pra migrar pro Plus com foco na Academia (cursos), não em sermões
+// ilimitados (que ele já tem).
+const ModalUpgrade = ({ estado, onFechar, onVerPlanos }) => {
+  if (!estado?.aberto) return null;
+
+  if (estado.tipo === 'fundador') {
+    return (
+      <div className="fixed inset-0 z-[250] flex items-end sm:items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onFechar} />
+        <div className="relative bg-white rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] p-7 text-center relative overflow-hidden">
+            <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <button
+              onClick={onFechar}
+              aria-label="Fechar"
+              className="absolute top-3 right-3 p-1.5 text-white/70 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Sparkles size={26} className="text-white" />
+            </div>
+            <p className="text-white font-black text-lg leading-tight">
+              Quer continuar sua formação?
+            </p>
+          </div>
+          <div className="p-6">
+            <p className="text-slate-400 text-[10px] font-black text-center uppercase tracking-widest mb-4">
+              No Verbo Plus você encontra
+            </p>
+            <ul className="space-y-2.5 mb-6">
+              {RECURSOS_ACADEMIA.map((recurso) => (
+                <li key={recurso} className="flex items-center gap-2.5 text-sm text-slate-600 font-medium">
+                  <CheckCircle2 size={17} className="text-[#4C1D95] shrink-0" />
+                  {recurso}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={onVerPlanos}
+              className="w-full bg-[#4C1D95] text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-[#5B21B6] active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
+            >
+              Fazer upgrade para o Plus <ArrowRight size={16} />
+            </button>
+            <button
+              onClick={onFechar}
+              className="w-full text-slate-400 text-xs font-bold py-2"
+            >
+              Continuar como Fundador
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const conteudo = CONTEUDO_DEGRAU[estado.degrau] || CONTEUDO_DEGRAU[3];
+
   return (
     <div className="fixed inset-0 z-[250] flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onFechar} />
@@ -106,12 +198,12 @@ const ModalUpgradeSermao = ({ aberto, onFechar, onVerPlanos }) => {
             <Sparkles size={26} className="text-white" />
           </div>
           <p className="text-white font-black text-lg leading-tight">
-            Você já criou 3 mensagens com o Verbo 🎉
+            {conteudo.titulo} {conteudo.emoji}
           </p>
         </div>
         <div className="p-6">
           <p className="text-slate-500 text-sm text-center leading-relaxed mb-6">
-            Continue evoluindo sua pregação com a Academia Verbo, sermões ilimitados e recursos exclusivos do plano Plus.
+            {conteudo.corpo}
           </p>
           <button
             onClick={onVerPlanos}
@@ -163,14 +255,16 @@ const Editor = () => {
   // upgrade. Isso é um bug: Fundador é plano PAGO (entrada, R$9,90) mas
   // isPlus = false para ele — então o modal de "vire assinante" continuava
   // aparecendo pra quem já é assinante Fundador. `isAssinante` (Fundador OU
-  // Plus) é o conceito certo aqui, já que o modal oferece "virar pagante",
-  // não especificamente "virar Plus". Mantemos `isPlus` disponível caso
-  // outras partes do componente precisem da distinção específica de tier.
-  const { isPlus, isAssinante } = usePlano();
+  // Plus) é o conceito certo pro fluxo de degraus (gratuito → pagante).
+  // `isFundador` especificamente é usado agora pro convite Fundador → Plus.
+  const { isPlus, isFundador, isAssinante } = usePlano();
   const podeCreiarSermao = true;
   const sermoesRestantes = null;
   const percentualUso    = 0;
-  const [modalUpgradeAberto, setModalUpgradeAberto] = useState(false);
+
+  // NOVO: um único estado cobre as duas famílias de modal (degrau do
+  // usuário gratuito e convite Fundador→Plus) — { aberto, tipo, degrau }
+  const [modalUpgrade, setModalUpgrade] = useState({ aberto: false, tipo: null, degrau: null });
 
   const [titulo,     setTitulo]     = useState('');
   const [conteudo,   setConteudo]   = useState('');
@@ -198,19 +292,90 @@ const Editor = () => {
     setTimeout(() => setToast(t => ({ ...t, visivel: false })), duracao);
   }, []);
 
-  // Loga clique/dispensa do modal de upgrade — sem isso, não dá para saber
-  // se a queda de conversão acontece na decisão (ninguém clica) ou depois,
-  // no checkout (clica mas não completa a compra).
-  const logEventoModal = useCallback(async (acao) => {
+  // Loga exibição/clique/dispensa do modal de upgrade — sem isso, não dá
+  // pra saber se a queda de conversão acontece na decisão (ninguém clica)
+  // ou depois, no checkout (clica mas não completa a compra).
+  // NOVO: `variante` identifica qual modal gerou o evento (degrau_1,
+  // degrau_2, degrau_3 ou fundador) — sem isso as quatro variantes ficam
+  // misturadas numa única conta no funil do AdminDashboard.
+  const logEventoModal = useCallback(async (acao, variante = null) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
       if (!user) return;
-      await supabase.from('eventos_modal_upgrade').insert({ user_id: user.id, acao });
+      await supabase.from('eventos_modal_upgrade').insert({ user_id: user.id, acao, variante });
     } catch {
       // Instrumentação não deve travar o fluxo do usuário se falhar
     }
   }, []);
+
+  // ── Decide e exibe o modal de upgrade mais relevante para este momento ──
+  // Cobre dois públicos diferentes, checados em sequência:
+  //  1) Usuários gratuitos: escala conforme o Nº de sermões (1º/2º/3º),
+  //     usando o degrau mais alto ainda não visto — cobre tanto o caminho
+  //     normal (cria 1, depois 2, depois 3) quanto saltos (ex.: sync
+  //     offline que grava vários de uma vez).
+  //  2) Usuários Fundador: convite pontual pra migrar pro Plus, focado na
+  //     Academia Verbo. Independente do fluxo de degraus — dispara mesmo
+  //     em edição de sermão existente, não só em criação, porque um
+  //     Fundador já ativo pode não criar sermões novos com frequência.
+  // Retorna true se algum modal foi exibido, pra decidir se segura a
+  // navegação de volta ao Dashboard.
+  const verificarModalUpgrade = useCallback(async (user, eraSermaoNovo, totalSermoesUsuarioParam) => {
+    try {
+      const { data: perfil } = await supabase
+        .from('profiles')
+        .select('viu_upgrade_sermao_1, viu_upgrade_sermao_2, viu_upgrade_sermoes, viu_upgrade_fundador')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      // ── Público 1: usuários gratuitos, gatilho por Nº de sermões ──
+      if (eraSermaoNovo && !isAssinante) {
+        const count = totalSermoesUsuarioParam ?? (
+          await supabase
+            .from('sermoes')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+        ).count;
+
+        let degrau = null;
+        if (count >= 3 && !perfil?.viu_upgrade_sermoes) degrau = 3;
+        else if (count >= 2 && !perfil?.viu_upgrade_sermao_2) degrau = 2;
+        else if (count >= 1 && !perfil?.viu_upgrade_sermao_1) degrau = 1;
+
+        if (degrau) {
+          // Coluna do 3º degrau reaproveita o nome já existente
+          // (viu_upgrade_sermoes) pra não quebrar histórico de usuários
+          // que já tinham essa flag marcada antes desta mudança.
+          const coluna = degrau === 3 ? 'viu_upgrade_sermoes' : `viu_upgrade_sermao_${degrau}`;
+          await supabase
+            .from('profiles')
+            .update({ [coluna]: true, [`${coluna}_em`]: new Date().toISOString() })
+            .eq('id', user.id);
+
+          setModalUpgrade({ aberto: true, tipo: 'degrau', degrau });
+          logEventoModal('exibido', `degrau_${degrau}`);
+          return true;
+        }
+      }
+
+      // ── Público 2: Fundador — convite pra virar Plus. Fundador não é
+      // o destino, é o primeiro degrau. ──
+      if (isFundador && !perfil?.viu_upgrade_fundador) {
+        await supabase
+          .from('profiles')
+          .update({ viu_upgrade_fundador: true, viu_upgrade_fundador_em: new Date().toISOString() })
+          .eq('id', user.id);
+
+        setModalUpgrade({ aberto: true, tipo: 'fundador' });
+        logEventoModal('exibido', 'fundador');
+        return true;
+      }
+    } catch {
+      // Se a checagem falhar, segue o fluxo normal sem modal
+    }
+    return false;
+  }, [isAssinante, isFundador, logEventoModal]);
 
   // ── Estrutura guiada pelo tipo ────────────────────────────────────────────
   useEffect(() => {
@@ -390,7 +555,7 @@ Oração:`
       };
 
       let salvouOnline = false;
-      const eraSermaoNovo = !id; // só sermões recém-criados contam pro gatilho de upgrade
+      const eraSermaoNovo = !id; // só sermões recém-criados contam pro gatilho de upgrade por degrau
       try {
         const res = id
           ? await supabase.from('sermoes').update(dadosSermao).eq('id', id)
@@ -412,8 +577,8 @@ Oração:`
 
           // ── Analytics: sermon_created / sermon_edited / first_sermon_created ──
           // Reaproveitamos a contagem de sermões do usuário tanto pra saber se é
-          // o primeiro sermão (analytics) quanto pro gatilho do modal de upgrade
-          // logo abaixo — evita rodar a mesma query duas vezes.
+          // o primeiro sermão (analytics) quanto pro gatilho de degrau do modal
+          // de upgrade logo abaixo — evita rodar a mesma query duas vezes.
           let totalSermoesUsuario = null;
           if (eraSermaoNovo) {
             try {
@@ -434,53 +599,12 @@ Oração:`
           }
 
           // ── Gatilho de upgrade contextual ──────────────────────────────
-          // Só verifica em criação (não edição) e só para quem NÃO é
-          // assinante (nem Fundador, nem Plus) — CORRIGIDO: antes checava
-          // `!isPlus`, o que deixava passar usuários Fundador (plano pago
-          // de entrada) para o modal de "vire assinante", já que Fundador
-          // tem isPlus = false. A flag de "já viu" fica no banco
-          // (profiles.viu_upgrade_sermoes), não em localStorage — assim
-          // cobre tanto usuários novos quanto quem já tinha 3+ sermões
-          // antes deste recurso existir, e continua consistente mesmo se
-          // a pessoa trocar de aparelho.
-          if (eraSermaoNovo && !isAssinante) {
-            try {
-              const { data: perfilFlag } = await supabase
-                .from('profiles')
-                .select('viu_upgrade_sermoes')
-                .eq('id', user.id)
-                .maybeSingle();
-
-              const jaViuUpgrade = perfilFlag?.viu_upgrade_sermoes === true;
-
-              // Reaproveita a contagem já feita acima; se por algum motivo
-              // não tiver vindo (ex.: falha na query), busca de novo aqui.
-              const count = totalSermoesUsuario ?? (
-                await supabase
-                  .from('sermoes')
-                  .select('*', { count: 'exact', head: true })
-                  .eq('user_id', user.id)
-              ).count;
-
-              if (count >= GATILHO_UPGRADE_SERMAO && !jaViuUpgrade) {
-                // Marca no banco antes de exibir — evita corrida entre
-                // salvamentos rápidos mostrando o modal mais de uma vez.
-                // Também registra o timestamp, para permitir análises
-                // temporais precisas (profiles não tem updated_at nativo).
-                await supabase
-                  .from('profiles')
-                  .update({
-                    viu_upgrade_sermoes: true,
-                    viu_upgrade_sermoes_em: new Date().toISOString(),
-                  })
-                  .eq('id', user.id);
-
-                setModalUpgradeAberto(true);
-                return; // segura a navegação — o modal decide o próximo passo
-              }
-            } catch {
-              // Se a checagem falhar, segue o fluxo normal sem o modal
-            }
+          // Verifica os dois públicos (degraus do gratuito + convite
+          // Fundador→Plus) numa única checagem. Se algum modal for
+          // exibido, segura a navegação — o modal decide o próximo passo.
+          const modalMostrado = await verificarModalUpgrade(user, eraSermaoNovo, totalSermoesUsuario);
+          if (modalMostrado) {
+            return;
           }
 
           setTimeout(() => navigate('/'), 1200);
@@ -533,6 +657,9 @@ Oração:`
   const formatarHora = (iso) =>
     new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
+  // Identifica a variante ativa do modal, usada pro log de dispensa/clique
+  const varianteModalAtual = modalUpgrade.tipo === 'fundador' ? 'fundador' : `degrau_${modalUpgrade.degrau}`;
+
   // ── Bloqueio de criação no limite ──────────────────────────────────────────
   if (!id && !podeCreiarSermao) {
     return (
@@ -543,7 +670,7 @@ Oração:`
         <div>
           <h2 className="font-black text-xl text-slate-800 mb-2">Limite de sermões atingido</h2>
           <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
-            O plano gratuito permite até 50 sermões salvos. Faça upgrade para ter sermões ilimitados.
+            Você está no plano gratuito.. Faça upgrade para ter sermões ilimitados.
           </p>
         </div>
         <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')}
@@ -571,16 +698,17 @@ Oração:`
       <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem}
         onFechar={() => setToast(t => ({ ...t, visivel: false }))} />
 
-      <ModalUpgradeSermao
-        aberto={modalUpgradeAberto}
+      <ModalUpgrade
+        estado={modalUpgrade}
         onFechar={() => {
-          logEventoModal('dispensou');
-          setModalUpgradeAberto(false);
+          logEventoModal('dispensou', varianteModalAtual);
+          setModalUpgrade({ aberto: false, tipo: null, degrau: null });
           navigate('/');
         }}
         onVerPlanos={() => {
-          logEventoModal('clicou_plus');
-          navigate('/upgrade?motivo=3_sermoes');
+          logEventoModal('clicou_plus', varianteModalAtual);
+          const motivo = modalUpgrade.tipo === 'fundador' ? 'fundador_para_plus' : `${modalUpgrade.degrau}_sermoes`;
+          navigate(`/upgrade?motivo=${motivo}`);
         }}
       />
 

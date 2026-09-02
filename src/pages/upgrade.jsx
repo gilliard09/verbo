@@ -23,15 +23,18 @@ const BENEFICIOS_FUNDADOR = [
 const BENEFICIOS_PLUS = [
   { icon: Infinity,       texto: 'Sermões ilimitados' },
   { icon: BookOpen,       texto: 'Academia Verbo completa — todos os cursos' },
-  { icon: GraduationCap,  texto: 'Curso para Pregadores + Teologia Completa' },
+  { icon: GraduationCap,  texto: '✓ Teologia Fundamental' },
+  { icon: GraduationCap,  texto: '✓ Método Pregação Impactante' },
+  { icon: GraduationCap,  texto: '✓ Novo Testamento Explicado' },
+  { icon: GraduationCap,  texto: '✓ Discipulado Cristão' },
   { icon: Mic2,           texto: 'Modo púlpito sem restrições' },
   { icon: WifiOff,        texto: 'Acesso offline ilimitado' },
-  { icon: Sparkles,       texto: 'Todas as features futuras incluídas' },
+  { icon: Sparkles,       texto: 'Todas as atualizações futuras incluídas' },
   { icon: Star,           texto: 'Suporte prioritário' },
 ];
 
 const MOTIVOS = {
-  limite_sermoes: { emoji: '📝', texto: 'Você atingiu o limite de 50 sermões do plano gratuito.' },
+  limite_sermoes: { emoji: '📝', texto: 'Você atingiu o limite de sermões do plano gratuito.' },
   academia:       { emoji: '🎓', texto: 'A Academia Verbo é exclusiva para assinantes.' },
 };
 
@@ -90,11 +93,14 @@ const Upgrade = () => {
           <div className="bg-white border border-slate-100 rounded-[24px] p-5 mb-8 space-y-3">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">O que você ganha a mais</p>
             {[
-              'Curso de Teologia Completo',
+              '✓ Teologia Fundamental',
+              '✓ Método Pregação Impactante',
+              '✓ Novo Testamento Explicado',
+              '✓ Discipulado Cristão',
+              '✓ Sermões ilimitados',
               'Acesso a todos os cursos da Academia',
               'Sermões ilimitados',
               'Acesso offline aos sermões',
-              'Suporte prioritário',
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-5 h-5 bg-green-50 rounded-full flex items-center justify-center shrink-0">
@@ -193,7 +199,7 @@ const Upgrade = () => {
                   <span className="text-3xl font-black text-[#4C1D95]">R$9,90</span>
                   <span className="text-xs text-gray-400 font-bold">/mês para sempre</span>
                 </div>
-                <p className="text-[10px] text-amber-600 font-black uppercase tracking-widest mt-1">Vagas limitadas</p>
+                <p className="text-[10px] text-amber-600 font-black uppercase tracking-widest mt-1">Apenas 6 vagas!</p>
               </div>
             </div>
           </button>
@@ -267,7 +273,7 @@ const Upgrade = () => {
         </div>
 
         <button onClick={() => navigate('/')} className="w-full text-center text-xs text-slate-400 font-bold py-3 hover:text-slate-600 transition-colors">
-          Continuar com o plano gratuito (50 sermões)
+          Continuar com o plano gratuito
         </button>
       </div>
     </div>

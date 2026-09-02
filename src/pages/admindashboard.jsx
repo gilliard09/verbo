@@ -57,9 +57,6 @@ const TelaLeituraPreview = ({ devocional, onFechar, dark }) => {
           </button>
           <span className="text-xs font-bold text-slate-400 uppercase">PREVIEW</span>
           <div className="flex items-center gap-2">
-            {/* CORRIGIDO: ZoomIn/ZoomOut agora vêm de lucide-react (ícones reais e distintos),
-                antes ambos renderizavam a mesma lupa 🔍 e ficava impossível diferenciar
-                qual botão aumenta e qual diminui a fonte. */}
             <button
               onClick={() => setFontSize(Math.max(14, fontSize - 1))}
               className="p-2 hover:bg-white/10 rounded-lg transition"
@@ -422,9 +419,6 @@ const FunilCard = ({ funil, estimado }) => {
                   <div className="flex justify-between mb-1 items-center">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
                       {etapa.label}
-                      {/* Sinaliza quando o número de visitantes é uma estimativa (fallback ×3 sobre
-                          cadastros) porque a função vercel-analytics não retornou dado real —
-                          sem isso, o número parecia um dado medido de verdade. */}
                       {etapa.label==='Visitantes' && estimado && (
                         <span className="text-[7px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-black uppercase tracking-widest">Estimado</span>
                       )}
@@ -445,9 +439,9 @@ const FunilCard = ({ funil, estimado }) => {
   );
 };
 
-// NOVO: Funil do modal de upgrade — exposição → clique → assinatura.
-// Antes esse dado só existia como investigação manual via SQL a cada revisão;
-// agora fica visível de forma permanente no dashboard.
+// Funil do modal de upgrade — exposição → clique → assinatura. Antes esse
+// dado só existia como investigação manual via SQL a cada revisão; agora
+// fica visível de forma permanente no dashboard.
 const FunilUpgradeCard = ({ funil }) => {
   const etapas = [
     {label:'Viram o Modal',valor:funil.exibiram,cor:'bg-pink-400',emoji:'👁️'},
@@ -589,10 +583,7 @@ const RetencaoCard = ({ retencao }) => {
   );
 };
 
-// NOVO: breakdown de uso por funcionalidade, direto da tabela `events` —
-// mostra quais telas/ações do produto as pessoas realmente usam nos últimos
-// 7 dias. Antes disso não existia NENHUMA visão de comportamento dentro do
-// produto no AdminDashboard; só contagens totais de linhas em tabelas.
+// Breakdown de uso por funcionalidade, direto da tabela `events`.
 const EVENTO_LABELS = {
   dashboard_viewed:      { label: 'Dashboard',        emoji: '🏠' },
   editor_opened:         { label: 'Editor',           emoji: '✍️' },
@@ -663,9 +654,6 @@ const ReceitaCard = ({ receita }) => (
         {label:'MR Mensal',valor:receita.mr.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),cor:'text-green-400',bg:'bg-green-500/10',sub:'receita recorrente'},
         {label:'Ticket Médio',valor:receita.ticketMedio.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),cor:'text-blue-400',bg:'bg-blue-500/10',sub:'por assinante'},
         {label:'LTV Estimado',valor:receita.ltv.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),cor:'text-purple-400',bg:'bg-purple-500/10',sub:'12 meses × ticket'},
-        // CORRIGIDO: antes churn vinha hardcoded como 0%, parecendo um dado real calculado.
-        // Sem fonte de cancelamentos (webhook da Cakto, por ex.) isso é mostrado como N/A,
-        // deixando claro que ainda não é medido em vez de mentir "0% de churn".
         {
           label:'Churn Estimado',
           valor: receita.churn===null ? 'N/A' : `${receita.churn}%`,
@@ -684,9 +672,8 @@ const ReceitaCard = ({ receita }) => (
   </div>
 );
 
-// NOVO: split Fundador vs Plus — os dados já eram buscados (totalFundadores/totalPlus,
-// usados pra calcular o MR) mas nunca apareciam na UI. Sem isso não dava pra saber se
-// as pessoas estão travando no plano de entrada ou avançando pro Plus.
+// Split Fundador vs Plus — os dados já eram buscados pro cálculo de MR, só
+// faltava expor na UI.
 const PlanosCard = ({ planos }) => {
   const total = (planos.fundador + planos.plus) || 1;
   const pctFundador = Math.round((planos.fundador/total)*100);
@@ -751,12 +738,9 @@ const AdminDashboard = () => {
   const [taxas, setTaxas] = useState({visitanteCadastro:0,cadastroUso:0,usoAssinatura:0});
   const [ativacao, setAtivacao] = useState({pct1Sermao:0,pct3Sermoes:0,pct7Dias:0});
   const [retencao, setRetencao] = useState({dau:0,wau:0});
-  // NOVO: breakdown de eventos (event_name → contagem) dos últimos 7 dias,
-  // usado pelo card "Uso por Recurso"
   const [usoPorRecurso, setUsoPorRecurso] = useState({});
   const [receita, setReceita] = useState({mr:0,ticketMedio:0,ltv:0,churn:null});
   const [planos, setPlanos] = useState({fundador:0,plus:0});
-  // NOVO: funil do modal de upgrade (exibido → clicou_upgrade/clicou_plus → assinou)
   const [funilUpgrade, setFunilUpgrade] = useState({exibiram:0,clicaram:0,assinaram:0});
   const [metas, setMetas] = useState(()=>{try{const s=JSON.parse(localStorage.getItem('verbo_admin_metas')||'{}');return{usuarios:s.usuarios??50,sermoes:s.sermoes??100,assinaturas:s.assinaturas??50,sermoesDiarios:s.sermoesDiarios??14};}catch{return{usuarios:50,sermoes:100,assinaturas:50,sermoesDiarios:14};}});
   const [editandoMeta, setEditandoMeta] = useState(null);
@@ -964,15 +948,8 @@ const AdminDashboard = () => {
         supabase.from('aulas').select('*',{count:'exact',head:true}),
         supabase.from('profiles').select('*',{count:'exact',head:true}).eq('plano','fundador'),
         supabase.from('profiles').select('*',{count:'exact',head:true}).eq('plano','plus'),
-        // CORRIGIDO: DAU/WAU agora vêm da tabela `events` (analytics real,
-        // populada desde a instrumentação do app) em vez de `sessoes`, que não
-        // estava sendo gravada e sempre retornava 0. Trazemos user_id e
-        // contamos distintos no client, já que o Supabase JS não faz
-        // COUNT(DISTINCT) direto via select.
         supabase.from('events').select('user_id').gte('created_at',`${hoje.toISOString().split('T')[0]}T00:00:00`).not('user_id','is',null),
         supabase.from('events').select('user_id').gte('created_at',seteDiasAtras.toISOString()).not('user_id','is',null),
-        // NOVO: eventos dos últimos 7 dias, usados pro card "Uso por Recurso" —
-        // mostra quais funcionalidades do produto estão realmente sendo usadas.
         supabase.from('events').select('event_name').gte('created_at',seteDiasAtras.toISOString()),
         supabase.functions.invoke('vercel-analytics').catch(() => ({ data: null })),
       ]);
@@ -1000,7 +977,6 @@ const AdminDashboard = () => {
       setStats(novoStats);
       setMetas(m=>{verificarMetas(novoStats,m);return m;});
 
-      // NOVO: split Fundador vs Plus, já buscado acima pro cálculo de MR — só faltava expor na UI
       setPlanos({fundador: totalFundadores||0, plus: totalPlus||0});
 
       const totalCadastros = usuarios||0;
@@ -1008,8 +984,6 @@ const AdminDashboard = () => {
       const totalVoltaram  = voltaram2x;
       const totalAssinaram = assinaturas||0;
       const totalVisitantes = totalVisitantesVercel > 0 ? totalVisitantesVercel : totalCadastros * 3;
-      // CORRIGIDO: sinaliza quando o número de visitantes é estimado (Vercel Analytics
-      // não respondeu), pra não passar como se fosse dado medido de verdade
       setVisitantesEstimados(totalVisitantesVercel <= 0);
 
       setFunil({visitantes:totalVisitantes,cadastros:totalCadastros,usaram:totalUsaram,voltaram:totalVoltaram,assinaram:totalAssinaram});
@@ -1025,19 +999,13 @@ const AdminDashboard = () => {
       });
       setRetencao({dau:dau||0,wau:wau||0});
       const ticketMedio = totalAssinaram>0?mr/totalAssinaram:0;
-      // CORRIGIDO: churn não é medido ainda (sem fonte de cancelamentos) — usar null
-      // em vez de 0 fixo, pra não fingir que é um dado real calculado.
       setReceita({mr,ticketMedio,ltv:ticketMedio*12,churn:null});
 
-      // NOVO: funil do modal de upgrade (exposição → clique → assinatura).
-      // Antes isso só existia como investigação manual via SQL a cada revisão semanal;
-      // agora fica calculado e exibido direto no dashboard.
       try {
         const { data: eventosModal } = await supabase
           .from('eventos_modal_upgrade')
           .select('user_id,acao');
         const usuariosExibiram = new Set((eventosModal||[]).filter(e=>e.acao==='exibido').map(e=>e.user_id));
-        // aceita tanto 'clicou_upgrade' (nome novo) quanto 'clicou_plus' (nome antigo, legado)
         const usuariosClicaram = new Set((eventosModal||[]).filter(e=>e.acao==='clicou_upgrade'||e.acao==='clicou_plus').map(e=>e.user_id));
 
         let assinaramAposClicar = 0;
@@ -1093,6 +1061,10 @@ const AdminDashboard = () => {
 
   const maxGrafico=Math.max(...dadosGrafico.map(d=>d.valor),1);
   const maxCrescimento=Math.max(...dadosCrescimento.map(d=>d.valor),1);
+  // NOVO: totais somados dos 7 dias em memória, sem query extra — preenche o
+  // espaço em branco abaixo das barras dos dois gráficos.
+  const totalSermoesSemana = dadosGrafico.reduce((soma, dia) => soma + dia.valor, 0);
+  const totalUsuariosSemana = dadosCrescimento.reduce((soma, dia) => soma + dia.valor, 0);
   const inputClass="w-full p-4 bg-slate-50 rounded-2xl text-sm border-none font-bold focus:ring-2 focus:ring-purple-200 outline-none transition-all";
   const feedbacksNaoLidos=feedbacks.filter(f=>!f.lido).length;
   const mediaEstrelas=feedbacks.length>0?(feedbacks.reduce((s,f)=>s+f.estrelas,0)/feedbacks.length).toFixed(1):'—';
@@ -1155,8 +1127,28 @@ const AdminDashboard = () => {
             <TaxasCard taxas={taxas}/>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]"><h4 className="text-white font-bold text-sm mb-5 flex items-center gap-2"><PenTool size={16} className="text-purple-400"/>Sermões — 7 dias</h4><div className="h-36 flex items-end gap-2">{dadosGrafico.map((dia,i)=>(<div key={i} className="flex-1 flex flex-col items-center gap-1.5"><span className="text-[8px] text-purple-400 font-black">{dia.valor>0?dia.valor:''}</span><div className="w-full bg-purple-500/30 rounded-t-lg border-t border-purple-400 transition-all duration-700" style={{height:`${(dia.valor/maxGrafico)*100}%`,minHeight:dia.valor>0?'4px':'2px'}}/><span className="text-[9px] font-black text-slate-500 uppercase">{dia.label}</span></div>))}</div></div>
-              <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]"><h4 className="text-white font-bold text-sm mb-5 flex items-center gap-2"><TrendingUp size={16} className="text-green-400"/>Novos Usuários — 7 dias</h4><div className="h-36 flex items-end gap-2">{dadosCrescimento.map((sem,i)=>(<div key={i} className="flex-1 flex flex-col items-center gap-1.5"><span className="text-[8px] text-green-400 font-black">{sem.valor>0?sem.valor:''}</span><div className="w-full bg-green-500/30 rounded-t-lg border-t border-green-400 transition-all duration-700" style={{height:`${(sem.valor/maxCrescimento)*100}%`,minHeight:sem.valor>0?'4px':'2px'}}/><span className="text-[9px] font-black text-slate-500 uppercase">{sem.label}</span></div>))}</div></div>
+              <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]">
+                <h4 className="text-white font-bold text-sm mb-5 flex items-center gap-2"><PenTool size={16} className="text-purple-400"/>Sermões — 7 dias</h4>
+                <div className="h-36 flex items-end gap-2">
+                  {dadosGrafico.map((dia,i)=>(<div key={i} className="flex-1 flex flex-col items-center gap-1.5"><span className="text-[8px] text-purple-400 font-black">{dia.valor>0?dia.valor:''}</span><div className="w-full bg-purple-500/30 rounded-t-lg border-t border-purple-400 transition-all duration-700" style={{height:`${(dia.valor/maxGrafico)*100}%`,minHeight:dia.valor>0?'4px':'2px'}}/><span className="text-[9px] font-black text-slate-500 uppercase">{dia.label}</span></div>))}
+                </div>
+                {/* NOVO: total do período, somado no client a partir do array já carregado */}
+                <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total no período</span>
+                  <span className="text-xl font-black text-purple-400 italic">{totalSermoesSemana}</span>
+                </div>
+              </div>
+              <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]">
+                <h4 className="text-white font-bold text-sm mb-5 flex items-center gap-2"><TrendingUp size={16} className="text-green-400"/>Novos Usuários — 7 dias</h4>
+                <div className="h-36 flex items-end gap-2">
+                  {dadosCrescimento.map((sem,i)=>(<div key={i} className="flex-1 flex flex-col items-center gap-1.5"><span className="text-[8px] text-green-400 font-black">{sem.valor>0?sem.valor:''}</span><div className="w-full bg-green-500/30 rounded-t-lg border-t border-green-400 transition-all duration-700" style={{height:`${(sem.valor/maxCrescimento)*100}%`,minHeight:sem.valor>0?'4px':'2px'}}/><span className="text-[9px] font-black text-slate-500 uppercase">{sem.label}</span></div>))}
+                </div>
+                {/* NOVO: mesmo padrão do card de sermões */}
+                <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total no período</span>
+                  <span className="text-xl font-black text-green-400 italic">{totalUsuariosSemana}</span>
+                </div>
+              </div>
             </div>
 
             {/* ── Seção: Ativação & Retenção ── */}
