@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, KeyRound, AlertCircle, CheckCircle2, X, ShieldCheck } from 'lucide-react';
 
 // Traduz as mensagens mais comuns do Supabase Auth para português
@@ -44,6 +44,7 @@ const FeedbackBanner = ({ tipo, mensagem, onClose }) => {
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [prontoParaRedefinir, setProntoParaRedefinir] = useState(false);
   const [verificando, setVerificando] = useState(true);
@@ -52,27 +53,47 @@ const ResetPassword = () => {
   const [feedback, setFeedback] = useState({ tipo: null, mensagem: '' });
   const [concluido, setConcluido] = useState(false);
 
-  // O Supabase captura o token do link de e-mail automaticamente e dispara
-  // o evento PASSWORD_RECOVERY quando a sessão temporária de recuperação está pronta.
+  // Extrai o token da URL e verifica se é válido
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    const verificarToken = async () => {
+      try {
+        // Extrai token e type da query string
+        const token = searchParams.get('token');
+        const type = searchParams.get('type');
+
+        console.log('Token da URL:', token ? '✓ Encontrado' : '✗ Não encontrado');
+        console.log('Type:', type);
+
+        // Se não houver token, link é inválido
+        if (!token) {
+          setVerificando(false);
+          return;
+        }
+
+        // Verifica se o token é válido com o Supabase
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: type || 'recovery',
+        });
+
+        if (error) {
+          console.error('Erro ao verificar OTP:', error);
+          setVerificando(false);
+          return;
+        }
+
+        // Se chegou aqui, token é válido
         setProntoParaRedefinir(true);
         setVerificando(false);
-      }
-    });
 
-    // Fallback: se já existir sessão válida ao carregar (ex: recarregou a página
-    // depois de clicar no link), libera o formulário também.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setProntoParaRedefinir(true);
+      } catch (error) {
+        console.error('Erro durante verificação:', error);
+        setVerificando(false);
       }
-      setVerificando(false);
-    });
+    };
 
-    return () => listener?.subscription?.unsubscribe();
-  }, []);
+    verificarToken();
+  }, [searchParams]);
 
   const handleRedefinir = async (e) => {
     e.preventDefault();
@@ -93,6 +114,11 @@ const ResetPassword = () => {
       if (error) throw error;
       setConcluido(true);
       setFeedback({ tipo: 'sucesso', mensagem: 'Senha redefinida com sucesso!' });
+
+      // Redireciona para login após 2 segundos
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (error) {
       setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });
     } finally {
@@ -235,7 +261,9 @@ const ResetPassword = () => {
                   {loading ? (
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
                   ) : (
-                    <><ShieldCheck size={20} /> Redefinir senha</>
+                    <>
+                      <ShieldCheck size={20} /> Redefinir senha
+                    </>
                   )}
                 </button>
               </form>
