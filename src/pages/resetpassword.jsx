@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, KeyRound, AlertCircle, CheckCircle2, X, ShieldCheck } from 'lucide-react';
+import { track } from '../lib/analytics';
 
 // Traduz as mensagens mais comuns do Supabase Auth para português
 const traduzirErro = (mensagem = '') => {
@@ -66,29 +67,40 @@ const ResetPassword = () => {
 
         // Se não houver token, link é inválido
         if (!token) {
+          console.error('Nenhum token encontrado na URL');
           setVerificando(false);
           return;
         }
 
-        // Verifica se o token é válido com o Supabase
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: type || 'recovery',
-        });
+        console.log('Tentando validar token com Supabase...');
+
+        // ✅ CORRIGIDO: Usar exchangeCodeForSession para password recovery
+        const { data, error } = await supabase.auth.exchangeCodeForSession(token);
 
         if (error) {
-          console.error('Erro ao verificar OTP:', error);
+          console.error('❌ Erro ao validar token:', error.message);
+          setVerificando(false);
+          setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });
+          return;
+        }
+
+        if (!data?.session) {
+          console.error('❌ Nenhuma sessão retornada');
           setVerificando(false);
           return;
         }
 
-        // Se chegou aqui, token é válido
+        console.log('✓ Token validado com sucesso, sessão estabelecida');
+        track('password_reset_link_verified');
+        
+        // Se chegou aqui, token é válido e temos uma sessão
         setProntoParaRedefinir(true);
         setVerificando(false);
 
       } catch (error) {
-        console.error('Erro durante verificação:', error);
+        console.error('❌ Erro durante verificação:', error);
         setVerificando(false);
+        setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });
       }
     };
 
@@ -110,8 +122,11 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
+      // ✅ CORRIGIDO: Agora temos uma sessão válida após exchangeCodeForSession
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      
+      track('password_reset_completed');
       setConcluido(true);
       setFeedback({ tipo: 'sucesso', mensagem: 'Senha redefinida com sucesso!' });
 
@@ -120,6 +135,7 @@ const ResetPassword = () => {
         navigate('/login');
       }, 2000);
     } catch (error) {
+      console.error('Erro ao atualizar senha:', error);
       setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });
     } finally {
       setLoading(false);

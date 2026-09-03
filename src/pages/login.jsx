@@ -102,10 +102,15 @@ const Login = () => {
     setFeedback({ tipo: null, mensagem: '' });
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      // ✅ CORRIGIDO: Adicionar redirectTo para a página de reset de senha
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
       if (error) throw error;
+      track('password_reset_requested');
       setFeedback({ tipo: 'sucesso', mensagem: 'Enviamos um link de recuperação para o seu e-mail.' });
     } catch (error) {
+      console.error('Erro ao enviar reset:', error);
       setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });
     } finally {
       setLoading(false);
