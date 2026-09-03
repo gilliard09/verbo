@@ -50,8 +50,6 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [prontoParaRedefinir, setProntoParaRedefinir] = useState(false);
   const [verificando, setVerificando] = useState(true);
-  const [tokenValido, setTokenValido] = useState(false);
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmarPassword, setConfirmarPassword] = useState('');
   const [feedback, setFeedback] = useState({ tipo: null, mensagem: '' });
@@ -61,66 +59,61 @@ const ResetPassword = () => {
   useEffect(() => {
     const verificarToken = async () => {
       try {
-        // Extrai token e type da query string
+        // Extrai token da query string
         const token = searchParams.get('token');
-        const type = searchParams.get('type');
 
         console.log('🔍 Verificando reset de senha...');
         console.log('Token da URL:', token ? `✓ Encontrado (${token.length} caracteres)` : '✗ Não encontrado');
-        console.log('Type:', type);
 
         // Se não houver token, link é inválido
         if (!token) {
           console.error('❌ Nenhum token encontrado na URL');
           setVerificando(false);
+          return;
+        }
+
+        // Log para debug
+        if (token.length < 20) {
+          console.warn('⚠️ AVISO: Token parece muito curto:', token.length, 'caracteres');
+          console.warn('Token:', token);
+          console.warn('Isso significa que o redirectTo não foi configurado no Login.jsx');
+        }
+
+        console.log('Tentando validar token com exchangeCodeForSession...');
+        
+        // ✅ Para password recovery links, usar exchangeCodeForSession
+        // Isso establece uma sessão autenticada que permite chamar updateUser
+        const { data, error } = await supabase.auth.exchangeCodeForSession(token);
+
+        if (error) {
+          console.error('❌ Erro ao validar token:', error.message);
+          console.error('Status:', error.status);
+          
+          // Se o token for inválido, pode ser porque:
+          // 1. Link expirou
+          // 2. Token já foi usado
+          // 3. Token foi gerado sem redirectTo correto
+          
+          setVerificando(false);
+          setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });
+          return;
+        }
+
+        if (!data?.session) {
+          console.error('❌ Nenhuma sessão foi estabelecida');
+          setVerificando(false);
           setFeedback({ tipo: 'erro', mensagem: traduzirErro('invalid token') });
           return;
         }
 
-        // Log: qual é o tamanho do token?
-        if (token.length < 20) {
-          console.warn('⚠️ Token parece muito curto:', token.length, 'caracteres');
-        }
-
-        // ✅ Para password recovery, usar verifyOtp
-        // Mas o problema é: verifyOtp precisa do email, que não temos na URL
-        // Solução: Tentar fazer login com o token direto via exchangeCodeForSession
+        console.log('✅ Token validado! Sessão estabelecida com sucesso');
+        console.log('Usuário:', data.session.user.email);
         
-        console.log('Tentando validar token com exchangeCodeForSession...');
-        const { data, error } = await supabase.auth.exchangeCodeForSession(token);
-
-        if (error) {
-          console.error('❌ Erro ao validar token com exchangeCodeForSession:', error.message);
-          
-          // Se falhar, tentar verifyOtp como fallback
-          console.log('Tentando fallback com verifyOtp (sem email)...');
-          const { error: otpError } = await supabase.auth.verifyOtp({
-            token: token,
-            type: type || 'recovery',
-          });
-
-          if (otpError) {
-            console.error('❌ Fallback também falhou:', otpError.message);
-            setVerificando(false);
-            setFeedback({ tipo: 'erro', mensagem: traduzirErro(otpError.message) });
-            return;
-          }
-        }
-
-        if (data?.session) {
-          console.log('✓ Sessão estabelecida com sucesso');
-          setProntoParaRedefinir(true);
-          setTokenValido(true);
-          setVerificando(false);
-        } else if (!error) {
-          // verifyOtp funcionou sem sessão
-          console.log('✓ Token validado (sem sessão estabelecida)');
-          setTokenValido(true);
-          setProntoParaRedefinir(true);
-          setVerificando(false);
-        }
-
         track('password_reset_link_verified');
+        
+        // Se chegou aqui, token é válido e temos uma sessão
+        setProntoParaRedefinir(true);
+        setVerificando(false);
 
       } catch (error) {
         console.error('❌ Erro durante verificação:', error);
@@ -147,11 +140,18 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      // ✅ Agora o updateUser deve funcionar porque o token foi validado
+      console.log('🔐 Atualizando senha...');
+      
+      // ✅ Agora é seguro chamar updateUser porque o token foi validado
+      // e a sessão foi estabelecida por exchangeCodeForSession
       const { error } = await supabase.auth.updateUser({ password });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao atualizar senha:', error);
+        throw error;
+      }
 
+      console.log('✅ Senha atualizada com sucesso!');
       track('password_reset_completed');
       setConcluido(true);
       setFeedback({ tipo: 'sucesso', mensagem: 'Senha redefinida com sucesso!' });

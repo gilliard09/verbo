@@ -102,15 +102,31 @@ const Login = () => {
     setFeedback({ tipo: null, mensagem: '' });
 
     try {
-      // ✅ CORRIGIDO: Adicionar redirectTo para a página de reset de senha
+      // ✅ CORRIGIDO: Especificar redirectTo corretamente
+      // Isso garante que o Supabase gera um link completo e válido
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      
+      console.log('📧 Enviando reset para:', email.trim());
+      console.log('🔗 URL de redirecionamento:', redirectUrl);
+
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: redirectUrl
       });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('❌ Erro ao enviar reset:', error);
+        throw error;
+      }
+      
+      console.log('✅ Email de recuperação enviado com sucesso');
       track('password_reset_requested');
-      setFeedback({ tipo: 'sucesso', mensagem: 'Enviamos um link de recuperação para o seu e-mail.' });
+      setFeedback({ 
+        tipo: 'sucesso', 
+        mensagem: 'Enviamos um link de recuperação para o seu e-mail. Verifique sua caixa de entrada e spam.' 
+      });
+      
     } catch (error) {
-      console.error('Erro ao enviar reset:', error);
+      console.error('❌ Erro durante resetPasswordForEmail:', error);
       setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });
     } finally {
       setLoading(false);
