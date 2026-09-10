@@ -512,6 +512,71 @@ const CalendarioProgresso = ({ completados, dark }) => {
   );
 };
 
+// ─── MAPA DE ÍCONES POR TEMA ──────────────────────────────────────────────────
+const ICON_MAP = {
+  'perdão': '🕊️',
+  'fé': '✨',
+  'liderança': '👑',
+  'oração': '🙏',
+  'salmos': '🎵',
+  'graça': '💫',
+  'esperança': '🌟',
+  'amor': '❤️',
+  'sabedoria': '🧠',
+  'paz': '☮️',
+  'coragem': '🦁',
+  'gratidão': '🙌',
+  'alegria': '😊',
+  'perdição': '🔥',
+  'santidade': '👼',
+};
+
+const getIconByTema = (tema) => {
+  return ICON_MAP[tema?.toLowerCase().trim()] || '📖';
+};
+
+// ─── FILTROS DE TEMA (DINÂMICOS) ──────────────────────────────────────────────
+const FiltrosTema = ({ filtroAtivo, onFiltro, dark, temas, temasLoading }) => {
+  const textSub = dark ? '#64748b' : '#94a3b8';
+  const acento = '#4C1D95';
+
+  if (temasLoading) {
+    return (
+      <div className="px-4 py-3">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="h-10 w-24 rounded-full animate-pulse"
+              style={{ background: dark ? '#1a1a1a' : '#f5f5f5' }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-3">
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {temas.map(tema => (
+          <button
+            key={tema.id}
+            onClick={() => onFiltro(tema.id)}
+            className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2"
+            style={{
+              background: filtroAtivo === tema.id ? acento : dark ? '#1a1a1a' : '#f5f5f5',
+              color: filtroAtivo === tema.id ? 'white' : textSub
+            }}
+          >
+            <span>{tema.icon}</span> {tema.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ─── CARD DE DEVOCIONAL ────────────────────────────────────────────────────────
 const DevocionalCard = ({ devocional, dark, onMarcarCompleto, completado, onCompartilhar, onAbrir, peopleCount }) => {
   const [marcando, setMarcando] = useState(false);
@@ -711,41 +776,6 @@ const ProgressHeader = ({ totalSemana, completadosSemana, streak, dark }) => {
   );
 };
 
-// ─── FILTROS DE TEMA ──────────────────────────────────────────────────────────
-const FiltrosTema = ({ filtroAtivo, onFiltro, dark }) => {
-  const temas = [
-    { id: 'todos',    label: 'Todos',      icon: '📚' },
-    { id: 'perdão',   label: 'Perdão',     icon: '🕊️' },
-    { id: 'fé',       label: 'Fé',         icon: '✨' },
-    { id: 'liderança',label: 'Liderança',  icon: '👑' },
-    { id: 'oração',   label: 'Oração',     icon: '🙏' },
-    { id: 'salmos',   label: 'Salmos',     icon: '🎵' },
-  ];
-
-  const textSub = dark ? '#64748b' : '#94a3b8';
-  const acento = '#4C1D95';
-
-  return (
-    <div className="px-4 py-3">
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {temas.map(tema => (
-          <button
-            key={tema.id}
-            onClick={() => onFiltro(tema.id)}
-            className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2"
-            style={{
-              background: filtroAtivo === tema.id ? acento : dark ? '#1a1a1a' : '#f5f5f5',
-              color: filtroAtivo === tema.id ? 'white' : textSub
-            }}
-          >
-            <span>{tema.icon}</span> {tema.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // ─── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
 const Devocionais = () => {
   const dark = useTheme();
@@ -763,6 +793,8 @@ const Devocionais = () => {
   const [toast, setToast] = useState('');
   const [filtroAtivo, setFiltroAtivo] = useState('todos');
   const [datosCompletadosHoje, setDatosCompletadosHoje] = useState([]);
+  const [temas, setTemas] = useState([]);
+  const [temasLoading, setTemasLoading] = useState(false);
 
   const montado = useRef(true);
   useEffect(() => { montado.current = true; return () => { montado.current = false; }; }, []);
@@ -781,15 +813,58 @@ const Devocionais = () => {
       if (!montado.current) return;
       if (user) {
         setUserId(user.id);
-        await Promise.all([carregarDevocionais(user.id), carregarProgresso(user.id)]);
+        await Promise.all([carregarDevocionais(user.id), carregarProgresso(user.id), carregarTemas()]);
       } else {
-        await carregarDevocionais();
+        await Promise.all([carregarDevocionais(), carregarTemas()]);
       }
     };
     init();
   }, []);
 
-  // ✅ OTIMIZADO: Select apenas colunas necessárias (não usar *)
+  // ✅ CARREGA OS TEMAS DINÂMICOS DO SUPABASE
+  const carregarTemas = async () => {
+    setTemasLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('devocionais')
+        .select('tema')
+        .not('tema', 'is', null);
+
+      if (!montado.current) return;
+
+      if (!error && data) {
+        // Extrai temas únicos e ordena
+        const temasUnicos = Array.from(
+          new Set(
+            data
+              .map(d => d.tema?.trim().toLowerCase())
+              .filter(Boolean)
+          )
+        ).sort();
+
+        // Cria array com "Todos" + temas dinâmicos
+        const temasFormatados = [
+          { id: 'todos', label: 'Todos', icon: '📚' },
+          ...temasUnicos.map(tema => ({
+            id: tema,
+            label: tema.charAt(0).toUpperCase() + tema.slice(1),
+            icon: getIconByTema(tema)
+          }))
+        ];
+
+        setTemas(temasFormatados);
+        await offlineStorage.save('temas', temasFormatados);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar temas:', e);
+      const cached = await offlineStorage.get('temas');
+      if (cached) setTemas(cached);
+    } finally {
+      setTemasLoading(false);
+    }
+  };
+
+  // ✅ OTIMIZADO: Select apenas colunas necessárias
   const carregarDevocionais = async (uid = null) => {
     setLoading(true);
     setErro(false);
@@ -860,11 +935,6 @@ const Devocionais = () => {
     }
   };
 
-  // ── Analytics + navegação: abrir um devocional para leitura ────────────────
-  // Centralizado aqui (em vez de passar setTelaLeituraAberta direto pro
-  // onAbrir do card) porque é o único ponto de entrada da TelaLeitura hoje —
-  // se no futuro surgir outro (ex.: abrir via notificação/deep link), basta
-  // reaproveitar esta função.
   const abrirDevocional = useCallback((devocional) => {
     track('devotional_opened', { devotional_id: devocional.id });
     setTelaLeituraAberta(devocional);
@@ -883,7 +953,7 @@ const Devocionais = () => {
 
   const devocionalsFiltrados = filtroAtivo === 'todos'
     ? devocionais
-    : devocionais.filter(d => d.tema?.toLowerCase() === filtroAtivo.toLowerCase());
+    : devocionais.filter(d => d.tema?.toLowerCase().trim() === filtroAtivo.toLowerCase());
 
   return (
     <>
@@ -945,7 +1015,13 @@ const Devocionais = () => {
             <CalendarioProgresso completados={datosCompletadosHoje} dark={dark} />
           )}
 
-          <FiltrosTema filtroAtivo={filtroAtivo} onFiltro={setFiltroAtivo} dark={dark} />
+          <FiltrosTema 
+            filtroAtivo={filtroAtivo} 
+            onFiltro={setFiltroAtivo} 
+            dark={dark}
+            temas={temas}
+            temasLoading={temasLoading}
+          />
 
           <div className="px-4 pb-2 pt-2">
             <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: dark ? '#334155' : '#cbd5e1' }}>
