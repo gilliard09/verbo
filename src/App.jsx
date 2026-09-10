@@ -2,6 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // --- IMPORTAÇÕES LAZY (CARREGAMENTO SOB DEMANDA) ---
 const Dashboard = lazy(() => import('./pages/dashboard'));
@@ -116,6 +117,7 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
 
       <Navbar session={session} onOpenBiblia={() => setBibliaAberta(true)} />
       <Analytics />
+      <SpeedInsights />
 
       {session && (
         <BibliaSidebar isOpen={bibliaAberta} onClose={() => setBibliaAberta(false)} />
