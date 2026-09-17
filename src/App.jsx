@@ -3,29 +3,42 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } f
 import { supabase } from './supabaseClient';
 import { Analytics } from '@vercel/analytics/react';
 
-// --- IMPORTAÇÕES LAZY (CARREGAMENTO SOB DEMANDA) ---
-const Dashboard = lazy(() => import('./pages/dashboard'));
-const NovoSermao = lazy(() => import('./pages/novosermao'));
+// --- ROTES PRINCIPAIS (Carregamento crítico: Login, Landing, Reset) ---
+// Essas 3 rotas PRECISAM estar rápidas porque o usuário vê elas primeiro
 const Login = lazy(() => import('./pages/login'));
-const ResetPassword = lazy(() => import('./pages/resetpassword'));
-const Editor = lazy(() => import('./pages/editor'));
-const Leitura = lazy(() => import('./pages/leitura'));
-const Perfil = lazy(() => import('./pages/perfil'));
-const Biblioteca = lazy(() => import('./pages/biblioteca'));
 const LandingPage = lazy(() => import('./pages/landingpage'));
+const ResetPassword = lazy(() => import('./pages/resetpassword'));
+
+// --- ROTAS AUTENTICADAS (Lazy load: carregam quando user está logado) ---
+// Dashboard é a primeira rota após login, então tem prioridade
+const Dashboard = lazy(() => import('./pages/dashboard'));
+
+// Editor & Criação de Conteúdo (pesado: Tiptap + Google AI)
+const Editor = lazy(() => import('./pages/editor'));
+const NovoSermao = lazy(() => import('./pages/novosermao'));
+
+// Leitura & Biblioteca (pesado: PDF.js + react-pdf)
+const Leitura = lazy(() => import('./pages/leitura'));
+const Biblioteca = lazy(() => import('./pages/biblioteca'));
+
+// Academia (pesado: Vídeos + estrutura de curso)
 const Cursos = lazy(() => import('./pages/cursos'));
 const Aulas = lazy(() => import('./pages/aulas'));
-const AdminDashboard = lazy(() => import('./pages/admindashboard'));
-const Upgrade = lazy(() => import('./pages/upgrade'));
+
+// Utilities (carregam rápido, podem ficar juntos)
+const Perfil = lazy(() => import('./pages/perfil'));
 const Devocionais = lazy(() => import('./pages/Devocionais'));
+const Upgrade = lazy(() => import('./pages/upgrade'));
+
+// Admin (não é crítico, usuário normal nunca vê)
+const AdminDashboard = lazy(() => import('./pages/admindashboard'));
 
 // --- COMPONENTES ---
 import BibliaSidebar from './components/BibliaSidebar';
 import RotaAdmin from './components/RotaAdmin';
 import { Home, PenTool, User, Users, PlayCircle } from 'lucide-react';
 
-// Rotas de autenticação/marketing onde a navbar inferior nunca deve aparecer,
-// independente do estado de sessão (login, landing e recuperação de senha).
+// Rotas onde a navbar inferior nunca deve aparecer
 const ROTAS_SEM_NAVBAR = ['/login', '/landing', '/reset-password'];
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
@@ -68,11 +81,10 @@ const Navbar = ({ session, onOpenBiblia }) => {
   );
 };
 
-// ─── AppShell — precisa estar dentro do <Router> para usar useLocation ────────
+// ─── AppShell ─────────────────────────────────────────────────────────────────
 const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
   const location = useLocation();
 
-  // Rotas onde a navbar inferior fica escondida (não reservamos o respiro pb-24 nelas)
   const isPublicPage = ROTAS_SEM_NAVBAR.includes(location.pathname);
   const isReading    = location.pathname.startsWith('/leitura');
   const isAdminPage  = location.pathname.startsWith('/admin');
@@ -85,31 +97,42 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
   return (
     <div className="min-h-screen bg-[#FDFDFF]">
       <main className={session && !navbarEscondida ? "pb-24" : ""}>
-        {/* Suspense garante uma transição suave entre o carregamento das páginas */}
+        {/* Suspense fallback: Loading spinner customizado */}
         <Suspense fallback={
           <div className="min-h-screen flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-[#4C1D95] border-t-transparent rounded-full animate-spin"></div>
           </div>
         }>
           <Routes>
-            <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
+            {/* PUBLIC ROUTES — Rápidas e sem dependências de autenticação */}
+            <Route path="/" element={session ? <Dashboard /> : <LandingPage />} />
+            <Route path="/login" element={!session ? <Login /> : <Navigate to="/" replace />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/landing" element={<LandingPage />} />
+
+            {/* AUTHENTICATED ROUTES — Dashboard & Main App */}
             <Route path="/novosermao" element={session ? <NovoSermao /> : <Navigate to="/login" replace />} />
-            <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
-            {/* Sempre acessível: o Supabase cria uma sessão temporária de recuperação
-                ao abrir o link do e-mail, então essa rota não pode depender de `session`. */}
-            <Route path="/reset-password"  element={<ResetPassword />} />
-            <Route path="/landing"         element={<LandingPage />} />
-            <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
-            <Route path="/cursos/:cursoId" element={session ? <Aulas />         : <Navigate to="/login" replace />} />
-            <Route path="/admin"           element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
-            <Route path="/biblioteca"      element={session ? <Biblioteca />    : <Navigate to="/login" replace />} />
-            <Route path="/editor"          element={session ? <Editor />        : <Navigate to="/login" replace />} />
-            <Route path="/editor/:id"      element={session ? <Editor />        : <Navigate to="/login" replace />} />
-            <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
-            <Route path="/perfil"          element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
-            <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
-            <Route path="/devocionais"      element={session ? <Devocionais />    : <Navigate to="/login" replace />} />
-            <Route path="*"                element={<Navigate to="/" replace />} />
+            <Route path="/editor" element={session ? <Editor /> : <Navigate to="/login" replace />} />
+            <Route path="/editor/:id" element={session ? <Editor /> : <Navigate to="/login" replace />} />
+
+            {/* LEITURA & BIBLIOTECA — Pesadas (PDF.js) */}
+            <Route path="/leitura/:id" element={session ? <Leitura /> : <Navigate to="/login" replace />} />
+            <Route path="/biblioteca" element={session ? <Biblioteca /> : <Navigate to="/login" replace />} />
+
+            {/* ACADEMIA — Pesada (Vídeos) */}
+            <Route path="/cursos" element={session ? <Cursos /> : <Navigate to="/login" replace />} />
+            <Route path="/cursos/:cursoId" element={session ? <Aulas /> : <Navigate to="/login" replace />} />
+
+            {/* UTILITIES — Leves */}
+            <Route path="/perfil" element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
+            <Route path="/devocionais" element={session ? <Devocionais /> : <Navigate to="/login" replace />} />
+            <Route path="/upgrade" element={session ? <Upgrade /> : <Navigate to="/login" replace />} />
+
+            {/* ADMIN — Não é crítico */}
+            <Route path="/admin" element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
+
+            {/* CATCH ALL */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </main>
@@ -131,7 +154,7 @@ function App() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // 1. Registro do Service Worker
+    // 1. Service Worker Registration (apenas uma vez)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
@@ -140,7 +163,7 @@ function App() {
       });
     }
 
-    // 2. Lógica de Autenticação
+    // 2. Get Initial Session
     const getInitialSession = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
@@ -153,6 +176,7 @@ function App() {
     };
     getInitialSession();
 
+    // 3. Listen to Auth Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
       setIsChecking(false);
@@ -161,6 +185,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Loading state enquanto verifica sessão
   if (isChecking) {
     return (
       <div className="min-h-screen bg-[#FDFDFF] flex items-center justify-center">
