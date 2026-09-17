@@ -12,13 +12,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
 
-      // Service Worker com Workbox
       workbox: {
-        // Estratégia para assets estáticos: CacheFirst (instantâneo)
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
 
         runtimeCaching: [
-          // Fontes do Google: CacheFirst por 1 ano
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: 'CacheFirst',
@@ -28,31 +25,28 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Supabase REST (sermões, perfil): NetworkFirst com fallback pro cache
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-api',
               networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 }, // 7 dias
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Imagens externas (capas de cursos, avatars): StaleWhileRevalidate
           {
             urlPattern: /^https:\/\/.*\.(supabase\.co\/storage|unsplash\.com|images\.)/i,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'imagens',
-              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 }, // 30 dias
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
         ],
       },
 
-      // Manifest do PWA (ícone, nome, cores)
       manifest: {
         name: 'Verbo — Plataforma do Pregador',
         short_name: 'Verbo',
@@ -70,10 +64,64 @@ export default defineConfig({
         ],
       },
 
-      // Desenvolvimento: ativa o SW mesmo em dev para testar
       devOptions: {
-        enabled: false, // mude para true se quiser testar offline em dev
+        enabled: false,
       },
     }),
   ],
+
+  // ✅ NOVO: Otimização de Build & Code Splitting
+  build: {
+    target: 'esnext',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    
+    // 🔴 CRITICAL: Code Splitting Strategy
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Vendor: Dependências pesadas separadas
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase-vendor';
+          }
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/react-router')) {
+            return 'router-vendor';
+          }
+          if (id.includes('node_modules/@tiptap')) {
+            return 'tiptap-vendor'; // Editor pesado
+          }
+          if (id.includes('node_modules/pdfjs-dist') || id.includes('node_modules/react-pdf')) {
+            return 'pdf-vendor'; // PDF pesado — carrega só para Leitura/Biblioteca
+          }
+          if (id.includes('node_modules/@google/generative-ai')) {
+            return 'ai-vendor'; // Google AI — carrega só para Editor
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons-vendor';
+          }
+          // Utils e compostos menores
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        },
+      },
+    },
+
+    // 🔴 IMPORTANTE: Limpar warnings de chunk size
+    chunkSizeWarningLimit: 1000, // 1MB limit (aumentado)
+  },
+
+  // ✅ Otimizar deps pré-bundling (acelera dev)
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+    exclude: ['@google/generative-ai'], // Deixa esse lazy
+  },
 });

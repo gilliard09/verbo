@@ -4,6 +4,7 @@ import { supabase } from './supabaseClient';
 import { Analytics } from '@vercel/analytics/react';
 
 // --- IMPORTAÇÕES LAZY (CARREGAMENTO SOB DEMANDA) ---
+// Essas páginas APENAS são carregadas quando o usuário navega até elas
 const Dashboard = lazy(() => import('./pages/dashboard'));
 const NovoSermao = lazy(() => import('./pages/novosermao'));
 const Login = lazy(() => import('./pages/login'));
@@ -19,7 +20,7 @@ const AdminDashboard = lazy(() => import('./pages/admindashboard'));
 const Upgrade = lazy(() => import('./pages/upgrade'));
 const Devocionais = lazy(() => import('./pages/Devocionais'));
 
-// --- COMPONENTES ---
+// --- COMPONENTES SÍNCRONOS (Precisam estar prontos na primeira render) ---
 import BibliaSidebar from './components/BibliaSidebar';
 import RotaAdmin from './components/RotaAdmin';
 import { Home, PenTool, User, Users, PlayCircle } from 'lucide-react';
