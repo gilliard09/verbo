@@ -124,4 +124,4 @@ export default defineConfig({
     include: ['react', 'react-dom', 'react-router-dom'],
     exclude: ['@google/generative-ai'], // Deixa esse lazy
   },
-});
+}); 
