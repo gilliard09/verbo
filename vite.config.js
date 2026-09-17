@@ -15,7 +15,7 @@ export default defineConfig({
       // Service Worker com Workbox
       workbox: {
         // Estratégia para assets estáticos: CacheFirst (instantâneo)
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        globPatterns: ['**/*.{html,css,ico,svg,woff2,webmanifest}'],
 
         runtimeCaching: [
           // Fontes do Google: CacheFirst por 1 ano
@@ -39,13 +39,34 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // JS/CSS dos chunks lazy: cacheia depois do primeiro acesso.
+          // Não pré-carregamos todos os chunks no primeiro visit.
+          {
+            urlPattern: /\/assets\/.*\.(?:js|css)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'verbo-assets',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Imagens locais: cacheia depois que forem realmente solicitadas.
+          {
+            urlPattern: /\.(?:png|jpe?g|webp|svg)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'verbo-images',
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           // Imagens externas (capas de cursos, avatars): StaleWhileRevalidate
           {
             urlPattern: /^https:\/\/.*\.(supabase\.co\/storage|unsplash\.com|images\.)/i,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'imagens',
-              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 }, // 30 dias
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

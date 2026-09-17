@@ -160,7 +160,7 @@ const Login = () => {
         <div className="mb-10 text-center">
           <div className="w-32 h-32 mx-auto mb-4 drop-shadow-xl overflow-hidden rounded-[32px]">
             <img
-              src="/logo.png?v=1"
+              src="/logo.webp?v=1"
               alt="Logo Verbo"
               className="w-full h-full object-contain"
               style={{ display: 'block' }}

@@ -6,7 +6,7 @@ const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/logo.png'
+  '/logo.webp'
 ];
 
 // 1. Instalação: Armazena os arquivos no cache
@@ -58,8 +58,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body || 'Novo conteúdo disponível no seu devocional!',
-    icon: '/logo.png',
-    badge: '/logo.png',
+    icon: '/logo.webp',
+    badge: '/logo.webp',
     data: { url: '/' } // URL para onde o app deve ir ao clicar
   };
 

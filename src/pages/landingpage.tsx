@@ -27,7 +27,7 @@ const BENEFICIOS = [
 
 const SCREENSHOTS = [
   {
-    src: '/screenshot-editor.png',
+    src: '/screenshot-editor.webp',
     alt: 'Editor de Sermões',
     titulo: 'Editor de Sermões',
     desc: 'Escreva, formate e organize seus esboços com auto-save automático.',
@@ -35,7 +35,7 @@ const SCREENSHOTS = [
     badge: 'Editor',
   },
   {
-    src: '/screenshot-dashboard.png',
+    src: '/screenshot-dashboard.webp',
     alt: 'Dashboard com sermões salvos',
     titulo: 'Todos os seus sermões organizados',
     desc: 'Acesse qualquer sermão salvo, com título, referência bíblica e histórico.',
@@ -43,7 +43,7 @@ const SCREENSHOTS = [
     badge: 'Dashboard',
   },
   {
-    src: '/screenshot-pulpito-temas.png',
+    src: '/screenshot-pulpito-temas.webp',
     alt: 'Modo Púlpito com temas e fontes',
     titulo: 'Modo Púlpito completo',
     desc: 'Temas claro, sépia e escuro. Fonte ajustável. Tela que não apaga.',
@@ -51,7 +51,7 @@ const SCREENSHOTS = [
     badge: 'Modo Púlpito',
   },
   {
-    src: '/screenshot-pulpito-limpo.png',
+    src: '/screenshot-pulpito-limpo.webp',
     alt: 'Modo Púlpito com barra escondida',
     titulo: 'Foco total na mensagem',
     desc: 'Esconda a barra e pregue sem distração. Apenas a Palavra na tela.',
@@ -88,21 +88,21 @@ const DEPOIMENTOS = [
     texto: 'Paz pastor adorei o aplicativo do verbo, nossa bem prático, fácil, muito bom mesmo. A gente tem a liberdade de escrever como a gente quiser sem problema nenhum para escrever a mensagem.',
     nome: 'Jayne',
     local: 'Santa Catarina',
-    img: '/depoimento-jayne.jpg',
+    img: '/depoimento-jayne.webp',
     stars: 5,
   },
   {
     texto: 'Bonito e integralizado, boa aparência, fácil manuseio e objetivo!',
     nome: 'Michel',
     local: 'São Paulo',
-    img: '/depoimento-michel.jpg',
+    img: '/depoimento-michel.webp',
     stars: 5,
   },
   {
     texto: 'Sensacional o app ali mano. Bem organizado e facilita pra organizar o esboço. Benção de Deus!',
     nome: 'Oséas',
     local: 'Santa Catarina',
-    img: '/depoimento-oseas.png',
+    img: '/depoimento-oseas.webp',
     stars: 5,
   },
 ];
@@ -115,8 +115,8 @@ const DORES = [
 ];
 
 // Números reais de tração — atualize conforme o painel de analytics
-const TOTAL_USUARIOS = 359;
-const TOTAL_SERMOES = 306;
+const TOTAL_USUARIOS = 528;
+const TOTAL_SERMOES = 500;
 const YOUTUBE_VIDEO_ID = 'FFSS5F7JSms';
 
 // ─── Componente FAQ Item ──────────────────────────────────────────────────────
@@ -238,7 +238,6 @@ const LandingPageOptimized = () => {
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-900 overflow-x-hidden" style={{ fontFamily: "'Poppins', sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&display=swap');
         * { font-family: 'Poppins', sans-serif; }
         
         .hero-glow { 
@@ -320,7 +319,7 @@ const LandingPageOptimized = () => {
       {/* ── NAV ── */}
       <nav className="flex justify-between items-center px-6 py-5 max-w-6xl mx-auto sticky top-0 bg-[#FAFAFA]/80 backdrop-blur-lg z-50 border-b border-slate-100/50">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Verbo" className="w-9 h-9 object-contain rounded-xl"
+          <img src="/logo.webp" alt="Verbo" width="36" height="36" className="w-9 h-9 object-contain rounded-xl"
             onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=V&background=4C1D95&color=fff"; }} />
           <span className="font-black tracking-tighter text-xl text-[#4C1D95] uppercase">Verbo</span>
         </div>
@@ -434,7 +433,7 @@ const LandingPageOptimized = () => {
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
                   <div className="relative pulse-ring">
                     <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-100 to-purple-200 overflow-hidden">
-                      <img src={d.img} alt={d.nome}
+                      <img src={d.img} alt={d.nome} loading="lazy" width="44" height="44"
                         className="w-full h-full object-cover"
                         onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${d.nome}&background=EDE9FE&color=4C1D95`; }} />
                     </div>
@@ -538,57 +537,39 @@ const LandingPageOptimized = () => {
 
           {/* Screenshot ativo */}
           <div {...anim('screenshots', 200)}>
-            {SCREENSHOTS.map((s, i) => (
-              <div
-                key={i}
-                className="transition-all duration-500"
-                style={{
-                  display: screenshotAtivo === i ? 'block' : 'none',
-                }}
-              >
-                <div className="relative max-w-xs mx-auto">
-                  {/* Frame do celular/tela */}
-                  <div className="screenshot-frame rounded-[40px] overflow-hidden border-8 border-white bg-slate-100 aspect-[9/16] flex items-center justify-center relative">
-                    <img
-                      src={s.src}
-                      alt={s.alt}
-                      className="w-full h-full object-cover"
-                      onError={e => {
-                        const target = e.target as HTMLImageElement;
-                        target.onerror = null;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent && !parent.querySelector('.placeholder-content')) {
-                          const placeholder = document.createElement('div');
-                          placeholder.className = 'placeholder-content flex flex-col items-center justify-center w-full h-full gap-4 p-8';
-                          placeholder.innerHTML = `
-                            <div style="width:64px;height:64px;background:linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);border-radius:16px;display:flex;align-items:center;justify-content:center;">
-                              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4C1D95" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                            </div>
-                            <div style="text-align:center;">
-                              <p style="font-weight:800;color:#1e293b;font-size:14px;margin:0 0 4px">${s.titulo}</p>
-                              <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.4">Adicione o arquivo: <br/><strong>${s.src}</strong></p>
-                            </div>
-                          `;
-                          parent.appendChild(placeholder);
-                        }
-                      }}
-                    />
+            {(() => {
+              const s = SCREENSHOTS[screenshotAtivo];
+              const Icon = s.icon;
+              return (
+                <div key={s.src} className="transition-all duration-500">
+                  <div className="relative max-w-xs mx-auto">
+                    {/* Frame do celular/tela */}
+                    <div className="screenshot-frame rounded-[40px] overflow-hidden border-8 border-white bg-slate-100 aspect-[9/16] flex items-center justify-center relative">
+                      <img
+                        src={s.src}
+                        alt={s.alt}
+                        width="640"
+                        height="1138"
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Badge flutuante */}
+                    <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#4C1D95] to-[#5B21B6] text-white px-3 py-1.5 rounded-xl shadow-xl">
+                      <p className="text-[9px] font-bold uppercase tracking-widest">{s.badge}</p>
+                    </div>
                   </div>
 
-                  {/* Badge flutuante */}
-                  <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#4C1D95] to-[#5B21B6] text-white px-3 py-1.5 rounded-xl shadow-xl">
-                    <p className="text-[9px] font-bold uppercase tracking-widest">{s.badge}</p>
+                  {/* Descrição abaixo */}
+                  <div className="text-center mt-8 max-w-lg mx-auto">
+                    <h3 className="font-bold text-slate-800 text-lg mb-2">{s.titulo}</h3>
+                    <p className="text-gray-500 text-sm leading-relaxed">{s.desc}</p>
                   </div>
                 </div>
-
-                {/* Descrição abaixo */}
-                <div className="text-center mt-8 max-w-lg mx-auto">
-                  <h3 className="font-bold text-slate-800 text-lg mb-2">{s.titulo}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{s.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })()}
           </div>
 
           {/* Dots de navegação */}
@@ -619,7 +600,7 @@ const LandingPageOptimized = () => {
           aria-label="Assistir vídeo de apresentação do Verbo"
         >
           <img
-            src={`https://img.youtube.com/vi/${YOUTUBE_VIDEO_ID}/maxresdefault.jpg`}
+            src={`https://img.youtube.com/vi/${YOUTUBE_VIDEO_ID}/maxresdefault.jpg`} loading="lazy"
             alt="Prévia do vídeo de apresentação do Verbo"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             onError={e => {
@@ -645,7 +626,7 @@ const LandingPageOptimized = () => {
           <div {...anim('autor', 0)} className="flex justify-center">
             <div className="relative">
               <div className="w-64 h-80 rounded-[40px] overflow-hidden shadow-2xl border-8 border-white ring-4 ring-purple-100 float">
-                <img src="/pastor-jeferson.jpg" alt="Pastor Jeferson Rocha"
+                <img src="/pastor-jeferson.webp" alt="Pastor Jeferson Rocha" loading="lazy" width="512" height="683"
                   className="w-full h-full object-cover object-top"
                   onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=JR&background=4C1D95&color=fff&size=256"; }} />
               </div>
@@ -728,7 +709,7 @@ const LandingPageOptimized = () => {
       <footer className="py-12 text-center border-t border-gray-100 bg-white">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <img src="/logo.png" alt="Verbo" className="w-8 h-8 object-contain rounded-lg"
+            <img src="/logo.webp" alt="Verbo" width="32" height="32" className="w-8 h-8 object-contain rounded-lg"
               onError={e => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=V&background=4C1D95&color=fff&size=32"; }} />
             <span className="font-black tracking-tighter text-lg text-[#4C1D95] uppercase">Verbo</span>
           </div>

@@ -69,11 +69,17 @@ const Navbar = ({ session, onOpenBiblia }) => {
   );
 };
 
+// ─── Loading mínimo para rotas protegidas ─────────────────────────────────────
+const LoadingScreen = () => (
+  <div className="min-h-screen bg-[#FDFDFF] flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-[#4C1D95] border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
 // ─── AppShell — precisa estar dentro do <Router> para usar useLocation ────────
 const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
   const location = useLocation();
 
-  // Rotas onde a navbar inferior fica escondida (não reservamos o respiro pb-24 nelas)
   const isPublicPage = ROTAS_SEM_NAVBAR.includes(location.pathname);
   const isReading    = location.pathname.startsWith('/leitura');
   const isAdminPage  = location.pathname.startsWith('/admin');
@@ -86,31 +92,24 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
   return (
     <div className="min-h-screen bg-[#FDFDFF]">
       <main className={session && !navbarEscondida ? "pb-24" : ""}>
-        {/* Suspense garante uma transição suave entre o carregamento das páginas */}
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-[#4C1D95] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        }>
+        <Suspense fallback={<LoadingScreen />}>
           <Routes>
-            <Route path="/"                element={session ? <Dashboard />    : <LandingPage />} />
+            <Route path="/" element={session ? <Dashboard /> : <LandingPage />} />
             <Route path="/novosermao" element={session ? <NovoSermao /> : <Navigate to="/login" replace />} />
-            <Route path="/login"           element={!session ? <Login />        : <Navigate to="/" replace />} />
-            {/* Sempre acessível: o Supabase cria uma sessão temporária de recuperação
-                ao abrir o link do e-mail, então essa rota não pode depender de `session`. */}
-            <Route path="/reset-password"  element={<ResetPassword />} />
-            <Route path="/landing"         element={<LandingPage />} />
-            <Route path="/cursos"          element={session ? <Cursos />        : <Navigate to="/login" replace />} />
-            <Route path="/cursos/:cursoId" element={session ? <Aulas />         : <Navigate to="/login" replace />} />
-            <Route path="/admin"           element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
-            <Route path="/biblioteca"      element={session ? <Biblioteca />    : <Navigate to="/login" replace />} />
-            <Route path="/editor"          element={session ? <Editor />        : <Navigate to="/login" replace />} />
-            <Route path="/editor/:id"      element={session ? <Editor />        : <Navigate to="/login" replace />} />
-            <Route path="/leitura/:id"     element={session ? <Leitura />       : <Navigate to="/login" replace />} />
-            <Route path="/perfil"          element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
-            <Route path="/upgrade"         element={session ? <Upgrade />       : <Navigate to="/login" replace />} />
-            <Route path="/devocionais"      element={session ? <Devocionais />    : <Navigate to="/login" replace />} />
-            <Route path="*"                element={<Navigate to="/" replace />} />
+            <Route path="/login" element={!session ? <Login /> : <Navigate to="/" replace />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/cursos" element={session ? <Cursos /> : <Navigate to="/login" replace />} />
+            <Route path="/cursos/:cursoId" element={session ? <Aulas /> : <Navigate to="/login" replace />} />
+            <Route path="/admin" element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
+            <Route path="/biblioteca" element={session ? <Biblioteca /> : <Navigate to="/login" replace />} />
+            <Route path="/editor" element={session ? <Editor /> : <Navigate to="/login" replace />} />
+            <Route path="/editor/:id" element={session ? <Editor /> : <Navigate to="/login" replace />} />
+            <Route path="/leitura/:id" element={session ? <Leitura /> : <Navigate to="/login" replace />} />
+            <Route path="/perfil" element={session ? <Perfil onOpenBiblia={() => setBibliaAberta(true)} /> : <Navigate to="/login" replace />} />
+            <Route path="/upgrade" element={session ? <Upgrade /> : <Navigate to="/login" replace />} />
+            <Route path="/devocionais" element={session ? <Devocionais /> : <Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </main>
@@ -129,10 +128,11 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
 function App() {
   const [session, setSession] = useState(null);
   const [bibliaAberta, setBibliaAberta] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    // 1. Registro do Service Worker
+    // O landing page não depende da autenticação. A sessão é verificada
+    // em segundo plano para não bloquear o primeiro paint.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
@@ -141,38 +141,37 @@ function App() {
       });
     }
 
-    // 2. Lógica de Autenticação
-    const getInitialSession = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
-      } catch (error) {
-        console.error("Erro Supabase:", error);
-      } finally {
-        setIsChecking(false);
-      }
-    };
-    getInitialSession();
+    let mounted = true;
+
+    supabase.auth.getSession()
+      .then(({ data: { session: initialSession } }) => {
+        if (mounted) setSession(initialSession);
+      })
+      .catch(error => console.error('Erro Supabase:', error))
+      .finally(() => {
+        if (mounted) setAuthReady(true);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      setSession(currentSession);
-      setIsChecking(false);
+      if (mounted) {
+        setSession(currentSession);
+        setAuthReady(true);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
-
-  if (isChecking) {
-    return (
-      <div className="min-h-screen bg-[#FDFDFF] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#4C1D95] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
 
   return (
     <Router>
-      <AppShell session={session} bibliaAberta={bibliaAberta} setBibliaAberta={setBibliaAberta} />
+      <AppShell
+        session={session}
+        bibliaAberta={bibliaAberta}
+        setBibliaAberta={setBibliaAberta}
+      />
     </Router>
   );
 }

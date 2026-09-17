@@ -111,7 +111,7 @@ const useOfflineStorage = () => {
 // ─── LOGO ────────────────────────────────────────────────────────────────────
 const LogoVerbo = ({ dark }) => (
   <div style={{ width: 40, height: 40, borderRadius: 12, overflow: 'hidden', background: dark ? '#1a1a1a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <img src="/logo.png" alt="Verbo" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+    <img src="/logo.webp" alt="Verbo" style={{ width: 36, height: 36, objectFit: 'contain' }} />
   </div>
 );
 
