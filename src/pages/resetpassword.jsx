@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Lock, KeyRound, AlertCircle, CheckCircle2, X, ShieldCheck } from 'lucide-react';
 import { track } from '../lib/analytics';
 
@@ -46,7 +46,6 @@ const FeedbackBanner = ({ tipo, mensagem, onClose }) => {
 
 const ResetPassword = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [prontoParaRedefinir, setProntoParaRedefinir] = useState(false);
   const [verificando, setVerificando] = useState(true);
@@ -55,63 +54,39 @@ const ResetPassword = () => {
   const [feedback, setFeedback] = useState({ tipo: null, mensagem: '' });
   const [concluido, setConcluido] = useState(false);
 
-  // Extrai o token da URL e verifica se é válido
+  // ✅ SOLUÇÃO: Usar onAuthStateChange para detectar quando o Supabase
+  // processa o hash de deep link automaticamente
   useEffect(() => {
     const verificarToken = async () => {
       try {
-        // Extrai token da query string
-        const token = searchParams.get('token');
-
         console.log('🔍 Verificando reset de senha...');
-        console.log('Token da URL:', token ? `✓ Encontrado (${token.length} caracteres)` : '✗ Não encontrado');
-
-        // Se não houver token, link é inválido
-        if (!token) {
-          console.error('❌ Nenhum token encontrado na URL');
-          setVerificando(false);
-          return;
-        }
-
-        // Log para debug
-        if (token.length < 20) {
-          console.warn('⚠️ AVISO: Token parece muito curto:', token.length, 'caracteres');
-          console.warn('Token:', token);
-          console.warn('Isso significa que o redirectTo não foi configurado no Login.jsx');
-        }
-
-        console.log('Tentando validar token com exchangeCodeForSession...');
         
-        // ✅ Para password recovery links, usar exchangeCodeForSession
-        // Isso establece uma sessão autenticada que permite chamar updateUser
-        const { data, error } = await supabase.auth.exchangeCodeForSession(token);
+        // ✅ Supabase processa automaticamente o hash (#access_token=...)
+        // e cria uma sessão. Basta verificar a sessão atual.
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (error) {
-          console.error('❌ Erro ao validar token:', error.message);
-          console.error('Status:', error.status);
-          
-          // Se o token for inválido, pode ser porque:
-          // 1. Link expirou
-          // 2. Token já foi usado
-          // 3. Token foi gerado sem redirectTo correto
-          
+        if (sessionError) {
+          console.error('❌ Erro ao obter sessão:', sessionError.message);
           setVerificando(false);
-          setFeedback({ tipo: 'erro', mensagem: traduzirErro(error.message) });
+          setFeedback({ tipo: 'erro', mensagem: traduzirErro(sessionError.message) });
           return;
         }
 
-        if (!data?.session) {
-          console.error('❌ Nenhuma sessão foi estabelecida');
+        // Se não há sessão, o link é inválido ou expirou
+        if (!session) {
+          console.error('❌ Nenhuma sessão de recuperação encontrada');
+          console.log('💡 Dica: O link pode ter expirado (máximo 24h) ou já foi usado');
           setVerificando(false);
           setFeedback({ tipo: 'erro', mensagem: traduzirErro('invalid token') });
           return;
         }
 
         console.log('✅ Token validado! Sessão estabelecida com sucesso');
-        console.log('Usuário:', data.session.user.email);
+        console.log('Usuário:', session.user.email);
         
         track('password_reset_link_verified');
         
-        // Se chegou aqui, token é válido e temos uma sessão
+        // Se chegou aqui, temos uma sessão válida de recuperação
         setProntoParaRedefinir(true);
         setVerificando(false);
 
@@ -122,8 +97,13 @@ const ResetPassword = () => {
       }
     };
 
-    verificarToken();
-  }, [searchParams]);
+    // Aguarda um pouco para garantir que o Supabase processou o hash
+    const timer = setTimeout(() => {
+      verificarToken();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleRedefinir = async (e) => {
     e.preventDefault();
@@ -142,8 +122,8 @@ const ResetPassword = () => {
     try {
       console.log('🔐 Atualizando senha...');
       
-      // ✅ Agora é seguro chamar updateUser porque o token foi validado
-      // e a sessão foi estabelecida por exchangeCodeForSession
+      // ✅ Agora é seguro chamar updateUser porque a sessão foi
+      // estabelecida automaticamente pelo Supabase
       const { error } = await supabase.auth.updateUser({ password });
       
       if (error) {
@@ -156,8 +136,9 @@ const ResetPassword = () => {
       setConcluido(true);
       setFeedback({ tipo: 'sucesso', mensagem: 'Senha redefinida com sucesso!' });
 
-      // Redireciona para login após 2 segundos
-      setTimeout(() => {
+      // Faz logout e redireciona para login após 2 segundos
+      setTimeout(async () => {
+        await supabase.auth.signOut();
         navigate('/login');
       }, 2000);
     } catch (error) {
