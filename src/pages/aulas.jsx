@@ -546,6 +546,13 @@ const Aulas = () => {
               </button>
             </div>
 
+            {aulaAtiva?.descricao && (
+              <div className="mb-6 rounded-[28px] border border-white/10 bg-[#131019] p-6 md:p-8">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#A78BFA]">Sobre esta aula</p>
+                <p className="text-sm md:text-base leading-7 text-white/70 whitespace-pre-line">{aulaAtiva.descricao}</p>
+              </div>
+            )}
+
             {/* ── Material de Apoio ─────────────────────────────────────────────── */}
             {aulaAtiva?.material_url && (
               <div className="bg-[#131019] rounded-[40px] border border-white/10 shadow-sm overflow-hidden transition-all duration-500">
