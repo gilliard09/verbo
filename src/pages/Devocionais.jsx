@@ -909,28 +909,46 @@ const Devocionais = () => {
       setCompletados(completadosData.map(c => c.devocional_id));
       setDatosCompletadosHoje(completadosData.map(c => c.completado_em));
       
-      // ✅ Remover duplicatas usando Set para datas únicas
+      // Usa uma chave YYYY-MM-DD baseada na data local para evitar
+      // problemas de ordenação de strings e diferenças de fuso horário.
+      const chaveDataLocal = (value) => {
+        const d = new Date(value);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      };
+
+      // Remove duplicatas e ordena cronologicamente (mais recente primeiro).
       const datasUnicas = Array.from(
-        new Set(completadosData.map(c => new Date(c.completado_em).toDateString()))
+        new Set(completadosData.map(c => chaveDataLocal(c.completado_em)))
       ).sort().reverse();
-      
+
+      const hoje = new Date();
+      const chaveHoje = chaveDataLocal(hoje);
+
+      const ontem = new Date(hoje);
+      ontem.setDate(ontem.getDate() - 1);
+      const chaveOntem = chaveDataLocal(ontem);
+
       let streakAtual = 0;
-      const hoje = new Date().toDateString();
-      const ontem = new Date(Date.now() - 86400000).toDateString();
-      
-      if (datasUnicas.includes(hoje) || datasUnicas.includes(ontem)) {
+
+      // A sequência continua válida se o último devocional foi hoje ou ontem.
+      if (datasUnicas.includes(chaveHoje) || datasUnicas.includes(chaveOntem)) {
         streakAtual = 1;
-        let dataEsperada = datasUnicas.includes(hoje) 
-          ? new Date(Date.now() - 86400000)
-          : new Date(Date.now() - 2 * 86400000);
-        
-        for (let i = 1; i < datasUnicas.length; i++) {
-          if (datasUnicas[i] === dataEsperada.toDateString()) {
+
+        const dataInicial = datasUnicas.includes(chaveHoje) ? hoje : ontem;
+        const dataEsperada = new Date(dataInicial);
+
+        while (true) {
+          dataEsperada.setDate(dataEsperada.getDate() - 1);
+          const chaveEsperada = chaveDataLocal(dataEsperada);
+
+          if (datasUnicas.includes(chaveEsperada)) {
             streakAtual++;
-            dataEsperada = new Date(dataEsperada - 86400000);
-          } else break;
+          } else {
+            break;
+          }
         }
       }
+
       setStreak(streakAtual);
     }
   };
