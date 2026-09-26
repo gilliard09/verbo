@@ -8,7 +8,6 @@ import {
   Church,
   MoreHorizontal,
   EyeOff,
-  X,
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
@@ -43,7 +42,6 @@ const AcquisitionSourceModal = ({ session, onClose }) => {
 
       if (updateError) throw updateError;
 
-      localStorage.removeItem('verbo_pending_acquisition_source');
       onClose();
     } catch (err) {
       console.error('Erro ao salvar origem de aquisição:', err);
@@ -63,16 +61,6 @@ const AcquisitionSourceModal = ({ session, onClose }) => {
     >
       <div className="relative w-full max-w-md overflow-hidden rounded-[32px] bg-white shadow-2xl">
         <div className="px-6 pb-5 pt-7 sm:px-8 sm:pt-8">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
-            aria-label="Fechar"
-          >
-            <X size={18} />
-          </button>
-
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F3EEFF] text-[#4C1D95]">
             <MessageCircle size={22} strokeWidth={2.2} />
           </div>
