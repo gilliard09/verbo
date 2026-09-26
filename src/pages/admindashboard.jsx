@@ -391,46 +391,43 @@ const SectionHeader = ({ icon: Icon, title, subtitle }) => (
   </div>
 );
 
-const FunilCard = ({ funil, estimado }) => {
+const OrigemAquisicaoCard = ({ origens }) => {
   const etapas = [
-    {label:'Visitantes',valor:funil.visitantes,cor:'bg-slate-400',emoji:'👀'},
-    {label:'Cadastros',valor:funil.cadastros,cor:'bg-blue-400',emoji:'✍️'},
-    {label:'1º Sermão',valor:funil.usaram,cor:'bg-purple-400',emoji:'📝'},
-    {label:'Voltaram 2x+',valor:funil.voltaram,cor:'bg-violet-400',emoji:'🔁'},
-    {label:'Assinantes',valor:funil.assinaram,cor:'bg-green-400',emoji:'💎'},
+    { label: 'YouTube', value: origens.youtube, color: 'bg-red-400', text: 'text-red-400' },
+    { label: 'Instagram', value: origens.instagram, color: 'bg-pink-400', text: 'text-pink-400' },
+    { label: 'Threads', value: origens.threads, color: 'bg-slate-300', text: 'text-slate-300' },
+    { label: 'Facebook', value: origens.facebook, color: 'bg-blue-400', text: 'text-blue-400' },
+    { label: 'Google', value: origens.google, color: 'bg-amber-400', text: 'text-amber-400' },
+    { label: 'Outro', value: origens.other, color: 'bg-purple-400', text: 'text-purple-400' },
   ];
-  const max = etapas[0].valor || 1;
+  const total = etapas.reduce((sum, item) => sum + item.value, 0);
+  const max = Math.max(...etapas.map(item => item.value), 1);
+
   return (
     <div className="bg-white/5 border border-white/10 p-7 rounded-[32px] backdrop-blur-md">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2.5 bg-blue-500/20 rounded-2xl"><BarChart3 size={20} className="text-blue-400"/></div>
-        <div><h3 className="font-black text-white text-sm uppercase tracking-tight">Funil do Usuário</h3><p className="text-[10px] text-slate-500 font-bold">Onde você perde usuários</p></div>
+        <div className="p-2.5 bg-blue-500/20 rounded-2xl"><Users size={20} className="text-blue-400"/></div>
+        <div>
+          <h3 className="font-black text-white text-sm uppercase tracking-tight">Como conheceram o Verbo</h3>
+          <p className="text-[10px] text-slate-500 font-bold">{total} respostas registradas no pop-up</p>
+        </div>
       </div>
+
       <div className="space-y-3">
-        {etapas.map((etapa, i) => {
-          const pct = max > 0 ? Math.round((etapa.valor/max)*100) : 0;
-          const dropPct = i>0 && etapas[i-1].valor>0 ? Math.round((1-etapa.valor/etapas[i-1].valor)*100) : null;
+        {etapas.map(item => {
+          const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+          const largura = Math.round((item.value / max) * 100);
           return (
-            <div key={etapa.label}>
-              {dropPct!==null && dropPct>0 && <div className="flex items-center gap-2 py-1 pl-2"><TrendingDown size={10} className="text-red-400"/><span className="text-[9px] font-black text-red-400">-{dropPct}% drop</span></div>}
-              <div className="flex items-center gap-3">
-                <span className="text-base w-6 shrink-0">{etapa.emoji}</span>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-1 items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      {etapa.label}
-                      {etapa.label==='Visitantes' && estimado && (
-                        <span className="text-[7px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-black uppercase tracking-widest">Estimado</span>
-                      )}
-                    </span>
-                    <span className="text-[10px] font-black text-white">{etapa.valor.toLocaleString('pt-BR')}</span>
-                  </div>
-                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${etapa.cor} transition-all duration-1000`} style={{width:`${pct}%`,opacity:0.85}}/>
-                  </div>
-                </div>
-                <span className="text-[10px] font-black text-slate-500 w-8 text-right">{pct}%</span>
+            <div key={item.label} className="flex items-center gap-3">
+              <div className="w-20 shrink-0">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</span>
               </div>
+              <div className="flex-1">
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${item.color} transition-all duration-700`} style={{ width: `${largura}%`, opacity: 0.85 }} />
+                </div>
+              </div>
+              <span className={`text-[10px] font-black ${item.text} w-14 text-right`}>{item.value} · {pct}%</span>
             </div>
           );
         })}
@@ -485,41 +482,6 @@ const FunilUpgradeCard = ({ funil }) => {
           <p className="text-lg font-black text-green-400">{pctConversao}%</p>
           <p className="text-[8px] font-black text-slate-500 uppercase mt-1">clique → assinatura</p>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const TaxasCard = ({ taxas }) => {
-  const itens = [
-    {label:'Visitante → Cadastro',valor:taxas.visitanteCadastro,cor:'text-blue-400',bg:'bg-blue-500/20',alerta:20},
-    {label:'Cadastro → Uso',valor:taxas.cadastroUso,cor:'text-purple-400',bg:'bg-purple-500/20',alerta:40},
-    {label:'Uso → Assinatura',valor:taxas.usoAssinatura,cor:'text-green-400',bg:'bg-green-500/20',alerta:15},
-  ];
-  return (
-    <div className="bg-white/5 border border-white/10 p-7 rounded-[32px] backdrop-blur-md">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2.5 bg-purple-500/20 rounded-2xl"><Percent size={20} className="text-purple-400"/></div>
-        <div><h3 className="font-black text-white text-sm uppercase tracking-tight">Taxas de Conversão</h3><p className="text-[10px] text-slate-500 font-bold">Onde mexer pra crescer</p></div>
-      </div>
-      <div className="space-y-4">
-        {itens.map(item => {
-          const bom = item.valor >= item.alerta;
-          return (
-            <div key={item.label} className={`p-4 rounded-2xl ${item.bg} border border-white/5`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-xl font-black ${item.cor}`}>{item.valor}%</span>
-                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${bom?'bg-green-500/20 text-green-400':'bg-red-500/20 text-red-400'}`}>{bom?'✓ OK':'↓ Baixo'}</span>
-                </div>
-              </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${item.cor.replace('text-','bg-')} transition-all duration-1000`} style={{width:`${Math.min(item.valor*2,100)}%`}}/>
-              </div>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
@@ -735,7 +697,7 @@ const AdminDashboard = () => {
   const [matriculasRecentes, setMatriculasRecentes] = useState([]);
   const [funil, setFunil] = useState({visitantes:0,cadastros:0,usaram:0,voltaram:0,assinaram:0});
   const [visitantesEstimados, setVisitantesEstimados] = useState(false);
-  const [taxas, setTaxas] = useState({visitanteCadastro:0,cadastroUso:0,usoAssinatura:0});
+  const [origensAquisicao, setOrigensAquisicao] = useState({youtube:0,instagram:0,threads:0,facebook:0,google:0,other:0});
   const [ativacao, setAtivacao] = useState({pct1Sermao:0,pct3Sermoes:0,pct7Dias:0});
   const [retencao, setRetencao] = useState({dau:0,wau:0});
   const [usoPorRecurso, setUsoPorRecurso] = useState({});
@@ -979,6 +941,23 @@ const AdminDashboard = () => {
 
       setPlanos({fundador: totalFundadores||0, plus: totalPlus||0});
 
+      // Origem informada no pop-up de aquisição, armazenada em profiles.acquisition_source.
+      const { data: perfisOrigem, error: erroOrigem } = await supabase
+        .from('profiles')
+        .select('acquisition_source');
+
+      if (erroOrigem) {
+        console.error('Erro ao carregar origens de aquisição:', erroOrigem);
+      }
+
+      const contagemOrigem = {youtube:0,instagram:0,threads:0,facebook:0,google:0,other:0};
+      (perfisOrigem || []).forEach(perfil => {
+        if (Object.prototype.hasOwnProperty.call(contagemOrigem, perfil.acquisition_source)) {
+          contagemOrigem[perfil.acquisition_source] += 1;
+        }
+      });
+      setOrigensAquisicao(contagemOrigem);
+
       const totalCadastros = usuarios||0;
       const totalUsaram    = com1Sermao;
       const totalVoltaram  = voltaram2x;
@@ -987,11 +966,6 @@ const AdminDashboard = () => {
       setVisitantesEstimados(totalVisitantesVercel <= 0);
 
       setFunil({visitantes:totalVisitantes,cadastros:totalCadastros,usaram:totalUsaram,voltaram:totalVoltaram,assinaram:totalAssinaram});
-      setTaxas({
-        visitanteCadastro:totalVisitantes>0?Math.round((totalCadastros/totalVisitantes)*100):0,
-        cadastroUso:totalCadastros>0?Math.round((totalUsaram/totalCadastros)*100):0,
-        usoAssinatura:totalUsaram>0?Math.round((totalAssinaram/totalUsaram)*100):0,
-      });
       setAtivacao({
         pct1Sermao:totalCadastros>0?Math.round((com1Sermao/totalCadastros)*100):0,
         pct3Sermoes:totalCadastros>0?Math.round((com3Sermoes/totalCadastros)*100):0,
@@ -1002,29 +976,51 @@ const AdminDashboard = () => {
       setReceita({mr,ticketMedio,ltv:ticketMedio*12,churn:null});
 
       try {
-        const { data: eventosModal } = await supabase
+        const { data: eventosModal, error: erroEventosModal } = await supabase
           .from('eventos_modal_upgrade')
           .select('user_id,acao');
-        const usuariosExibiram = new Set((eventosModal||[]).filter(e=>e.acao==='exibido').map(e=>e.user_id));
-        const usuariosClicaram = new Set((eventosModal||[]).filter(e=>e.acao==='clicou_upgrade'||e.acao==='clicou_plus').map(e=>e.user_id));
 
-        let assinaramAposClicar = 0;
-        if (usuariosClicaram.size > 0) {
-          const { count: countAssinantes } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .in('id', [...usuariosClicaram])
-            .in('plano', ['fundador','plus']);
-          assinaramAposClicar = countAssinantes || 0;
+        if (erroEventosModal) {
+          console.error('Erro ao carregar eventos do modal de upgrade:', erroEventosModal);
+          setFunilUpgrade({exibiram:0,clicaram:0,assinaram:0});
+        } else {
+          const usuariosExibiram = new Set(
+            (eventosModal || [])
+              .filter(e => e.user_id && e.acao === 'exibido')
+              .map(e => e.user_id)
+          );
+
+          const usuariosClicaram = new Set(
+            (eventosModal || [])
+              .filter(e => e.user_id && ['clicou_upgrade','clicou_plus'].includes(e.acao))
+              .map(e => e.user_id)
+          );
+
+          // O status da assinatura vem de profiles, que é a fonte oficial do plano.
+          let assinaramAposClicar = 0;
+          if (usuariosClicaram.size > 0) {
+            const { count: countAssinantes, error: erroAssinantes } = await supabase
+              .from('profiles')
+              .select('id', { count: 'exact', head: true })
+              .in('id', [...usuariosClicaram])
+              .in('plano', ['fundador','plus']);
+
+            if (erroAssinantes) {
+              console.error('Erro ao cruzar assinaturas do modal com profiles:', erroAssinantes);
+            } else {
+              assinaramAposClicar = countAssinantes || 0;
+            }
+          }
+
+          setFunilUpgrade({
+            exibiram: usuariosExibiram.size,
+            clicaram: usuariosClicaram.size,
+            assinaram: assinaramAposClicar,
+          });
         }
-
-        setFunilUpgrade({
-          exibiram: usuariosExibiram.size,
-          clicaram: usuariosClicaram.size,
-          assinaram: assinaramAposClicar,
-        });
       } catch (e) {
         console.error('Erro ao calcular funil do modal de upgrade:', e);
+        setFunilUpgrade({exibiram:0,clicaram:0,assinaram:0});
       }
 
       const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -1120,11 +1116,9 @@ const AdminDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FunilCard funil={funil} estimado={visitantesEstimados}/>
+              <OrigemAquisicaoCard origens={origensAquisicao}/>
               <FunilUpgradeCard funil={funilUpgrade}/>
             </div>
-
-            <TaxasCard taxas={taxas}/>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white/5 border border-white/10 p-7 rounded-[32px]">
