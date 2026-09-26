@@ -22,6 +22,7 @@ const Devocionais = lazy(() => import('./pages/Devocionais'));
 
 // --- COMPONENTES SÍNCRONOS (Precisam estar prontos na primeira render) ---
 import BibliaSidebar from './components/BibliaSidebar';
+import AcquisitionSourceModal from './components/AcquisitionSourceModal';
 import RotaAdmin from './components/RotaAdmin';
 import { Home, PenTool, User, Users, PlayCircle } from 'lucide-react';
 
@@ -129,6 +130,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [bibliaAberta, setBibliaAberta] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [acquisitionModalOpen, setAcquisitionModalOpen] = useState(false);
 
   useEffect(() => {
     // O landing page não depende da autenticação. A sessão é verificada
@@ -165,6 +167,37 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    let cancelled = false;
+
+    const checkAcquisitionSource = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('acquisition_source')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error('Erro ao verificar origem de aquisição:', error);
+        return;
+      }
+
+      if (data?.acquisition_source == null) {
+        setAcquisitionModalOpen(true);
+      }
+    };
+
+    checkAcquisitionSource();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id]);
+
   return (
     <Router>
       <AppShell
@@ -172,6 +205,12 @@ function App() {
         bibliaAberta={bibliaAberta}
         setBibliaAberta={setBibliaAberta}
       />
+      {session && acquisitionModalOpen && (
+        <AcquisitionSourceModal
+          session={session}
+          onClose={() => setAcquisitionModalOpen(false)}
+        />
+      )}
     </Router>
   );
 }
