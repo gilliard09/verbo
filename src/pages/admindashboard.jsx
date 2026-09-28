@@ -711,7 +711,10 @@ const AdminDashboard = () => {
   const [celebracao, setCelebracao] = useState({visivel:false,label:''});
   const verificarMetas = useCallback((novoStats,novasMetas)=>{const checks=[{chave:'usuarios',atual:novoStats.totalUsuarios,alvo:novasMetas.usuarios,label:'Meta de Usuários'},{chave:'sermoes',atual:novoStats.totalSermoes,alvo:novasMetas.sermoes,label:'Meta de Sermões'},{chave:'assinaturas',atual:novoStats.totalAssinaturas,alvo:novasMetas.assinaturas,label:'Meta de Assinaturas'}];for(const{chave,atual,alvo,label}of checks){if(atual>=alvo&&!metaJaCelebrada(chave)){marcarMetaCelebrada(chave);setCelebracao({visivel:true,label});return;}}},[]);
   const [novoCurso, setNovoCurso] = useState({titulo:'',descricao:'',capa_url:'',hotmart_id:'',checkout_url:''});
-  const [novaAula, setNovaAula] = useState({titulo:'',descricao:'',video_url:'',material_url:'',curso_id:'',ordem:1});
+  const [novaAula, setNovaAula] = useState({titulo:'',descricao:'',video_url:'',material_url:'',curso_id:'',materia_id:'',ordem:1});
+  const [novaMateria, setNovaMateria] = useState({titulo:'',descricao:'',curso_id:'',ordem:1});
+  const [materiasDoCurso, setMateriasDoCurso] = useState([]);
+  const [materiaSelecionada, setMateriaSelecionada] = useState('');
   const [novaNotificacao, setNovaNotificacao] = useState({titulo:'',mensagem:'',tipo:'sistema',link:''});
   const [cursoEditando, setCursoEditando] = useState(null);
   const [dadosEdicaoCurso, setDadosEdicaoCurso] = useState({});
@@ -753,8 +756,14 @@ const AdminDashboard = () => {
   }, [aba]);
 
   useEffect(() => {
-    if (cursoSelecionadoAulas) carregarAulasDoCurso(cursoSelecionadoAulas);
+    if (cursoSelecionadoAulas) carregarMateriasDoCurso(cursoSelecionadoAulas);
+    else { setMateriasDoCurso([]); setMateriaSelecionada(''); setAulasDoCurso([]); }
   }, [cursoSelecionadoAulas]);
+
+  useEffect(() => {
+    if (materiaSelecionada) carregarAulasDaMateria(materiaSelecionada);
+    else setAulasDoCurso([]);
+  }, [materiaSelecionada]);
 
   // ════════════════════════════════════════════════════════════════════════════════
   // FUNÇÕES DE CARREGAMENTO INDIVIDUAIS
@@ -1033,19 +1042,117 @@ const AdminDashboard = () => {
   };
 
   const carregarCursos = async () => { setFetching(true); const{data}=await supabase.from('cursos').select('*').order('created_at',{ascending:false}); if(data)setCursos(data); setFetching(false); };
-  const carregarAulasDoCurso = async (cursoId) => { const{data}=await supabase.from('aulas').select('*').eq('curso_id',cursoId).order('ordem',{ascending:true}); if(data)setAulasDoCurso(data); };
-  const handleUploadPDF = async (e) => { const file=e.target.files[0]; if(!file||file.type!=='application/pdf'){alert("Envie apenas arquivos PDF.");return;} setUploadingPDF(true); try{const fileName=`${Math.random()}.pdf`;const{error}=await supabase.storage.from('materiais').upload(fileName,file);if(error)throw error;const{data}=supabase.storage.from('materiais').getPublicUrl(fileName);setNovaAula(a=>({...a,material_url:data.publicUrl}));}catch{alert("Erro ao subir arquivo.");}finally{setUploadingPDF(false);} };
-  const salvarCurso = async (e) => { e.preventDefault();setLoading(true);const{error}=await supabase.from('cursos').insert([novoCurso]);if(!error){setNovoCurso({titulo:'',descricao:'',capa_url:'',hotmart_id:'',checkout_url:''});await carregarCursos();carregarAnalytics();}setLoading(false); };
-  const iniciarEdicaoCurso = (curso) => { setCursoEditando(curso.id);setDadosEdicaoCurso({titulo:curso.titulo,descricao:curso.descricao,capa_url:curso.capa_url,hotmart_id:curso.hotmart_id,checkout_url:curso.checkout_url}); };
-  const salvarEdicaoCurso = async (id) => { setLoading(true);const{error}=await supabase.from('cursos').update(dadosEdicaoCurso).eq('id',id);if(!error){setCursoEditando(null);await carregarCursos();}setLoading(false); };
-  const confirmarDeletarCurso = (id) => { setModal({aberto:true,titulo:'Excluir Curso',descricao:'Isso removerá o curso, todas as aulas e matrículas associadas permanentemente.',onConfirmar:async()=>{setModalLoading(true);await supabase.from('cursos').delete().eq('id',id);setModal(m=>({...m,aberto:false}));setModalLoading(false);carregarCursos();}}); };
-  const salvarAula = async (e) => { e.preventDefault();setLoading(true);const{error}=await supabase.from('aulas').insert([novaAula]);if(!error){setNovaAula(a=>({...a,titulo:'',descricao:'',video_url:'',material_url:'',ordem:Number(a.ordem)+1}));if(cursoSelecionadoAulas===novaAula.curso_id)carregarAulasDoCurso(novaAula.curso_id);carregarAnalytics();}setLoading(false); };
-  const salvarEdicaoAula = async (id,dados) => { await supabase.from('aulas').update(dados).eq('id',id);setAulaEditando(null);carregarAulasDoCurso(cursoSelecionadoAulas); };
-  const confirmarDeletarAula = (id) => { setModal({aberto:true,titulo:'Excluir Aula',descricao:'O progresso dos alunos nesta aula também será removido.',onConfirmar:async()=>{setModalLoading(true);await supabase.from('aulas').delete().eq('id',id);setModal(m=>({...m,aberto:false}));setModalLoading(false);carregarAulasDoCurso(cursoSelecionadoAulas);}}); };
+  const carregarMateriasDoCurso = async (cursoId) => {
+    const { data, error } = await supabase.from('materias').select('*').eq('curso_id',cursoId).order('ordem',{ascending:true});
+    if(error){console.error(error);return;}
+    setMateriasDoCurso(data || []);
+    if(data?.length){
+      const id = data.some(m=>m.id===materiaSelecionada) ? materiaSelecionada : data[0].id;
+      setMateriaSelecionada(id);
+      setNovaAula(a=>({...a,curso_id:cursoId,materia_id:id}));
+    } else {
+      setMateriaSelecionada('');
+      setNovaAula(a=>({...a,curso_id:cursoId,materia_id:'',ordem:1}));
+    }
+  };
+
+  const carregarAulasDaMateria = async (materiaId) => {
+    const { data, error } = await supabase.from('aulas').select('*').eq('materia_id',materiaId).order('ordem',{ascending:true});
+    if(error){console.error(error);return;}
+    setAulasDoCurso(data || []);
+    setNovaAula(a=>({...a,materia_id:materiaId,ordem:(data?.length || 0)+1}));
+  };
+
+  const salvarMateria = async (e) => {
+    e.preventDefault();
+    if(!novaMateria.curso_id)return;
+    setLoading(true);
+    const { data, error } = await supabase.from('materias').insert([{
+      titulo:novaMateria.titulo,
+      descricao:novaMateria.descricao || null,
+      curso_id:novaMateria.curso_id,
+      ordem:novaMateria.ordem
+    }]).select().single();
+    if(error){alert(error.message || 'Erro ao criar matéria.');setLoading(false);return;}
+    setNovaMateria({titulo:'',descricao:'',curso_id:novaMateria.curso_id,ordem:Number(data.ordem)+1});
+    await carregarMateriasDoCurso(novaMateria.curso_id);
+    setMateriaSelecionada(data.id);
+    setNovaAula(a=>({...a,curso_id:novaMateria.curso_id,materia_id:data.id,ordem:1}));
+    setLoading(false);
+  };
+
+  const iniciarNovaMateria = (cursoId) => {
+    setNovaMateria({titulo:'',descricao:'',curso_id:cursoId,ordem:materiasDoCurso.length+1});
+  };
+
+  const confirmarDeletarMateria = (id) => {
+    setModal({
+      aberto:true,
+      titulo:'Excluir Matéria',
+      descricao:'As aulas desta matéria também serão removidas permanentemente. O progresso dessas aulas será perdido.',
+      onConfirmar:async()=>{
+        setModalLoading(true);
+        const { error } = await supabase.from('materias').delete().eq('id',id);
+        if(error) alert(error.message || 'Não foi possível excluir a matéria.');
+        const cursoId=cursoSelecionadoAulas;
+        setMateriaSelecionada('');
+        await carregarMateriasDoCurso(cursoId);
+        setModal(m=>({...m,aberto:false}));
+        setModalLoading(false);
+      }
+    });
+  };
+
+  const salvarAula = async (e) => {
+    e.preventDefault();
+    if(!novaAula.curso_id || !novaAula.materia_id){alert('Selecione um curso e uma matéria.');return;}
+    setLoading(true);
+    const { error } = await supabase.from('aulas').insert([novaAula]);
+    if(error){alert(error.message || 'Erro ao publicar aula.');setLoading(false);return;}
+    setNovaAula(a=>({...a,titulo:'',descricao:'',video_url:'',material_url:'',ordem:Number(a.ordem)+1}));
+    await carregarAulasDaMateria(novaAula.materia_id);
+    carregarAnalytics();
+    setLoading(false);
+  };
+
+  const salvarEdicaoAula = async (id,dados) => {
+    const { error } = await supabase.from('aulas').update(dados).eq('id',id);
+    if(error){alert(error.message || 'Erro ao salvar aula.');return;}
+    setAulaEditando(null);
+    carregarAulasDaMateria(materiaSelecionada);
+  };
+
+  const confirmarDeletarAula = (id) => {
+    setModal({
+      aberto:true,
+      titulo:'Excluir Aula',
+      descricao:'O progresso dos alunos nesta aula também será removido.',
+      onConfirmar:async()=>{
+        setModalLoading(true);
+        await supabase.from('aulas').delete().eq('id',id);
+        setModal(m=>({...m,aberto:false}));
+        setModalLoading(false);
+        carregarAulasDaMateria(materiaSelecionada);
+      }
+    });
+  };
+
   const handleDragStart = (index) => setDraggingIndex(index);
-  const handleDragOver = (index) => { if(draggingIndex===null||draggingIndex===index)return;const novas=[...aulasDoCurso];const[item]=novas.splice(draggingIndex,1);novas.splice(index,0,item);setAulasDoCurso(novas);setDraggingIndex(index); };
-  const handleDrop = async () => { setDraggingIndex(null);await Promise.all(aulasDoCurso.map((aula,i)=>supabase.from('aulas').update({ordem:i+1}).eq('id',aula.id)));carregarAulasDoCurso(cursoSelecionadoAulas); };
-  const salvarNotificacao = async (e) => { e.preventDefault();setLoading(true);const{error}=await supabase.from('notificacoes').insert([novaNotificacao]);if(!error){setNovaNotificacao({titulo:'',mensagem:'',tipo:'sistema',link:''});carregarNotificacoes();}setLoading(false); };
+  const handleDragOver = (index) => {
+    if(draggingIndex===null||draggingIndex===index)return;
+    const novas=[...aulasDoCurso];
+    const [item]=novas.splice(draggingIndex,1);
+    novas.splice(index,0,item);
+    setAulasDoCurso(novas);
+    setDraggingIndex(index);
+  };
+  const handleDrop = async () => {
+    setDraggingIndex(null);
+    await Promise.all(aulasDoCurso.map((aula,i)=>supabase.from('aulas').update({ordem:i+1}).eq('id',aula.id)));
+    carregarAulasDaMateria(materiaSelecionada);
+  };
+
+  const handleUploadPDF = async (e) => { e.preventDefault();setLoading(true);const{error}=await supabase.from('notificacoes').insert([novaNotificacao]);if(!error){setNovaNotificacao({titulo:'',mensagem:'',tipo:'sistema',link:''});carregarNotificacoes();}setLoading(false); };
   const confirmarDeletarNotificacao = (id) => { setModal({aberto:true,titulo:'Remover Comunicado',descricao:'Este comunicado será removido permanentemente.',onConfirmar:async()=>{setModalLoading(true);await supabase.from('notificacoes').delete().eq('id',id);setModal(m=>({...m,aberto:false}));setModalLoading(false);carregarNotificacoes();}}); };
   const marcarFeedbackLido = async (id,lido) => { await supabase.from('feedbacks').update({lido}).eq('id',id);setFeedbacks(prev=>prev.map(f=>f.id===id?{...f,lido}:f)); };
   const confirmarDeletarFeedback = (id) => { setModal({aberto:true,titulo:'Excluir Feedback',descricao:'Este feedback será removido permanentemente.',onConfirmar:async()=>{setModalLoading(true);await supabase.from('feedbacks').delete().eq('id',id);setModal(m=>({...m,aberto:false}));setModalLoading(false);setFeedbacks(prev=>prev.filter(f=>f.id!==id));}}); };
@@ -1183,9 +1290,62 @@ const AdminDashboard = () => {
 
         {/* ════ ABA AULAS ════ */}
         {aba==='aulas'&&(
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="md:col-span-1"><div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm sticky top-24"><h2 className="font-black text-slate-800 uppercase text-sm mb-6 flex items-center gap-2"><Plus size={18} className="text-[#4C1D95]"/>Nova Aula</h2><form onSubmit={salvarAula} className="space-y-3"><select className={inputClass} value={novaAula.curso_id} onChange={e=>{setNovaAula(a=>({...a,curso_id:e.target.value}));setCursoSelecionadoAulas(e.target.value);}} required><option value="">Selecione um curso...</option>{cursos.map(c=><option key={c.id} value={c.id}>{c.titulo}</option>)}</select><input placeholder="Título da Aula" className={inputClass} value={novaAula.titulo} onChange={e=>setNovaAula(a=>({...a,titulo:e.target.value}))} required/><textarea placeholder="Descrição da Aula" className={`${inputClass} min-h-[110px] resize-y`} value={novaAula.descricao} onChange={e=>setNovaAula(a=>({...a,descricao:e.target.value}))} rows={4}/><input placeholder="Link do Vídeo (YouTube)" className={inputClass} value={novaAula.video_url} onChange={e=>setNovaAula(a=>({...a,video_url:e.target.value}))} required/><input type="number" placeholder="Ordem" className={inputClass} value={novaAula.ordem} onChange={e=>setNovaAula(a=>({...a,ordem:Number(e.target.value)}))} min={1}/>{!novaAula.material_url?(<div className="relative group"><input type="file" accept=".pdf" onChange={handleUploadPDF} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" disabled={uploadingPDF}/><div className={`w-full p-4 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all ${uploadingPDF?'bg-slate-50 border-slate-200':'bg-orange-50/30 border-orange-200 group-hover:bg-orange-50'}`}>{uploadingPDF?<><Loader2 className="animate-spin text-orange-500 mb-1" size={18}/><span className="text-[10px] font-black text-orange-500 uppercase">Subindo...</span></>:<><UploadCloud className="text-orange-400 mb-1" size={22}/><span className="text-[10px] font-black text-orange-600 uppercase">Anexar Apostila PDF</span></>}</div></div>):(<div className="flex items-center justify-between p-4 bg-green-50 rounded-2xl border border-green-100"><div className="flex items-center gap-3"><FileText className="text-green-500 shrink-0" size={16}/><span className="text-[10px] font-bold text-green-700">Apostila anexada ✓</span></div><button type="button" onClick={()=>setNovaAula(a=>({...a,material_url:''}))} className="p-1 text-green-600 hover:text-red-500"><X size={14}/></button></div>)}<button disabled={loading||uploadingPDF} className="w-full py-4 bg-[#4C1D95] text-white rounded-2xl font-black text-xs uppercase shadow-lg flex items-center justify-center gap-2 hover:bg-[#4a22e0] transition-all">{loading?<Loader2 className="animate-spin" size={16}/>:'Publicar Aula'}</button></form></div></div>
-            <div className="md:col-span-2 space-y-4"><div className="flex items-center justify-between px-2"><h2 className="font-black text-slate-400 uppercase text-[10px] tracking-widest">{cursoSelecionadoAulas?`${aulasDoCurso.length} aulas`:'Selecione um curso'}</h2>{cursoSelecionadoAulas&&<span className="text-[9px] text-slate-300 font-bold flex items-center gap-1"><GripVertical size={10}/>Arraste para reordenar</span>}</div>{!cursoSelecionadoAulas?(<div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center"><BookOpen size={32} className="text-slate-200 mx-auto mb-3"/><p className="text-slate-400 text-sm font-bold">Selecione um curso no formulário ao lado.</p></div>):aulasDoCurso.length===0?(<div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center"><p className="text-slate-400 text-sm font-bold">Nenhuma aula neste curso ainda.</p></div>):(<div className="space-y-2">{aulasDoCurso.map((aula,index)=>(<AulaItem key={aula.id} aula={aula} index={index} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} onEditar={setAulaEditando} onDeletar={confirmarDeletarAula} editando={aulaEditando===aula.id} onSalvarEdicao={salvarEdicaoAula}/>))}</div>)}</div>
+          <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6">
+              <div className="flex items-center justify-between gap-4 mb-5">
+                <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-300">Academia</p><h2 className="font-black text-slate-800 text-lg">Estrutura do curso</h2><p className="text-xs text-slate-400 mt-1">Organize o conteúdo em matérias e depois em aulas.</p></div>
+                {cursoSelecionadoAulas&&<button type="button" onClick={()=>iniciarNovaMateria(cursoSelecionadoAulas)} className="px-4 py-3 bg-purple-50 text-[#4C1D95] rounded-2xl font-black text-[10px] uppercase flex items-center gap-2"><Plus size={14}/>Nova Matéria</button>}
+              </div>
+              <div className="flex flex-col md:flex-row gap-3">
+                <select className={inputClass} value={cursoSelecionadoAulas} onChange={e=>{const id=e.target.value;setCursoSelecionadoAulas(id);setMateriaSelecionada('');setNovaMateria({titulo:'',descricao:'',curso_id:id,ordem:1});setNovaAula(a=>({...a,curso_id:id,materia_id:'',ordem:1}));}}>
+                  <option value="">Selecione um curso...</option>{cursos.map(c=><option key={c.id} value={c.id}>{c.titulo}</option>)}
+                </select>
+                <select className={inputClass} value={materiaSelecionada} onChange={e=>{const id=e.target.value;setMateriaSelecionada(id);setNovaAula(a=>({...a,materia_id:id}));}} disabled={!cursoSelecionadoAulas||!materiasDoCurso.length}>
+                  <option value="">{materiasDoCurso.length?'Selecione uma matéria...':'Nenhuma matéria cadastrada'}</option>{materiasDoCurso.map(m=><option key={m.id} value={m.id}>{m.ordem}. {m.titulo}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {cursoSelecionadoAulas&&!materiasDoCurso.length&&<div className="bg-white rounded-[28px] border border-dashed border-purple-200 p-10 text-center"><BookOpen size={32} className="text-purple-200 mx-auto mb-3"/><h3 className="font-black text-slate-700">Este curso ainda não possui matérias</h3><p className="text-xs text-slate-400 mt-2 mb-5">Crie a primeira matéria para começar a organizar as aulas.</p><button type="button" onClick={()=>iniciarNovaMateria(cursoSelecionadoAulas)} className="px-5 py-3 bg-[#4C1D95] text-white rounded-2xl font-black text-[10px] uppercase"><Plus size={13} className="inline mr-2"/>Criar primeira matéria</button></div>}
+
+            {cursoSelecionadoAulas&&materiasDoCurso.length>0&&<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="space-y-4">
+                <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-4"><div><p className="text-[9px] font-black uppercase tracking-widest text-slate-300">Curso</p><h3 className="font-black text-slate-800 text-sm">Matérias</h3></div><span className="text-[9px] font-black text-slate-300 uppercase">{materiasDoCurso.length}</span></div>
+                  <div className="space-y-2">
+                    {materiasDoCurso.map((materia,index)=><div key={materia.id} className={`rounded-2xl border p-3 transition-all ${materiaSelecionada===materia.id?'border-purple-200 bg-purple-50':'border-slate-100 hover:border-slate-200'}`}>
+                      <button type="button" onClick={()=>{setMateriaSelecionada(materia.id);setNovaAula(a=>({...a,materia_id:materia.id,ordem:1}));}} className="w-full text-left"><div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black ${materiaSelecionada===materia.id?'bg-[#4C1D95] text-white':'bg-slate-100 text-slate-400'}`}>{index+1}</div><div className="min-w-0 flex-1"><p className="text-xs font-black text-slate-700 truncate">{materia.titulo}</p><p className="text-[9px] text-slate-400 mt-0.5 line-clamp-1">{materia.descricao||'Sem descrição'}</p></div></div></button>
+                      <div className="flex justify-end mt-2"><button type="button" onClick={()=>confirmarDeletarMateria(materia.id)} className="p-1.5 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={13}/></button></div>
+                    </div>)}
+                  </div>
+                </div>
+                <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm">
+                  <h3 className="font-black text-slate-800 uppercase text-xs mb-4 flex items-center gap-2"><Plus size={16} className="text-[#4C1D95]"/>Nova Matéria</h3>
+                  <form onSubmit={salvarMateria} className="space-y-3">
+                    <input placeholder="Nome da matéria" className={inputClass} value={novaMateria.titulo} onChange={e=>setNovaMateria(m=>({...m,titulo:e.target.value}))} required/>
+                    <textarea placeholder="Descrição da matéria (opcional)" className={inputClass} value={novaMateria.descricao} onChange={e=>setNovaMateria(m=>({...m,descricao:e.target.value}))}/>
+                    <input type="number" min={1} className={inputClass} value={novaMateria.ordem} onChange={e=>setNovaMateria(m=>({...m,ordem:Number(e.target.value)}))}/>
+                    <button disabled={loading||!novaMateria.curso_id} className="w-full py-3.5 bg-[#4C1D95] text-white rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2">{loading?<Loader2 className="animate-spin" size={14}/>:<><Plus size={13}/>Criar Matéria</>}</button>
+                  </form>
+                </div>
+              </div>
+
+              <div className="lg:col-span-2 space-y-4">
+                {!materiaSelecionada?<div className="bg-white rounded-[28px] border border-slate-100 p-14 text-center"><BookOpen size={34} className="text-slate-200 mx-auto mb-3"/><p className="text-slate-400 text-sm font-bold">Selecione uma matéria para gerenciar as aulas.</p></div>:<>
+                  <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between gap-4 mb-5"><div><p className="text-[9px] font-black uppercase tracking-widest text-slate-300">Matéria selecionada</p><h3 className="font-black text-slate-800 text-lg">{materiasDoCurso.find(m=>m.id===materiaSelecionada)?.titulo||'Matéria'}</h3></div><span className="text-[9px] text-slate-300 font-bold flex items-center gap-1"><GripVertical size={10}/>Arraste para reordenar</span></div>
+                    <form onSubmit={salvarAula} className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3"><input placeholder="Título da Aula" className={inputClass} value={novaAula.titulo} onChange={e=>setNovaAula(a=>({...a,titulo:e.target.value}))} required/><input placeholder="Link do Vídeo (YouTube)" className={inputClass} value={novaAula.video_url} onChange={e=>setNovaAula(a=>({...a,video_url:e.target.value}))} required/></div>
+                      <textarea placeholder="Descrição da Aula" className={inputClass} value={novaAula.descricao} onChange={e=>setNovaAula(a=>({...a,descricao:e.target.value}))} rows={4}/>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3"><input type="number" min={1} className={inputClass} value={novaAula.ordem} onChange={e=>setNovaAula(a=>({...a,ordem:Number(e.target.value)}))}/>{!novaAula.material_url?<div className="md:col-span-2 relative group"><input type="file" accept=".pdf" onChange={handleUploadPDF} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" disabled={uploadingPDF}/><div className="w-full p-3.5 border-2 border-dashed rounded-2xl flex items-center justify-center gap-2 bg-orange-50/30 border-orange-200">{uploadingPDF?<Loader2 className="animate-spin text-orange-500" size={18}/>:<UploadCloud className="text-orange-400" size={20}/>}<span className="text-[10px] font-black text-orange-600 uppercase">{uploadingPDF?'Subindo...':'Anexar Apostila PDF'}</span></div></div>:<div className="md:col-span-2 flex items-center justify-between p-3.5 bg-green-50 rounded-2xl border border-green-100"><div className="flex items-center gap-3"><FileText className="text-green-500" size={16}/><span className="text-[10px] font-bold text-green-700">Apostila anexada ✓</span></div><button type="button" onClick={()=>setNovaAula(a=>({...a,material_url:''}))} className="p-1 text-green-600"><X size={14}/></button></div>}</div>
+                      <button disabled={loading||uploadingPDF} className="w-full py-4 bg-[#4C1D95] text-white rounded-2xl font-black text-xs uppercase shadow-lg flex items-center justify-center gap-2">{loading?<Loader2 className="animate-spin" size={16}/>:<><Plus size={14}/>Publicar Aula</>}</button>
+                    </form>
+                  </div>
+                  <div className="flex items-center justify-between px-2"><h2 className="font-black text-slate-400 uppercase text-[10px] tracking-widest">{aulasDoCurso.length} aulas</h2></div>
+                  {aulasDoCurso.length===0?<div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center"><p className="text-slate-400 text-sm font-bold">Nenhuma aula nesta matéria ainda.</p></div>:<div className="space-y-2">{aulasDoCurso.map((aula,index)=><AulaItem key={aula.id} aula={aula} index={index} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} onEditar={setAulaEditando} onDeletar={confirmarDeletarAula} editando={aulaEditando===aula.id} onSalvarEdicao={salvarEdicaoAula}/>)}</div>}
+                </>}
+              </div>
+            </div>}
           </div>
         )}
 
