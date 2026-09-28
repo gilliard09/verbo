@@ -261,6 +261,7 @@ const Aulas = () => {
   const [dadosMateria, setDadosMateria] = useState(null);
   const [visualizarPDF, setVisualizarPDF] = useState(false);
   const [baixandoPDF, setBaixandoPDF] = useState(false);
+  const [cursoConcluido, setCursoConcluido] = useState(false);
 
   const [celebrando, setCelebrando] = useState(false);
   const [toastVisivel, setToastVisivel] = useState(false);
@@ -318,10 +319,12 @@ const Aulas = () => {
         .eq('user_id', user.id).eq('curso_id', cursoId).maybeSingle();
       setTemAcessoMatricula(matricula?.status === 'ativo');
 
-      let queryAulas = supabase.from('aulas').select('*').eq('curso_id', cursoId).order('ordem', { ascending: true });
-      if (materiaId) queryAulas = queryAulas.eq('materia_id', materiaId);
+      const { data: todasAulasCurso, error: erroAulas } = await supabase
+        .from('aulas')
+        .select('*')
+        .eq('curso_id', cursoId)
+        .order('ordem', { ascending: true });
 
-      const { data: listaAulas, error: erroAulas } = await queryAulas;
       if (erroAulas) throw erroAulas;
 
       const { data: progresso, error: erroProgresso } = await supabase.from('progresso_aulas')
@@ -330,6 +333,19 @@ const Aulas = () => {
         .eq('aulas.curso_id', cursoId);
 
       if (erroProgresso) throw erroProgresso;
+
+      // O certificado só é liberado quando todas as aulas do curso estiverem concluídas.
+      const aulasCurso = todasAulasCurso || [];
+      const progressoCursoIds = new Set((progresso || []).map(p => p.aula_id));
+      const cursoFoiConcluido =
+        aulasCurso.length > 0 &&
+        aulasCurso.every(aula => progressoCursoIds.has(aula.id));
+
+      setCursoConcluido(cursoFoiConcluido);
+
+      const listaAulas = materiaId
+        ? aulasCurso.filter(aula => aula.materia_id === materiaId)
+        : aulasCurso;
 
       const progressoFiltrado = materiaId
         ? (progresso || []).filter(p => p.aulas?.materia_id === materiaId)
@@ -684,7 +700,7 @@ const Aulas = () => {
               </div>
             </div>
 
-            {porcentagem === 100 && (
+            {cursoConcluido && (
               <div className="p-6 bg-gradient-to-br from-yellow-400 to-orange-500 m-4 rounded-[32px] text-white text-center shadow-lg">
                 <Trophy size={24} className="mx-auto mb-2" />
                 <h5 className="font-black text-xs uppercase italic tracking-tighter">Parabéns! Curso Concluído!</h5>
