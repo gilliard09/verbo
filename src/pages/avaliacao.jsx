@@ -189,6 +189,63 @@ const Avaliacao = () => {
               <button onClick={voltar} className="px-6 py-3 rounded-2xl bg-[#6D28D9] text-white text-xs font-black uppercase">Voltar para a matéria</button>
             </div>
           </section>
+
+          {Array.isArray(resultado.revisao) && resultado.revisao.length > 0 && (
+            <section className="mt-6">
+              <div className="mb-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#A78BFA]">Revisão</p>
+                <h2 className="mt-1 text-2xl font-black">Entenda suas respostas</h2>
+                <p className="mt-2 text-sm text-white/45">Veja o que você marcou, a resposta correta e a explicação de cada questão.</p>
+              </div>
+
+              <div className="space-y-4">
+                {resultado.revisao.map((questao, index) => {
+                  const marcada = (questao.alternativas || []).find(opcao => opcao.valor === questao.resposta_marcada);
+                  const correta = (questao.alternativas || []).find(opcao => opcao.valor === questao.resposta_correta);
+
+                  return (
+                    <article key={questao.questao_id} className={`rounded-[28px] border p-5 md:p-7 ${questao.correta ? 'border-emerald-500/20 bg-emerald-500/[0.04]' : 'border-orange-500/20 bg-orange-500/[0.04]'}`}>
+                      <div className="flex items-start gap-4">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${questao.correta ? 'bg-emerald-500/15 text-emerald-400' : 'bg-orange-500/15 text-orange-400'}`}>
+                          {questao.correta ? <CheckCircle size={18}/> : <CircleAlert size={18}/>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Questão {index + 1}</span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${questao.correta ? 'text-emerald-400' : 'text-orange-400'}`}>
+                              {questao.correta ? 'Correta' : 'Incorreta'}
+                            </span>
+                          </div>
+                          <h3 className="mt-2 text-base md:text-lg font-bold leading-6">{questao.enunciado}</h3>
+
+                          {marcada && (
+                            <div className="mt-5 rounded-2xl bg-black/20 border border-white/5 p-4">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-white/30">Sua resposta</p>
+                              <p className="mt-1 text-sm font-semibold text-white/75"><span className="text-[#A78BFA]">{marcada.valor}</span> — {marcada.texto}</p>
+                            </div>
+                          )}
+
+                          {!questao.correta && correta && (
+                            <div className="mt-3 rounded-2xl bg-emerald-500/[0.06] border border-emerald-500/10 p-4">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400/70">Resposta correta</p>
+                              <p className="mt-1 text-sm font-semibold text-emerald-300"><span className="text-emerald-400">{correta.valor}</span> — {correta.texto}</p>
+                            </div>
+                          )}
+
+                          {questao.explicacao && (
+                            <div className="mt-3 rounded-2xl bg-[#6D28D9]/10 border border-[#6D28D9]/20 p-4">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[#A78BFA]">Por que essa é a resposta?</p>
+                              <p className="mt-2 text-sm leading-6 text-white/65">{questao.explicacao}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         )}
       </main>
     </div>
