@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { usePlano } from '../hooks/usePlano';
 import { gerarCertificado } from '../utils/gerarCertificado';
 import { supabase } from '../supabaseClient';
@@ -249,6 +249,7 @@ const LeitorPDF = ({ url, titulo }) => {
 // ─── Componente principal ──────────────────────────────────────────────────────
 const Aulas = () => {
   const { cursoId, materiaId } = useParams();
+  const navigate = useNavigate();
   const { isAssinante, temAcessoCurso, loading: loadingPlano } = usePlano();
   const [aulas, setAulas] = useState([]);
   const [aulaAtiva, setAulaAtiva] = useState(null);
@@ -549,9 +550,9 @@ const Aulas = () => {
               type="button"
               onClick={() => {
                 if (materiaId) {
-                  window.location.href = `/cursos/${cursoId}`;
+                  navigate(`/cursos/${cursoId}`);
                 } else {
-                  window.location.href = '/cursos';
+                  navigate('/cursos');
                 }
               }}
               className="p-2 rounded-xl transition-all hover:bg-white/10 text-white"
