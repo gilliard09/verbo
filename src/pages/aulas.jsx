@@ -478,6 +478,22 @@ const Aulas = () => {
         await supabase.from('progresso_aulas').insert({ user_id: user.id, aula_id: aulaId });
         concluidas.add(aulaId);
         dispararCelebracao(aulaConcluidaTitulo);
+
+        // Atualiza o status do curso imediatamente, sem depender de recarregar a página.
+        // Como esta tela pode estar filtrada por matéria, buscamos o total do curso.
+        const { data: todasAulasCurso } = await supabase
+          .from('aulas')
+          .select('id')
+          .eq('curso_id', cursoId);
+
+        const progressoIdsAtualizados = new Set(concluidas);
+        progressoIdsAtualizados.add(aulaId);
+
+        const cursoFoiConcluidoAgora =
+          (todasAulasCurso || []).length > 0 &&
+          (todasAulasCurso || []).every(aula => progressoIdsAtualizados.has(aula.id));
+
+        setCursoConcluido(cursoFoiConcluidoAgora);
         setTimeout(irParaProxima, 1200);
       }
       setConcluidas(new Set(concluidas));
@@ -529,13 +545,20 @@ const Aulas = () => {
       <header className="sticky top-0 z-[100] border-b backdrop-blur-md bg-black/80 border-white/5 transition-all">
         <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link
-              to={materiaId ? `/cursos/${cursoId}/materia/${materiaId}` : `/cursos/${cursoId}`}
+            <button
+              type="button"
+              onClick={() => {
+                if (materiaId) {
+                  window.location.href = `/cursos/${cursoId}`;
+                } else {
+                  window.location.href = '/cursos';
+                }
+              }}
               className="p-2 rounded-xl transition-all hover:bg-white/10 text-white"
-              aria-label="Voltar"
+              aria-label={materiaId ? 'Voltar para matérias' : 'Voltar para cursos'}
             >
               <ChevronLeft size={20} />
-            </Link>
+            </button>
             <div className="flex flex-col min-w-0">
               <span className="text-[9px] font-black uppercase tracking-widest text-[#A78BFA] truncate max-w-[260px]">
                 {dadosMateria?.titulo || dadosCurso?.titulo || 'Academia Verbo'}
