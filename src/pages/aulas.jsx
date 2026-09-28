@@ -513,12 +513,20 @@ const Aulas = () => {
       <header className="sticky top-0 z-[100] border-b backdrop-blur-md bg-black/80 border-white/5 transition-all">
         <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/cursos" className="p-2 rounded-xl transition-all hover:bg-white/10 text-white">
+            <Link
+              to={materiaId ? `/cursos/${cursoId}/materia/${materiaId}` : `/cursos/${cursoId}`}
+              className="p-2 rounded-xl transition-all hover:bg-white/10 text-white"
+              aria-label="Voltar"
+            >
               <ChevronLeft size={20} />
             </Link>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Aula Ativa</span>
-              <h1 className="text-xs font-black uppercase truncate max-w-[200px] text-white">{aulaAtiva?.titulo}</h1>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#A78BFA] truncate max-w-[260px]">
+                {dadosMateria?.titulo || dadosCurso?.titulo || 'Academia Verbo'}
+              </span>
+              <h1 className="text-xs font-black uppercase truncate max-w-[280px] text-white">
+                {aulaAtiva?.titulo}
+              </h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
