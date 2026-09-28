@@ -248,7 +248,7 @@ const LeitorPDF = ({ url, titulo }) => {
 
 // ─── Componente principal ──────────────────────────────────────────────────────
 const Aulas = () => {
-  const { cursoId } = useParams();
+  const { cursoId, materiaId } = useParams();
   const { isAssinante, temAcessoCurso, loading: loadingPlano } = usePlano();
   const [aulas, setAulas] = useState([]);
   const [aulaAtiva, setAulaAtiva] = useState(null);
@@ -258,6 +258,7 @@ const Aulas = () => {
   const [btnLoading, setBtnLoading] = useState(false);
   const [modoCinema, setModoCinema] = useState(false);
   const [dadosCurso, setDadosCurso] = useState(null);
+  const [dadosMateria, setDadosMateria] = useState(null);
   const [visualizarPDF, setVisualizarPDF] = useState(false);
   const [baixandoPDF, setBaixandoPDF] = useState(false);
 
@@ -269,7 +270,7 @@ const Aulas = () => {
   const aulaAtivaRef = useRef(null);
   const sidebarRef = useRef(null);
 
-  useEffect(() => { carregarConteudo(); }, [cursoId]);
+  useEffect(() => { carregarConteudo(); }, [cursoId, materiaId]);
   useEffect(() => { setVisualizarPDF(false); }, [aulaAtiva]);
   useEffect(() => {
     if (aulaAtivaRef.current && sidebarRef.current) {
@@ -289,10 +290,22 @@ const Aulas = () => {
   }, [aulas, aulaAtiva]);
 
   const carregarConteudo = async () => {
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: cursoBD } = await supabase.from('cursos').select('*').eq('id', cursoId).single();
+      const { data: cursoBD, error: erroCurso } = await supabase.from('cursos').select('*').eq('id', cursoId).single();
+      if (erroCurso) throw erroCurso;
       setDadosCurso(cursoBD);
+
+      let materiaBD = null;
+      if (materiaId) {
+        const { data, error } = await supabase.from('materias').select('*').eq('id', materiaId).eq('curso_id', cursoId).single();
+        if (error) throw error;
+        materiaBD = data;
+        setDadosMateria(data);
+      } else {
+        setDadosMateria(null);
+      }
 
       const nomeAluno = user.user_metadata?.full_name || user.email.split('@')[0];
       const nomeCurso = cursoBD?.titulo || 'Curso Ministerial';
@@ -301,26 +314,38 @@ const Aulas = () => {
       const codigoValidacao = `VERBO-${hash}-${new Date().getFullYear()}`;
       dadosCertificadoRef.current = { nomeAluno, nomeCurso, dataFormatada, codigoValidacao };
 
-      const { data: matricula } = await supabase
-        .from('matriculas').select('status')
+      const { data: matricula } = await supabase.from('matriculas').select('status')
         .eq('user_id', user.id).eq('curso_id', cursoId).maybeSingle();
-
       setTemAcessoMatricula(matricula?.status === 'ativo');
 
-      const { data: listaAulas } = await supabase
-        .from('aulas').select('*').eq('curso_id', cursoId).order('ordem', { ascending: true });
+      let queryAulas = supabase.from('aulas').select('*').eq('curso_id', cursoId).order('ordem', { ascending: true });
+      if (materiaId) queryAulas = queryAulas.eq('materia_id', materiaId);
 
-      const { data: progresso } = await supabase
-        .from('progresso_aulas').select('aula_id, aulas!inner(curso_id)')
-        .eq('user_id', user.id).eq('aulas.curso_id', cursoId);
+      const { data: listaAulas, error: erroAulas } = await queryAulas;
+      if (erroAulas) throw erroAulas;
+
+      const { data: progresso, error: erroProgresso } = await supabase.from('progresso_aulas')
+        .select('aula_id, aulas!inner(curso_id, materia_id)')
+        .eq('user_id', user.id)
+        .eq('aulas.curso_id', cursoId);
+
+      if (erroProgresso) throw erroProgresso;
+
+      const progressoFiltrado = materiaId
+        ? (progresso || []).filter(p => p.aulas?.materia_id === materiaId)
+        : (progresso || []);
 
       if (listaAulas?.length > 0) {
         setAulas(listaAulas);
         setAulaAtiva(listaAulas[0]);
-        setConcluidas(new Set(progresso?.map(p => p.aula_id)));
+        setConcluidas(new Set(progressoFiltrado.map(p => p.aula_id)));
+      } else {
+        setAulas([]);
+        setAulaAtiva(null);
+        setConcluidas(new Set());
       }
     } catch (error) {
-      console.error(error);
+      console.error('Erro ao carregar aulas:', error);
     } finally {
       setLoading(false);
     }
