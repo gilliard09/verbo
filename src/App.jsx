@@ -17,6 +17,8 @@ const LandingPage = lazy(() => import('./pages/landingpage'));
 const Cursos = lazy(() => import('./pages/cursos'));
 const Curso = lazy(() => import('./pages/curso'));
 const Aulas = lazy(() => import('./pages/aulas'));
+const Avaliacao = lazy(() => import('./pages/avaliacao'));
+const AdminAvaliacoes = lazy(() => import('./pages/adminavaliacoes'));
 const AdminDashboard = lazy(() => import('./pages/admindashboard'));
 const Upgrade = lazy(() => import('./pages/upgrade'));
 const Devocionais = lazy(() => import('./pages/Devocionais'));
@@ -103,8 +105,10 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/cursos" element={session ? <Cursos /> : <Navigate to="/login" replace />} />
             <Route path="/cursos/:cursoId/materia/:materiaId" element={session ? <Aulas /> : <Navigate to="/login" replace />} />
+            <Route path="/cursos/:cursoId/materia/:materiaId/avaliacao/:avaliacaoId" element={session ? <Avaliacao /> : <Navigate to="/login" replace />} />
             <Route path="/cursos/:cursoId" element={session ? <Curso /> : <Navigate to="/login" replace />} />
             <Route path="/admin" element={session ? <RotaAdmin><AdminDashboard /></RotaAdmin> : <Navigate to="/login" replace />} />
+            <Route path="/admin/avaliacoes" element={session ? <RotaAdmin><AdminAvaliacoes /></RotaAdmin> : <Navigate to="/login" replace />} />
             <Route path="/biblioteca" element={session ? <Biblioteca /> : <Navigate to="/login" replace />} />
             <Route path="/editor" element={session ? <Editor /> : <Navigate to="/login" replace />} />
             <Route path="/editor/:id" element={session ? <Editor /> : <Navigate to="/login" replace />} />
