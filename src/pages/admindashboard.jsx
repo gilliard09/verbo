@@ -1042,6 +1042,7 @@ const AdminDashboard = () => {
   };
 
   const carregarCursos = async () => { setFetching(true); const{data}=await supabase.from('cursos').select('*').order('created_at',{ascending:false}); if(data)setCursos(data); setFetching(false); };
+
   const carregarMateriasDoCurso = async (cursoId) => {
     const { data, error } = await supabase.from('materias').select('*').eq('curso_id',cursoId).order('ordem',{ascending:true});
     if(error){console.error(error);return;}
@@ -1063,6 +1064,53 @@ const AdminDashboard = () => {
     setNovaAula(a=>({...a,materia_id:materiaId,ordem:(data?.length || 0)+1}));
   };
 
+  const salvarCurso = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.from('cursos').insert([novoCurso]);
+    if(!error){
+      setNovoCurso({titulo:'',descricao:'',capa_url:'',hotmart_id:'',checkout_url:''});
+      await carregarCursos();
+      carregarAnalytics();
+    } else alert(error.message || 'Erro ao criar curso.');
+    setLoading(false);
+  };
+
+  const iniciarEdicaoCurso = (curso) => {
+    setCursoEditando(curso.id);
+    setDadosEdicaoCurso({
+      titulo:curso.titulo,
+      descricao:curso.descricao,
+      capa_url:curso.capa_url,
+      hotmart_id:curso.hotmart_id,
+      checkout_url:curso.checkout_url
+    });
+  };
+
+  const salvarEdicaoCurso = async (id) => {
+    setLoading(true);
+    const { error } = await supabase.from('cursos').update(dadosEdicaoCurso).eq('id',id);
+    if(error) alert(error.message || 'Erro ao salvar curso.');
+    else { setCursoEditando(null); await carregarCursos(); }
+    setLoading(false);
+  };
+
+  const confirmarDeletarCurso = (id) => {
+    setModal({
+      aberto:true,
+      titulo:'Excluir Curso',
+      descricao:'Isso removerá o curso, todas as aulas e matrículas associadas permanentemente.',
+      onConfirmar:async()=>{
+        setModalLoading(true);
+        const { error } = await supabase.from('cursos').delete().eq('id',id);
+        if(error) alert(error.message || 'Não foi possível excluir o curso.');
+        setModal(m=>({...m,aberto:false}));
+        setModalLoading(false);
+        carregarCursos();
+      }
+    });
+  };
+
   const salvarMateria = async (e) => {
     e.preventDefault();
     if(!novaMateria.curso_id)return;
@@ -1074,10 +1122,11 @@ const AdminDashboard = () => {
       ordem:novaMateria.ordem
     }]).select().single();
     if(error){alert(error.message || 'Erro ao criar matéria.');setLoading(false);return;}
-    setNovaMateria({titulo:'',descricao:'',curso_id:novaMateria.curso_id,ordem:Number(data.ordem)+1});
-    await carregarMateriasDoCurso(novaMateria.curso_id);
+    const cursoId=novaMateria.curso_id;
+    setNovaMateria({titulo:'',descricao:'',curso_id:cursoId,ordem:Number(data.ordem)+1});
+    await carregarMateriasDoCurso(cursoId);
     setMateriaSelecionada(data.id);
-    setNovaAula(a=>({...a,curso_id:novaMateria.curso_id,materia_id:data.id,ordem:1}));
+    setNovaAula(a=>({...a,curso_id:cursoId,materia_id:data.id,ordem:1}));
     setLoading(false);
   };
 
@@ -1141,7 +1190,7 @@ const AdminDashboard = () => {
   const handleDragOver = (index) => {
     if(draggingIndex===null||draggingIndex===index)return;
     const novas=[...aulasDoCurso];
-    const [item]=novas.splice(draggingIndex,1);
+    const[item]=novas.splice(draggingIndex,1);
     novas.splice(index,0,item);
     setAulasDoCurso(novas);
     setDraggingIndex(index);
@@ -1152,7 +1201,31 @@ const AdminDashboard = () => {
     carregarAulasDaMateria(materiaSelecionada);
   };
 
-  const handleUploadPDF = async (e) => { e.preventDefault();setLoading(true);const{error}=await supabase.from('notificacoes').insert([novaNotificacao]);if(!error){setNovaNotificacao({titulo:'',mensagem:'',tipo:'sistema',link:''});carregarNotificacoes();}setLoading(false); };
+  const handleUploadPDF = async (e) => {
+    const file=e.target.files[0];
+    if(!file||file.type!=='application/pdf'){alert("Envie apenas arquivos PDF.");return;}
+    setUploadingPDF(true);
+    try{
+      const fileName=`${Math.random()}.pdf`;
+      const{error}=await supabase.storage.from('materiais').upload(fileName,file);
+      if(error)throw error;
+      const{data}=supabase.storage.from('materiais').getPublicUrl(fileName);
+      setNovaAula(a=>({...a,material_url:data.publicUrl}));
+    }catch{alert("Erro ao subir arquivo.");}
+    finally{setUploadingPDF(false);}
+  };
+
+  const salvarNotificacao = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const{error}=await supabase.from('notificacoes').insert([novaNotificacao]);
+    if(!error){
+      setNovaNotificacao({titulo:'',mensagem:'',tipo:'sistema',link:''});
+      carregarNotificacoes();
+    } else alert(error.message || 'Erro ao publicar comunicado.');
+    setLoading(false);
+  };
+
   const confirmarDeletarNotificacao = (id) => { setModal({aberto:true,titulo:'Remover Comunicado',descricao:'Este comunicado será removido permanentemente.',onConfirmar:async()=>{setModalLoading(true);await supabase.from('notificacoes').delete().eq('id',id);setModal(m=>({...m,aberto:false}));setModalLoading(false);carregarNotificacoes();}}); };
   const marcarFeedbackLido = async (id,lido) => { await supabase.from('feedbacks').update({lido}).eq('id',id);setFeedbacks(prev=>prev.map(f=>f.id===id?{...f,lido}:f)); };
   const confirmarDeletarFeedback = (id) => { setModal({aberto:true,titulo:'Excluir Feedback',descricao:'Este feedback será removido permanentemente.',onConfirmar:async()=>{setModalLoading(true);await supabase.from('feedbacks').delete().eq('id',id);setModal(m=>({...m,aberto:false}));setModalLoading(false);setFeedbacks(prev=>prev.filter(f=>f.id!==id));}}); };
