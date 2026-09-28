@@ -250,79 +250,79 @@ const Curso = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {materias.map((materia, index) => (
-              <button
-                key={materia.id}
-                onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}`)}
-                className="group text-left rounded-[28px] border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/15 transition-all overflow-hidden active:scale-[0.99]"
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="w-11 h-11 rounded-2xl bg-[#6D28D9]/20 text-[#A78BFA] flex items-center justify-center shrink-0">
-                      <BookOpen size={20} />
-                    </div>
-                    {materia.concluida && (
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase">
-                        <CheckCircle size={11} /> Concluída
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="mt-5 text-[9px] font-black uppercase tracking-[0.2em] text-white/25">
-                    Matéria {index + 1}
-                  </p>
-                  <h3 className="mt-1 text-lg font-black leading-tight text-white group-hover:text-[#C4B5FD] transition-colors">
-                    {materia.titulo}
-                  </h3>
-
-                  {materia.descricao && (
-                    <p className="mt-2 text-xs leading-5 text-white/40 line-clamp-2">
-                      {materia.descricao}
-                    </p>
-                  )}
-
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold text-white/35">
-                        {materia.totalAulas} aula{materia.totalAulas !== 1 ? 's' : ''}
-                      </span>
-                      <span className="text-[10px] font-black text-white/45">
-                        {materia.porcentagem}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${materia.concluida ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6]'}`}
-                        style={{ width: `${materia.porcentagem}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
-                    {materia.aulasFeitas > 0 ? 'Continuar matéria' : 'Começar matéria'}
-                  </span>
-                  <PlayCircle size={18} className="text-white/30 group-hover:text-[#A78BFA] transition-colors" />
-                </div>
-              </button>
-
-              {materia.concluida && materia.avaliacao && (
+              <div key={materia.id}>
                 <button
-                  onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}/avaliacao/${materia.avaliacao.id}`)}
-                  className="-mt-2 mx-2 px-4 py-3 rounded-b-[20px] border border-t-0 border-purple-500/20 bg-[#6D28D9]/10 text-left hover:bg-[#6D28D9]/20 transition-all"
+                  onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}`)}
+                  className="group w-full text-left rounded-[28px] border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/15 transition-all overflow-hidden active:scale-[0.99]"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-[#A78BFA]">Avaliação final</p>
-                      <p className="text-xs font-black text-white mt-1">
-                        {materia.ultimaTentativa?.aprovado ? `Aprovado · ${materia.ultimaTentativa.nota}%` : 'Validar conhecimento'}
-                      </p>
+                  <div className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="w-11 h-11 rounded-2xl bg-[#6D28D9]/20 text-[#A78BFA] flex items-center justify-center shrink-0">
+                        <BookOpen size={20} />
+                      </div>
+                      {materia.concluida && (
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase">
+                          <CheckCircle size={11} /> Concluída
+                        </span>
+                      )}
                     </div>
-                    <CheckCircle size={16} className={materia.ultimaTentativa?.aprovado ? 'text-emerald-400' : 'text-[#A78BFA]'} />
+
+                    <p className="mt-5 text-[9px] font-black uppercase tracking-[0.2em] text-white/25">
+                      Matéria {index + 1}
+                    </p>
+                    <h3 className="mt-1 text-lg font-black leading-tight text-white group-hover:text-[#C4B5FD] transition-colors">
+                      {materia.titulo}
+                    </h3>
+
+                    {materia.descricao && (
+                      <p className="mt-2 text-xs leading-5 text-white/40 line-clamp-2">
+                        {materia.descricao}
+                      </p>
+                    )}
+
+                    <div className="mt-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-white/35">
+                          {materia.totalAulas} aula{materia.totalAulas !== 1 ? 's' : ''}
+                        </span>
+                        <span className="text-[10px] font-black text-white/45">
+                          {materia.porcentagem}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${materia.concluida ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6]'}`}
+                          style={{ width: `${materia.porcentagem}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                      {materia.aulasFeitas > 0 ? 'Continuar matéria' : 'Começar matéria'}
+                    </span>
+                    <PlayCircle size={18} className="text-white/30 group-hover:text-[#A78BFA] transition-colors" />
                   </div>
                 </button>
-              )}
-              </button>
+
+                {materia.concluida && materia.avaliacao && (
+                  <button
+                    onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}/avaliacao/${materia.avaliacao.id}`)}
+                    className="-mt-2 mx-2 w-[calc(100%-1rem)] px-4 py-3 rounded-b-[20px] border border-t-0 border-purple-500/20 bg-[#6D28D9]/10 text-left hover:bg-[#6D28D9]/20 transition-all"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#A78BFA]">Avaliação final</p>
+                        <p className="text-xs font-black text-white mt-1">
+                          {materia.ultimaTentativa?.aprovado ? `Aprovado · ${materia.ultimaTentativa.nota}%` : 'Validar conhecimento'}
+                        </p>
+                      </div>
+                      <CheckCircle size={16} className={materia.ultimaTentativa?.aprovado ? 'text-emerald-400' : 'text-[#A78BFA]'} />
+                    </div>
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         )}
