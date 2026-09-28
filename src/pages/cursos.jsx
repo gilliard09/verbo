@@ -22,16 +22,17 @@ const CursosNew = () => {
   const [statsProgresso, setStatsProgresso] = useState({
     cursosIniciados: 0,
     certificados: 0,
+    aulasConcluidas: 0,
     diasConsecutivos: 7,
     horasEstudadas: 12
   });
 
-  // ─── Conquistas simuladas (pode ser expandido para banco de dados) ───
+  // ─── Conquistas ──────────────────────────────────────────────────────────
   const conquistas = [
-    { id: 1, nome: 'Primeiro Passo', descricao: 'Iniciou seu primeiro curso', icon: '🎯', desbloqueada: true },
-    { id: 2, nome: 'Sequência Sagrada', descricao: '7 dias consecutivos', icon: '🔥', desbloqueada: true },
-    { id: 3, nome: 'Mestre em Formação', descricao: '50 aulas assistidas', icon: '📚', desbloqueada: false },
-    { id: 4, nome: 'Certificado Premium', descricao: 'Primeiro certificado obtido', icon: '🏅', desbloqueada: false }
+    { id: 1, nome: 'Primeiro Passo', descricao: 'Iniciou seu primeiro curso', icon: '🎯', desbloqueada: statsProgresso.cursosIniciados > 0 },
+    { id: 2, nome: 'Sequência Sagrada', descricao: '7 dias consecutivos', icon: '🔥', desbloqueada: statsProgresso.diasConsecutivos >= 7 },
+    { id: 3, nome: 'Mestre em Formação', descricao: '50 aulas assistidas', icon: '📚', desbloqueada: statsProgresso.aulasConcluidas >= 50 },
+    { id: 4, nome: 'Certificado Premium', descricao: 'Primeiro certificado obtido', icon: '🏅', desbloqueada: statsProgresso.certificados > 0 }
   ];
 
   // ─── Novidades da Academia ───
@@ -109,6 +110,7 @@ const CursosNew = () => {
       setStatsProgresso({
         cursosIniciados,
         certificados,
+        aulasConcluidas: (progresso || []).length,
         diasConsecutivos: 7,
         horasEstudadas: cursosIniciados * 2
       });
