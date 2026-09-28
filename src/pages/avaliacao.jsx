@@ -173,7 +173,8 @@ const Avaliacao = () => {
             </button>
           </>
         ) : (
-          <section className="rounded-[36px] border border-white/10 bg-gradient-to-br from-[#17131F] to-[#0D0B12] p-8 md:p-12 text-center">
+          <>
+            <section className="rounded-[36px] border border-white/10 bg-gradient-to-br from-[#17131F] to-[#0D0B12] p-8 md:p-12 text-center">
             {resultado.aprovado ? <Trophy size={52} className="mx-auto text-yellow-400 mb-5"/> : <CircleAlert size={52} className="mx-auto text-orange-400 mb-5"/>}
             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#A78BFA]">Resultado</p>
             <h2 className="mt-2 text-4xl md:text-6xl font-black">{resultado.nota}%</h2>
@@ -246,6 +247,7 @@ const Avaliacao = () => {
               </div>
             </section>
           )}
+          </>
         )}
       </main>
     </div>
