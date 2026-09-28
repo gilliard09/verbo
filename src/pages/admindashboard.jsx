@@ -750,6 +750,9 @@ const AdminDashboard = () => {
       case 'devocionais':
         carregarDevocionais();
         break;
+      case 'avaliacoes':
+        navigate('/admin/avaliacoes');
+        break;
       default:
         break;
     }
@@ -1267,7 +1270,7 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-2"><div className={`p-2 rounded-xl ${aba==='analytics'?'bg-purple-500 text-white':'bg-[#4C1D95] text-white'}`}><Database size={18}/></div><h1 className={`font-black text-lg uppercase italic hidden sm:block ${aba==='analytics'?'text-white':'text-slate-800'}`}>Gestão Verbo</h1></div>
           </div>
           <div className={`flex p-1 rounded-2xl gap-1 overflow-x-auto ${aba==='analytics'?'bg-white/5 border border-white/10':'bg-slate-100'}`}>
-            {[{id:'analytics',label:'Analytics'},{id:'cursos',label:'Cursos'},{id:'aulas',label:'Aulas'},{id:'comunicados',label:'Avisos'},{id:'feedbacks',label:feedbacksNaoLidos>0?`Feedbacks (${feedbacksNaoLidos})`:'Feedbacks'},{id:'devocionais',label:'Devocionais'}].map(tab=>(
+            {[{id:'analytics',label:'Analytics'},{id:'cursos',label:'Cursos'},{id:'aulas',label:'Aulas'},{id:'comunicados',label:'Avisos'},{id:'feedbacks',label:feedbacksNaoLidos>0?`Feedbacks (${feedbacksNaoLidos})`:'Feedbacks'},{id:'avaliacoes',label:'Avaliações'},{id:'devocionais',label:'Devocionais'}].map(tab=>(
               <button key={tab.id} onClick={()=>setAba(tab.id)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap transition-all ${aba===tab.id?aba==='analytics'?'bg-purple-600 text-white':'bg-white text-[#4C1D95] shadow-sm':tab.id==='feedbacks'&&feedbacksNaoLidos>0?'text-yellow-500 hover:text-yellow-600':'text-gray-500 hover:text-gray-700'}`}>{tab.label}</button>
             ))}
           </div>
