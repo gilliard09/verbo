@@ -14,6 +14,7 @@ const Curso = () => {
 
   const [curso, setCurso] = useState(null);
   const [materias, setMaterias] = useState([]);
+  const [avaliacoes, setAvaliacoes] = useState([]);
   const [temMatricula, setTemMatricula] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(false);
@@ -33,7 +34,9 @@ const Curso = () => {
         { data: cursoBD, error: erroCurso },
         { data: matricula },
         { data: materiasBD, error: erroMaterias },
-        { data: progresso }
+        { data: progresso },
+        { data: avaliacoesBD, error: erroAvaliacoes },
+        { data: tentativasBD, error: erroTentativas }
       ] = await Promise.all([
         supabase.from('cursos').select('*').eq('id', cursoId).single(),
         supabase.from('matriculas').select('status')
@@ -43,14 +46,19 @@ const Curso = () => {
         supabase.from('progresso_aulas')
           .select('aula_id, aulas!inner(materia_id, curso_id)')
           .eq('user_id', user?.id)
-          .eq('aulas.curso_id', cursoId)
+          .eq('aulas.curso_id', cursoId),
+        supabase.from('avaliacoes').select('id,materia_id,titulo,nota_minima,ativa').eq('ativa', true),
+        supabase.from('tentativas_avaliacao').select('avaliacao_id,nota,aprovado,concluida_em').eq('user_id', user?.id).order('concluida_em', { ascending: false })
       ]);
 
       if (erroCurso) throw erroCurso;
       if (erroMaterias) throw erroMaterias;
+      if (erroAvaliacoes) throw erroAvaliacoes;
+      if (erroTentativas) throw erroTentativas;
 
       setCurso(cursoBD);
       setTemMatricula(matricula?.status === 'ativo');
+      setAvaliacoes(avaliacoesBD || []);
 
       const progressoPorMateria = (progresso || []).reduce((acc, item) => {
         const materiaId = item.aulas?.materia_id;
@@ -74,8 +82,15 @@ const Curso = () => {
             ? Math.round((aulasFeitas / totalAulas) * 100)
             : 0;
 
+          const avaliacao = (avaliacoesBD || []).find(a => a.materia_id === materia.id) || null;
+          const ultimaTentativa = avaliacao
+            ? (tentativasBD || []).find(t => t.avaliacao_id === avaliacao.id) || null
+            : null;
+
           return {
             ...materia,
+            avaliacao,
+            ultimaTentativa,
             totalAulas,
             aulasFeitas,
             porcentagem,
@@ -289,6 +304,24 @@ const Curso = () => {
                   </span>
                   <PlayCircle size={18} className="text-white/30 group-hover:text-[#A78BFA] transition-colors" />
                 </div>
+              </button>
+
+              {materia.concluida && materia.avaliacao && (
+                <button
+                  onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}/avaliacao/${materia.avaliacao.id}`)}
+                  className="-mt-2 mx-2 px-4 py-3 rounded-b-[20px] border border-t-0 border-purple-500/20 bg-[#6D28D9]/10 text-left hover:bg-[#6D28D9]/20 transition-all"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-[#A78BFA]">Avaliação final</p>
+                      <p className="text-xs font-black text-white mt-1">
+                        {materia.ultimaTentativa?.aprovado ? `Aprovado · ${materia.ultimaTentativa.nota}%` : 'Validar conhecimento'}
+                      </p>
+                    </div>
+                    <CheckCircle size={16} className={materia.ultimaTentativa?.aprovado ? 'text-emerald-400' : 'text-[#A78BFA]'} />
+                  </div>
+                </button>
+              )}
               </button>
             ))}
           </div>
