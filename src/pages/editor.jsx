@@ -45,10 +45,10 @@ const CONTEUDO_DEGRAU = {
   },
 };
 
-// Recursos da Academia Verbo mostrados no convite de upgrade do Fundador —
-// Fundador não é o destino, é o primeiro degrau. Esse modal é independente
-// do fluxo de degraus acima: dispara pra quem já é assinante Fundador,
-// focado em cursos (o que o Fundador não tem acesso), não em "sermões
+// Recursos da Academia Verbo mostrados no convite de upgrade do Essencial —
+// Essencial não é o destino, é o primeiro degrau. Esse modal é independente
+// do fluxo de degraus acima: dispara pra quem já é assinante Essencial,
+// focado em cursos (o que o Essencial não tem acesso), não em "sermões
 // ilimitados" (que ele já tem).
 const RECURSOS_ACADEMIA = [
   'Teologia Fundamental',
@@ -122,7 +122,7 @@ const Toast = ({ visivel, tipo, mensagem, onFechar }) => (
 //
 // `estado.tipo === 'degrau'` → usuário gratuito, mensagem escala com
 // `estado.degrau` (1, 2 ou 3).
-// `estado.tipo === 'fundador'` → usuário já assinante Fundador, convite
+// `estado.tipo === 'fundador'` → usuário já assinante Essencial, convite
 // pra migrar pro Plus com foco na Academia (cursos), não em sermões
 // ilimitados (que ele já tem).
 const ModalUpgrade = ({ estado, onFechar, onVerPlanos }) => {
@@ -171,7 +171,7 @@ const ModalUpgrade = ({ estado, onFechar, onVerPlanos }) => {
               onClick={onFechar}
               className="w-full text-slate-400 text-xs font-bold py-2"
             >
-              Continuar como Fundador
+              Continuar como Essencial
             </button>
           </div>
         </div>
@@ -250,20 +250,20 @@ const Editor = () => {
   const params = new URLSearchParams(location.search);
   const tipo   = params.get('tipo');
 
-  // ── CORREÇÃO (Fundador vs Plus) ─────────────────────────────────────────
+  // ── CORREÇÃO (Essencial vs Plus) ─────────────────────────────────────────
   // Antes usávamos só `isPlus` para decidir se mostra o modal/indicador de
-  // upgrade. Isso é um bug: Fundador é plano PAGO (entrada, R$9,90) mas
+  // upgrade. Isso é um bug: Essencial é plano PAGO (entrada, R$9,90) mas
   // isPlus = false para ele — então o modal de "vire assinante" continuava
-  // aparecendo pra quem já é assinante Fundador. `isAssinante` (Fundador OU
+  // aparecendo pra quem já é assinante Essencial. `isAssinante` (Essencial OU
   // Plus) é o conceito certo pro fluxo de degraus (gratuito → pagante).
-  // `isFundador` especificamente é usado agora pro convite Fundador → Plus.
-  const { isPlus, isFundador, isAssinante } = usePlano();
+  // `isEssencial` especificamente é usado agora pro convite Essencial → Plus.
+  const { isPlus, isEssencial, isAssinante } = usePlano();
   const podeCreiarSermao = true;
   const sermoesRestantes = null;
   const percentualUso    = 0;
 
   // NOVO: um único estado cobre as duas famílias de modal (degrau do
-  // usuário gratuito e convite Fundador→Plus) — { aberto, tipo, degrau }
+  // usuário gratuito e convite Essencial→Plus) — { aberto, tipo, degrau }
   const [modalUpgrade, setModalUpgrade] = useState({ aberto: false, tipo: null, degrau: null });
 
   const [titulo,     setTitulo]     = useState('');
@@ -315,10 +315,10 @@ const Editor = () => {
   //     usando o degrau mais alto ainda não visto — cobre tanto o caminho
   //     normal (cria 1, depois 2, depois 3) quanto saltos (ex.: sync
   //     offline que grava vários de uma vez).
-  //  2) Usuários Fundador: convite pontual pra migrar pro Plus, focado na
+  //  2) Usuários Essencial: convite pontual pra migrar pro Plus, focado na
   //     Academia Verbo. Independente do fluxo de degraus — dispara mesmo
   //     em edição de sermão existente, não só em criação, porque um
-  //     Fundador já ativo pode não criar sermões novos com frequência.
+  //     Essencial já ativo pode não criar sermões novos com frequência.
   // Retorna true se algum modal foi exibido, pra decidir se segura a
   // navegação de volta ao Dashboard.
   const verificarModalUpgrade = useCallback(async (user, eraSermaoNovo, totalSermoesUsuarioParam) => {
@@ -359,9 +359,9 @@ const Editor = () => {
         }
       }
 
-      // ── Público 2: Fundador — convite pra virar Plus. Fundador não é
+      // ── Público 2: Essencial — convite pra virar Plus. Essencial não é
       // o destino, é o primeiro degrau. ──
-      if (isFundador && !perfil?.viu_upgrade_fundador) {
+      if (isEssencial && !perfil?.viu_upgrade_fundador) {
         await supabase
           .from('profiles')
           .update({ viu_upgrade_fundador: true, viu_upgrade_fundador_em: new Date().toISOString() })
@@ -375,7 +375,7 @@ const Editor = () => {
       // Se a checagem falhar, segue o fluxo normal sem modal
     }
     return false;
-  }, [isAssinante, isFundador, logEventoModal]);
+  }, [isAssinante, isEssencial, logEventoModal]);
 
   // ── Estrutura guiada pelo tipo ────────────────────────────────────────────
   useEffect(() => {
@@ -600,7 +600,7 @@ Oração:`
 
           // ── Gatilho de upgrade contextual ──────────────────────────────
           // Verifica os dois públicos (degraus do gratuito + convite
-          // Fundador→Plus) numa única checagem. Se algum modal for
+          // Essencial→Plus) numa única checagem. Se algum modal for
           // exibido, segura a navegação — o modal decide o próximo passo.
           const modalMostrado = await verificarModalUpgrade(user, eraSermaoNovo, totalSermoesUsuario);
           if (modalMostrado) {
