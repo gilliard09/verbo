@@ -13,11 +13,11 @@ import {
 } from 'lucide-react';
 
 // ─── Benefícios por plano ─────────────────────────────────────────────────────
-const BENEFICIOS_FUNDADOR = [
-  { icon: Infinity,       texto: 'Sermões ilimitados' },
-  { icon: GraduationCap,  texto: 'Curso para Pregadores — incluso' },
-  { icon: Mic2,           texto: 'Modo púlpito sem restrições' },
-  { icon: WifiOff,        texto: 'Acesso offline ilimitado' },
+const BENEFICIOS_ESSENCIAL = [
+  { icon: BookOpen,       texto: '10 sermões por mês' },
+  { icon: Sparkles,       texto: 'Recursos intermediários' },
+  { icon: Mic2,           texto: 'Modo Púlpito' },
+  { icon: GraduationCap,  texto: 'Acesso parcial à Academia' },
 ];
 
 const BENEFICIOS_PLUS = [
@@ -42,7 +42,7 @@ const Upgrade = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const motivo = searchParams.get('motivo');
-  const { plano, isFundador, isPlus, isAssinante } = usePlano();
+  const { plano, isEssencial, isPlus, isAssinante } = usePlano();
   const [planoSelecionado, setPlanoSelecionado] = useState('plus');
   const [emailUsuario, setEmailUsuario] = useState('');
 
@@ -65,8 +65,8 @@ const Upgrade = () => {
     );
   }
 
-  // Já é Fundador — só mostra opção de upgrade para Plus
-  if (isFundador) {
+  // Já é Essencial — só mostra opção de upgrade para Plus
+  if (isEssencial) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] pb-12" style={{ fontFamily: "'Poppins', sans-serif" }}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');`}</style>
@@ -82,7 +82,7 @@ const Upgrade = () => {
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-amber-50 px-4 py-2 rounded-full mb-4">
               <Crown size={13} className="text-amber-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Você é Fundador</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Você é Essencial</span>
             </div>
             <h2 className="text-2xl font-black tracking-tight text-slate-900 leading-tight mb-2">
               Quer acesso a<br />todos os cursos?
@@ -123,7 +123,7 @@ const Upgrade = () => {
             <Sparkles size={18} /> FAZER UPGRADE — R$47/mês
           </button>
           <button onClick={() => navigate('/')} className="w-full text-center text-xs text-slate-400 font-bold py-3 hover:text-slate-600 transition-colors">
-            Continuar com o plano Fundador
+            Continuar com o plano Essencial
           </button>
         </div>
       </div>
@@ -131,10 +131,10 @@ const Upgrade = () => {
   }
 
   // ─── Tela principal — usuário gratuito ───────────────────────────────────────
-  const beneficiosAtivos = planoSelecionado === 'fundador' ? BENEFICIOS_FUNDADOR : BENEFICIOS_PLUS;
+  const beneficiosAtivos = planoSelecionado === 'essencial' ? BENEFICIOS_ESSENCIAL : BENEFICIOS_PLUS;
 
   const irParaCheckout = () => {
-    const base = planoSelecionado === 'fundador' ? CHECKOUT_FUNDADOR : CHECKOUT_PLUS;
+    const base = planoSelecionado === 'essencial' ? CHECKOUT_FUNDADOR : CHECKOUT_PLUS;
     const url = emailUsuario ? `${base}?email=${encodeURIComponent(emailUsuario)}` : base;
     window.open(url, '_blank');
   };
@@ -180,20 +180,20 @@ const Upgrade = () => {
 
           {/* Plano FUNDADOR */}
           <button
-            onClick={() => setPlanoSelecionado('fundador')}
+            onClick={() => setPlanoSelecionado('essencial')}
             className={`w-full text-left p-5 rounded-[24px] border-2 transition-all relative overflow-hidden ${
-              planoSelecionado === 'fundador' ? 'border-[#4C1D95] bg-purple-50' : 'border-slate-200 bg-white'
+              planoSelecionado === 'essencial' ? 'border-[#4C1D95] bg-purple-50' : 'border-slate-200 bg-white'
             }`}
           >
             <div className="absolute top-4 right-4 bg-amber-400 text-amber-900 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
-              <Crown size={9} /> Fundador
+              <Crown size={9} /> Essencial
             </div>
             <div className="flex items-start gap-3 pr-20">
-              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${planoSelecionado === 'fundador' ? 'border-[#4C1D95] bg-[#4C1D95]' : 'border-slate-300'}`}>
-                {planoSelecionado === 'fundador' && <div className="w-2 h-2 bg-white rounded-full" />}
+              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${planoSelecionado === 'essencial' ? 'border-[#4C1D95] bg-[#4C1D95]' : 'border-slate-300'}`}>
+                {planoSelecionado === 'essencial' && <div className="w-2 h-2 bg-white rounded-full" />}
               </div>
               <div>
-                <p className="font-black text-slate-800">Plano Fundador</p>
+                <p className="font-black text-slate-800">Plano Essencial</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">App completo + Curso para Pregadores incluso.</p>
                 <div className="flex items-baseline gap-1 mt-3">
                   <span className="text-3xl font-black text-[#4C1D95]">R$9,90</span>
@@ -236,7 +236,7 @@ const Upgrade = () => {
         {/* Benefícios do plano selecionado */}
         <div className="bg-white border border-slate-100 rounded-[24px] p-5 mb-8">
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">
-            Incluído no plano {planoSelecionado === 'fundador' ? 'Fundador' : 'Plus'}
+            Incluído no plano {planoSelecionado === 'essencial' ? 'Essencial' : 'Plus'}
           </p>
           <div className="space-y-3">
             {beneficiosAtivos.map((b, i) => (
@@ -248,7 +248,7 @@ const Upgrade = () => {
               </div>
             ))}
           </div>
-          {planoSelecionado === 'fundador' && (
+          {planoSelecionado === 'essencial' && (
             <div className="mt-4 pt-4 border-t border-slate-100">
               <p className="text-[10px] text-slate-400 font-bold">
                 ✦ Para acesso a <span className="text-[#4C1D95]">todos os cursos</span>, escolha o Plano Plus.
@@ -263,7 +263,7 @@ const Upgrade = () => {
           className="w-full bg-[#4C1D95] text-white py-5 rounded-[24px] font-black text-base shadow-xl shadow-purple-200 hover:bg-[#3a15b0] active:scale-95 transition-all flex items-center justify-center gap-2 mb-4"
         >
           <Sparkles size={18} />
-          {planoSelecionado === 'fundador' ? 'GARANTIR PREÇO FUNDADOR — R$9,90/mês' : 'ASSINAR AGORA — R$47/mês'}
+          {planoSelecionado === 'essencial' ? 'GARANTIR PREÇO FUNDADOR — R$9,90/mês' : 'ASSINAR AGORA — R$47/mês'}
         </button>
 
         <div className="flex justify-center gap-5 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8">
