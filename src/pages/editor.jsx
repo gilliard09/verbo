@@ -87,11 +87,13 @@ const useAlturaVisivel = () => {
     atualizar();
 
     if (vv) {
+      // O scroll da visualViewport pode acontecer durante a rolagem do
+      // textarea no iOS. Atualizar estado + transform do container nesse
+      // momento causa o efeito de "tremor". Para o editor, reagimos à
+      // mudança de tamanho (teclado), não ao scroll.
       vv.addEventListener('resize', atualizar);
-      vv.addEventListener('scroll', atualizar);
       return () => {
         vv.removeEventListener('resize', atualizar);
-        vv.removeEventListener('scroll', atualizar);
       };
     }
     window.addEventListener('resize', atualizar);
