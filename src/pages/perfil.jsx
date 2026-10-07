@@ -283,7 +283,7 @@ const Perfil = ({ onOpenBiblia }) => {
 
   useEffect(() => {
     if (view === 'boletim') carregarBoletim();
-  }, [view]);
+  }, [view, isAssinante]);
 
   const carregarBoletim = async () => {
     if (!isAssinante) return;
