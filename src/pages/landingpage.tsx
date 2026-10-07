@@ -27,7 +27,7 @@ const BENEFICIOS = [
 
 const SCREENSHOTS = [
   {
-    src: '/screenshot-editor.webp',
+    src: '/screenshot-editor.jpg',
     alt: 'Editor de Sermões',
     titulo: 'Editor de Sermões',
     desc: 'Escreva, formate e organize seus esboços com auto-save automático.',
@@ -35,7 +35,7 @@ const SCREENSHOTS = [
     badge: 'Editor',
   },
   {
-    src: '/screenshot-dashboard.webp',
+    src: '/screenshot-dashboard.jpg',
     alt: 'Dashboard com sermões salvos',
     titulo: 'Todos os seus sermões organizados',
     desc: 'Acesse qualquer sermão salvo, com título, referência bíblica e histórico.',
@@ -43,15 +43,15 @@ const SCREENSHOTS = [
     badge: 'Dashboard',
   },
   {
-    src: '/screenshot-pulpito-temas.webp',
-    alt: 'Modo Púlpito com temas e fontes',
-    titulo: 'Modo Púlpito completo',
-    desc: 'Temas claro, sépia e escuro. Fonte ajustável. Tela que não apaga.',
-    icon: PenTool,
-    badge: 'Modo Púlpito',
+    src: '/screenshot-academia.png',
+    alt: 'Academia Verbo',
+    titulo: 'Academia Verbo',
+    desc: 'Cursos de teologia e pregação com progresso salvo.',
+    icon: BookOpen,
+    badge: 'Academia',
   },
   {
-    src: '/screenshot-pulpito-limpo.webp',
+    src: '/screenshot-pulpito-limpo.jpg',
     alt: 'Modo Púlpito com barra escondida',
     titulo: 'Foco total na mensagem',
     desc: 'Esconda a barra e pregue sem distração. Apenas a Palavra na tela.',
@@ -548,8 +548,8 @@ const LandingPageOptimized = () => {
                       <img
                         src={s.src}
                         alt={s.alt}
-                        width="640"
-                        height="1138"
+                        width="720"
+                        height="1200"
                         loading="lazy"
                         decoding="async"
                         className="w-full h-full object-cover"
