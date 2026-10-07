@@ -808,7 +808,7 @@ const AdminDashboard = () => {
         { data: todosCursos },
         { data: todasAulas },
       ] = await Promise.all([
-        supabase.from('profiles').select('id,full_name,email,plano,created_at').order('created_at', { ascending: false }),
+        supabase.from('profiles').select('id,full_name,email,plano,created_at').in('plano', ['fundador', 'plus']).order('created_at', { ascending: false }),
         supabase.from('matriculas').select('user_id,curso_id,status,concluido_em'),
         supabase.from('progresso_aulas').select('user_id,aula_id,concluida_em'),
         supabase.from('tentativas_avaliacao').select('user_id,avaliacao_id,nota,acertos,total_questoes,aprovado,concluida_em'),
