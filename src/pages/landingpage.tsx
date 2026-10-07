@@ -542,9 +542,9 @@ const LandingPageOptimized = () => {
               const Icon = s.icon;
               return (
                 <div key={s.src} className="transition-all duration-500">
-                  <div className="relative max-w-xs mx-auto">
-                    {/* Frame do celular/tela */}
-                    <div className="screenshot-frame rounded-[40px] overflow-hidden border-8 border-white bg-slate-100 aspect-[9/16] flex items-center justify-center relative">
+                  <div className="relative max-w-4xl mx-auto">
+                    {/* Frame responsivo — preserva a imagem inteira sem cortes */}
+                    <div className="screenshot-frame rounded-[28px] md:rounded-[36px] overflow-hidden border-4 md:border-8 border-white bg-slate-100 flex items-center justify-center relative">
                       <img
                         src={s.src}
                         alt={s.alt}
@@ -552,7 +552,7 @@ const LandingPageOptimized = () => {
                         height="1200"
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-cover"
+                        className="block w-full h-auto object-contain"
                       />
                     </div>
 
