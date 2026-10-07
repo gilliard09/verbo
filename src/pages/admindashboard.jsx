@@ -8,7 +8,7 @@ import {
   Edit3, Check, GripVertical, AlertTriangle, UserCheck, BookOpen,
   Activity, MessageSquare, Star, Bug, Smile, Eye, EyeOff, Trophy, Flag,
   Zap, RefreshCw, DollarSign, Percent, TrendingDown, Calendar, List, Eye as EyeIcon,
-  ZoomIn, ZoomOut,
+  ZoomIn, ZoomOut, GraduationCap, Search,
 } from 'lucide-react';
 
 const LS_METAS_KEY = 'verbo_admin_metas_celebradas';
@@ -671,6 +671,10 @@ const AdminDashboard = () => {
   const [cursos, setCursos] = useState([]);
   const [notificacoes, setNotificacoes] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
+  const [alunos, setAlunos] = useState([]);
+  const [alunosLoading, setAlunosLoading] = useState(false);
+  const [alunoSelecionado, setAlunoSelecionado] = useState(null);
+  const [buscaAluno, setBuscaAluno] = useState('');
   const [filtroFeedback, setFiltroFeedback] = useState('todos');
   const [mostrarLidos, setMostrarLidos] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -744,8 +748,8 @@ const AdminDashboard = () => {
       case 'comunicados':
         carregarNotificacoes();
         break;
-      case 'feedbacks':
-        carregarFeedbacks();
+      case 'alunos':
+        carregarAlunos();
         break;
       case 'devocionais':
         carregarDevocionais();
@@ -789,6 +793,52 @@ const AdminDashboard = () => {
       .order('plano_atualizado_em', { ascending: false })
       .limit(8);
     if (data) setMatriculasRecentes(data);
+  };
+
+
+  const carregarAlunos = async () => {
+    setAlunosLoading(true);
+    try {
+      const [
+        { data: perfis, error: perfisError },
+        { data: matriculas },
+        { data: progresso },
+        { data: tentativas },
+        { data: todosCursos },
+        { data: todasAulas },
+      ] = await Promise.all([
+        supabase.from('profiles').select('id,full_name,email,plano,created_at').order('created_at', { ascending: false }),
+        supabase.from('matriculas').select('user_id,curso_id,status,concluido_em'),
+        supabase.from('progresso_aulas').select('user_id,aula_id,concluida_em'),
+        supabase.from('tentativas_avaliacao').select('user_id,avaliacao_id,nota,acertos,total_questoes,aprovado,concluida_em'),
+        supabase.from('cursos').select('id,titulo'),
+        supabase.from('aulas').select('id,curso_id,materia_id'),
+      ]);
+      if (perfisError) throw perfisError;
+      const cursoMap = Object.fromEntries((todosCursos || []).map(c => [c.id, c]));
+      const aulaMap = Object.fromEntries((todasAulas || []).map(a => [a.id, a]));
+      const matriculasPorAluno = {}, progressoPorAluno = {}, tentativasPorAluno = {};
+      (matriculas || []).forEach(m => (matriculasPorAluno[m.user_id] ||= []).push(m));
+      (progresso || []).forEach(p => (progressoPorAluno[p.user_id] ||= []).push(p));
+      (tentativas || []).forEach(t => (tentativasPorAluno[t.user_id] ||= []).push(t));
+      setAlunos((perfis || []).map(p => {
+        const mats = matriculasPorAluno[p.id] || [], progs = progressoPorAluno[p.id] || [], tent = tentativasPorAluno[p.id] || [];
+        const cursoIds = [...new Set([...mats.map(m => m.curso_id), ...progs.map(x => aulaMap[x.aula_id]?.curso_id).filter(Boolean)])];
+        const cursosAluno = cursoIds.map(cursoId => {
+          const aulasCurso = (todasAulas || []).filter(a => a.curso_id === cursoId);
+          const concluidas = progs.filter(x => aulaMap[x.aula_id]?.curso_id === cursoId && x.concluida_em).length;
+          const matricula = mats.find(m => m.curso_id === cursoId);
+          return { id: cursoId, titulo: cursoMap[cursoId]?.titulo || 'Curso', totalAulas: aulasCurso.length, concluidas, progresso: aulasCurso.length ? Math.round((concluidas / aulasCurso.length) * 100) : 0, concluido: !!matricula?.concluido_em };
+        });
+        const notas = tent.map(t => Number(t.nota)).filter(Number.isFinite);
+        return { ...p, cursos: cursosAluno, totalCursos: cursosAluno.length, cursosConcluidos: cursosAluno.filter(c => c.concluido).length, aulasConcluidas: progs.filter(x => x.concluida_em).length, media: notas.length ? Math.round((notas.reduce((s,n) => s+n,0) / notas.length) * 10) / 10 : null, tentativas: tent.length, aprovadas: tent.filter(t => t.aprovado).length, tentativasDetalhes: tent };
+      }));
+    } catch (error) {
+      console.error('Erro ao carregar alunos:', error);
+      setAlunos([]);
+    } finally {
+      setAlunosLoading(false);
+    }
   };
 
   const carregarFeedbacks = async () => {
@@ -1270,7 +1320,7 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-2"><div className={`p-2 rounded-xl ${aba==='analytics'?'bg-purple-500 text-white':'bg-[#4C1D95] text-white'}`}><Database size={18}/></div><h1 className={`font-black text-lg uppercase italic hidden sm:block ${aba==='analytics'?'text-white':'text-slate-800'}`}>Gestão Verbo</h1></div>
           </div>
           <div className={`flex p-1 rounded-2xl gap-1 overflow-x-auto ${aba==='analytics'?'bg-white/5 border border-white/10':'bg-slate-100'}`}>
-            {[{id:'analytics',label:'Analytics'},{id:'cursos',label:'Cursos'},{id:'aulas',label:'Aulas'},{id:'comunicados',label:'Avisos'},{id:'feedbacks',label:feedbacksNaoLidos>0?`Feedbacks (${feedbacksNaoLidos})`:'Feedbacks'},{id:'avaliacoes',label:'Avaliações'},{id:'devocionais',label:'Devocionais'}].map(tab=>(
+            {[{id:'analytics',label:'Analytics'},{id:'cursos',label:'Cursos'},{id:'aulas',label:'Aulas'},{id:'comunicados',label:'Avisos'},{id:'alunos',label:'Alunos'},{id:'avaliacoes',label:'Avaliações'},{id:'devocionais',label:'Devocionais'}].map(tab=>(
               <button key={tab.id} onClick={()=>setAba(tab.id)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap transition-all ${aba===tab.id?aba==='analytics'?'bg-purple-600 text-white':'bg-white text-[#4C1D95] shadow-sm':tab.id==='feedbacks'&&feedbacksNaoLidos>0?'text-yellow-500 hover:text-yellow-600':'text-gray-500 hover:text-gray-700'}`}>{tab.label}</button>
             ))}
           </div>
@@ -1433,12 +1483,39 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ════ ABA FEEDBACKS ════ */}
-        {aba==='feedbacks'&&(
-          <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[{label:'Total',value:feedbacks.length,cor:'bg-slate-100 text-slate-600'},{label:'Não lidos',value:feedbacksNaoLidos,cor:'bg-yellow-50 text-yellow-600'},{label:'Nota média',value:`${mediaEstrelas}★`,cor:'bg-green-50 text-green-600'},{label:'Bugs',value:feedbacks.filter(f=>f.tipo==='bug').length,cor:'bg-red-50 text-red-500'}].map(({label,value,cor})=>(<div key={label} className={`${cor} rounded-[20px] p-4 text-center`}><p className="text-2xl font-black">{value}</p><p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-70">{label}</p></div>))}</div>
-            <div className="flex flex-wrap items-center gap-3"><div className="flex gap-2 flex-wrap">{['todos','sugestao','bug','elogio','outro'].map(tipo=>(<button key={tipo} onClick={()=>setFiltroFeedback(tipo)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${filtroFeedback===tipo?'bg-[#4C1D95] text-white':'bg-white border border-slate-200 text-slate-500 hover:border-[#4C1D95] hover:text-[#4C1D95]'}`}>{tipo==='todos'?'Todos':tipoConfig[tipo]?.label}</button>))}</div><button onClick={()=>setMostrarLidos(v=>!v)} className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${mostrarLidos?'bg-slate-800 text-white border-slate-800':'bg-white border-slate-200 text-slate-500'}`}>{mostrarLidos?<><EyeOff size={12}/>Ocultar lidos</>:<><Eye size={12}/>Mostrar lidos</>}</button></div>
-            {feedbacksFiltrados.length===0?(<div className="bg-white rounded-[28px] border border-slate-100 p-16 text-center"><MessageSquare size={36} className="text-slate-200 mx-auto mb-3"/><p className="text-slate-400 text-sm font-bold">{feedbacks.length===0?'Nenhum feedback recebido ainda.':'Nenhum feedback neste filtro.'}</p></div>):(<div className="space-y-3">{feedbacksFiltrados.map(fb=><FeedbackCard key={fb.id} fb={fb} onMarcarLido={marcarFeedbackLido} onDeletar={confirmarDeletarFeedback}/>)}</div>)}
+
+        {/* ════ ABA ALUNOS ════ */}
+        {aba==='alunos'&&(
+          <div className="space-y-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-300">Academia</p><h2 className="text-2xl font-black text-slate-800 tracking-tight">Alunos</h2><p className="text-xs text-slate-400 mt-1">Acompanhe cursos, progresso e notas das avaliações.</p></div>
+              <div className="relative w-full md:w-72"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300"/><input value={buscaAluno} onChange={e=>setBuscaAluno(e.target.value)} placeholder="Buscar aluno..." className="w-full bg-white border border-slate-100 rounded-2xl py-3 pl-9 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-purple-100"/></div>
+            </div>
+            {alunosLoading ? <div className="bg-white rounded-[28px] border border-slate-100 p-16 flex justify-center"><Loader2 className="animate-spin text-[#4C1D95]" size={28}/></div> : (
+              <div className="bg-white rounded-[28px] border border-slate-100 overflow-hidden">
+                <div className="grid grid-cols-[1.6fr_.7fr_.8fr_.7fr_.7fr] gap-3 px-5 py-3 bg-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-400"><span>Aluno</span><span>Cursos</span><span>Progresso</span><span>Média</span><span>Concluídos</span></div>
+                {alunos.filter(a=>!buscaAluno.trim()||((a.full_name||'')+' '+(a.email||'')).toLowerCase().includes(buscaAluno.toLowerCase())).map(aluno=>(
+                  <button key={aluno.id} onClick={()=>setAlunoSelecionado(aluno)} className="w-full text-left grid grid-cols-[1.6fr_.7fr_.8fr_.7fr_.7fr] gap-3 px-5 py-4 border-t border-slate-50 hover:bg-purple-50/40 transition-all items-center">
+                    <div className="min-w-0"><p className="text-xs font-black text-slate-700 truncate">{aluno.full_name||'Sem nome'}</p><p className="text-[10px] text-slate-400 truncate">{aluno.email||'—'}</p></div>
+                    <span className="text-xs font-black text-slate-600">{aluno.totalCursos}</span>
+                    <div><span className="text-[9px] font-black text-slate-400">{aluno.aulasConcluidas} aulas</span><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1"><div className="h-full bg-[#4C1D95] rounded-full" style={{width:Math.min(100,aluno.cursos.reduce((s,c)=>s+c.progresso,0)/(aluno.cursos.length||1))+'%'}}/></div></div>
+                    <span className="text-xs font-black text-slate-700">{aluno.media!==null?aluno.media:'—'}</span><span className="text-xs font-black text-emerald-600">{aluno.cursosConcluidos}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {alunoSelecionado&&(
+              <div className="bg-white rounded-[28px] border border-purple-100 p-6 shadow-sm">
+                <div className="flex items-start justify-between gap-4 mb-6"><div><p className="text-[9px] font-black uppercase tracking-widest text-purple-400">Boletim do aluno</p><h3 className="text-xl font-black text-slate-800 mt-1">{alunoSelecionado.full_name||'Sem nome'}</h3><p className="text-xs text-slate-400">{alunoSelecionado.email}</p></div><button onClick={()=>setAlunoSelecionado(null)} className="p-2 rounded-xl bg-slate-50 text-slate-400"><X size={16}/></button></div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                  <div className="bg-purple-50 rounded-2xl p-4"><p className="text-xl font-black text-[#4C1D95]">{alunoSelecionado.totalCursos}</p><p className="text-[9px] font-black uppercase text-purple-400">Cursos</p></div>
+                  <div className="bg-emerald-50 rounded-2xl p-4"><p className="text-xl font-black text-emerald-600">{alunoSelecionado.cursosConcluidos}</p><p className="text-[9px] font-black uppercase text-emerald-400">Concluídos</p></div>
+                  <div className="bg-blue-50 rounded-2xl p-4"><p className="text-xl font-black text-blue-600">{alunoSelecionado.tentativas}</p><p className="text-[9px] font-black uppercase text-blue-400">Avaliações</p></div>
+                  <div className="bg-amber-50 rounded-2xl p-4"><p className="text-xl font-black text-amber-600">{alunoSelecionado.media!==null?alunoSelecionado.media:'—'}</p><p className="text-[9px] font-black uppercase text-amber-400">Média</p></div>
+                </div>
+                <div className="space-y-3">{alunoSelecionado.cursos.map(c=><div key={c.id} className="border border-slate-100 rounded-2xl p-4"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-sm font-black text-slate-700">{c.titulo}</p><p className="text-[10px] text-slate-400">{c.concluidas}/{c.totalAulas} aulas concluídas</p></div><span className={"text-[9px] font-black uppercase px-2.5 py-1 rounded-full "+(c.concluido?'bg-emerald-50 text-emerald-600':'bg-slate-100 text-slate-500')}>{c.concluido?'Concluído':c.progresso+'%'}</span></div><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-[#4C1D95]" style={{width:c.progresso+'%'}}/></div></div>)}</div>
+              </div>
+            )}
           </div>
         )}
 
