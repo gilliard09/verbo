@@ -12,7 +12,7 @@ import {
   MessageSquare, Star, Bug, Smile,
   LayoutDashboard, Mail, Lock, Eye, EyeOff,
   PenTool, BookOpen, TrendingUp, Award, AlertTriangle,
-  Crown, Zap, Book, ZoomIn, ZoomOut, Check
+  Crown, Zap, Book, ZoomIn, ZoomOut, Check, GraduationCap
 } from 'lucide-react';
 
 const AVATAR_MAX_MB = 8;
@@ -235,7 +235,7 @@ const Perfil = ({ onOpenBiblia }) => {
   const cardRef = useRef(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-  const { plano, isFundador, isPlus } = usePlano();
+  const { plano, isFundador, isPlus, isAssinante } = usePlano();
 
   // Navegação por querystring (?view=dados) em vez de estado puro — assim o
   // botão/gesto de voltar do celular volta para o menu do Perfil em vez de
@@ -252,10 +252,7 @@ const Perfil = ({ onOpenBiblia }) => {
   const [downloading, setDownloading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
-  const [feedback, setFeedback] = useState({ tipo: 'sugestao', estrelas: 5, mensagem: '' });
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
-  const [feedbackSucesso, setFeedbackSucesso] = useState(false);
-  const [erroFeedback, setErroFeedback] = useState('');
+  const [boletim, setBoletim] = useState({ cursos: [], loading: false, erro: '' });
   const [success, setSuccess] = useState(false);
   const [erro, setErro] = useState('');
   const [modalLogout, setModalLogout] = useState(false);
@@ -283,6 +280,69 @@ const Perfil = ({ onOpenBiblia }) => {
   const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 
   useEffect(() => { getProfile(); }, []);
+
+  useEffect(() => {
+    if (view === 'boletim') carregarBoletim();
+  }, [view]);
+
+  const carregarBoletim = async () => {
+    if (!isAssinante) return;
+    setBoletim({ cursos: [], loading: true, erro: '' });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [
+        { data: matriculas, error: matriculasError },
+        { data: progresso, error: progressoError },
+        { data: cursos },
+        { data: materias },
+        { data: aulas },
+        { data: avaliacoes },
+        { data: tentativas },
+      ] = await Promise.all([
+        supabase.from('matriculas').select('curso_id,status,concluido_em,certificado_emitido').eq('user_id', user.id),
+        supabase.from('progresso_aulas').select('aula_id,concluida_em').eq('user_id', user.id),
+        supabase.from('cursos').select('id,titulo,descricao,capa_url'),
+        supabase.from('materias').select('id,curso_id,titulo,ordem').order('ordem', { ascending: true }),
+        supabase.from('aulas').select('id,curso_id,materia_id,ordem'),
+        supabase.from('avaliacoes').select('id,materia_id,titulo,nota_minima'),
+        supabase.from('tentativas_avaliacao').select('avaliacao_id,nota,aprovado,acertos,total_questoes,concluida_em').eq('user_id', user.id).order('concluida_em', { ascending: false }),
+      ]);
+      if (matriculasError || progressoError) throw matriculasError || progressoError;
+
+      const matriculaMap = Object.fromEntries((matriculas || []).map(m => [m.curso_id, m]));
+      const concluidaMap = Object.fromEntries((progresso || []).filter(p => p.concluida_em).map(p => [p.aula_id, true]));
+      const avaliacaoMap = Object.fromEntries((avaliacoes || []).map(a => [a.id, a]));
+      const tentativasPorAvaliacao = {};
+      (tentativas || []).forEach(t => (tentativasPorAvaliacao[t.avaliacao_id] ||= []).push(t));
+
+      const cursosComAtividade = new Set([
+        ...(matriculas || []).map(m => m.curso_id),
+        ...(progresso || []).map(p => aulas?.find(a => a.id === p.aula_id)?.curso_id).filter(Boolean),
+      ]);
+
+      const resultado = (cursos || []).filter(c => cursosComAtividade.has(c.id)).map(curso => {
+        const materiasCurso = (materias || []).filter(m => m.curso_id === curso.id).map(materia => {
+          const aulasMateria = (aulas || []).filter(a => a.materia_id === materia.id);
+          const concluidas = aulasMateria.filter(a => concluidaMap[a.id]).length;
+          const avaliacao = (avaliacoes || []).find(a => a.materia_id === materia.id);
+          const tentativasMateria = avaliacao ? (tentativasPorAvaliacao[avaliacao.id] || []) : [];
+          const melhorTentativa = tentativasMateria.length ? tentativasMateria.reduce((best, t) => Number(t.nota) > Number(best.nota) ? t : best, tentativasMateria[0]) : null;
+          const materiaConcluida = aulasMateria.length > 0 && concluidas === aulasMateria.length;
+          return { ...materia, totalAulas: aulasMateria.length, concluidas, progresso: aulasMateria.length ? Math.round((concluidas / aulasMateria.length) * 100) : 0, concluida: materiaConcluida, avaliacao: avaliacao ? { ...avaliacao, nota: melhorTentativa?.nota ?? null, aprovado: melhorTentativa?.aprovado ?? false, tentativas: tentativasMateria.length } : null };
+        });
+        const aulasCurso = (aulas || []).filter(a => a.curso_id === curso.id);
+        const aulasConcluidas = aulasCurso.filter(a => concluidaMap[a.id]).length;
+        const matricula = matriculaMap[curso.id];
+        const cursoConcluido = !!matricula?.concluido_em || (aulasCurso.length > 0 && aulasConcluidas === aulasCurso.length);
+        return { ...curso, materias: materiasCurso, aulasConcluidas, totalAulas: aulasCurso.length, progresso: aulasCurso.length ? Math.round((aulasConcluidas / aulasCurso.length) * 100) : 0, concluido: cursoConcluido, certificado: !!matricula?.certificado_emitido };
+      });
+      setBoletim({ cursos: resultado, loading: false, erro: '' });
+    } catch (error) {
+      console.error('Erro ao carregar boletim:', error);
+      setBoletim({ cursos: [], loading: false, erro: 'Não foi possível carregar seu boletim agora.' });
+    }
+  };
 
   async function getProfile() {
     try {
@@ -418,28 +478,6 @@ const Perfil = ({ onOpenBiblia }) => {
       link.download = `Convite-Verbo-${perfil.nome.split(' ')[0]}.png`;
       link.click();
     } catch (err) { console.error(err); } finally { setDownloading(false); }
-  };
-
-  const enviarFeedback = async () => {
-    if (!feedback.mensagem.trim()) return;
-    setFeedbackLoading(true);
-    setErroFeedback('');
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from('feedbacks').insert({
-        user_id: user?.id, email: user?.email,
-        tipo: feedback.tipo, estrelas: feedback.estrelas, mensagem: feedback.mensagem.trim(),
-      });
-      if (error) throw error;
-      setFeedbackSucesso(true);
-      setFeedback({ tipo: 'sugestao', estrelas: 5, mensagem: '' });
-      setTimeout(() => { setFeedbackSucesso(false); setView('menu'); }, 2500);
-    } catch (e) {
-      console.error('Erro ao enviar feedback:', e);
-      setErroFeedback('Não foi possível enviar seu feedback agora. Tente novamente em instantes.');
-    } finally {
-      setFeedbackLoading(false);
-    }
   };
 
   if (loading) return (
@@ -580,15 +618,12 @@ const Perfil = ({ onOpenBiblia }) => {
             <Share2 size={18} className="text-gray-300" />
           </button>
 
-          <button onClick={() => setView('feedback')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
+          <button onClick={() => setView('boletim')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
             <div className="flex items-center gap-4">
-              <div className="p-2.5 bg-yellow-50 rounded-2xl"><MessageSquare size={18} className="text-yellow-500" /></div>
-              <div className="text-left">
-                <p className="font-bold text-slate-700 text-sm">Feedback</p>
-                <p className="text-[10px] text-gray-400">Sugestões, bugs e elogios</p>
-              </div>
+              <div className="p-3 bg-purple-50 text-[#4C1D95] rounded-2xl"><GraduationCap size={20} /></div>
+              <div className="text-left"><span className="font-bold text-slate-700 text-sm block">Seu Boletim</span><span className="text-[10px] text-gray-400">Notas, matérias e cursos concluídos</span></div>
             </div>
-            <ChevronRight size={16} className="text-gray-300" />
+            <ChevronRight size={18} className="text-gray-300" />
           </button>
 
           <button onClick={onOpenBiblia} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
@@ -757,74 +792,53 @@ const Perfil = ({ onOpenBiblia }) => {
         </div>
       )}
 
-      {/* ── VIEW: FEEDBACK ── */}
-      {view === 'feedback' && (
-        <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4">
+      {/* ── VIEW: BOLETIM ── */}
+      {view === 'boletim' && (
+        <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-right-4">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Feedback</h3>
-            <button onClick={() => setView('menu')} aria-label="Fechar" className="p-2 text-gray-400"><X size={20} /></button>
+            <div><p className="text-[9px] font-black uppercase tracking-widest text-purple-400">Academia Verbo</p><h3 className="font-black text-slate-800 uppercase text-sm tracking-widest mt-1">Seu Boletim</h3></div>
+            <button onClick={() => setView('menu')} aria-label="Fechar" className="p-2 text-gray-400"><X size={20}/></button>
           </div>
-          {feedbackSucesso ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-              <div className="w-16 h-16 bg-green-50 rounded-[24px] flex items-center justify-center">
-                <CheckCircle2 size={32} className="text-green-500" />
-              </div>
-              <p className="font-black text-slate-800 text-lg">Obrigado!</p>
-              <p className="text-slate-400 text-sm">Seu feedback foi enviado com sucesso.</p>
+          {!isAssinante ? (
+            <div className="bg-white rounded-[32px] border border-purple-100 p-8 md:p-12 text-center shadow-sm">
+              <div className="w-16 h-16 mx-auto mb-5 rounded-[24px] bg-purple-50 text-[#4C1D95] flex items-center justify-center"><GraduationCap size={30}/></div>
+              <h4 className="text-xl font-black text-slate-800">Sua formação começa aqui.</h4>
+              <p className="text-sm text-slate-400 leading-relaxed mt-3 max-w-md mx-auto">Assine o Verbo para ter acesso à Academia, acompanhar seu progresso, fazer avaliações e construir seu histórico de formação.</p>
+              <button onClick={() => navigate('/upgrade')} className="mt-7 w-full max-w-sm mx-auto py-4 rounded-2xl bg-[#4C1D95] text-white text-xs font-black uppercase tracking-wide shadow-lg shadow-purple-100">Conhecer planos</button>
+            </div>
+          ) : boletim.loading ? (
+            <div className="bg-white rounded-[32px] border border-slate-100 p-16 flex justify-center"><Loader2 className="animate-spin text-[#4C1D95]" size={28}/></div>
+          ) : boletim.erro ? (
+            <div className="bg-white rounded-[32px] border border-red-100 p-8 text-center text-sm font-bold text-red-500">{boletim.erro}</div>
+          ) : boletim.cursos.length === 0 ? (
+            <div className="bg-white rounded-[32px] border border-slate-100 p-8 md:p-10 text-center">
+              <BookOpen size={30} className="mx-auto text-purple-200 mb-4"/>
+              <h4 className="font-black text-slate-800 text-lg">Você ainda não iniciou um curso.</h4>
+              <p className="text-sm text-slate-400 mt-2">Acesse a Academia para escolher sua próxima formação.</p>
+              <button onClick={() => navigate('/cursos')} className="mt-6 px-6 py-3 rounded-2xl bg-[#4C1D95] text-white text-xs font-black uppercase">Ir para a Academia</button>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-[24px] border border-gray-100">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Tipo</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'sugestao', label: 'Sugestão', icon: <Star size={14} /> },
-                    { id: 'bug',      label: 'Bug',       icon: <Bug size={14} /> },
-                    { id: 'elogio',   label: 'Elogio',    icon: <Smile size={14} /> },
-                    { id: 'outro',    label: 'Outro',     icon: <MessageSquare size={14} /> },
-                  ].map(t => (
-                    <button key={t.id} onClick={() => setFeedback(f => ({ ...f, tipo: t.id }))}
-                      className={`flex items-center gap-2 p-3 rounded-2xl border-2 font-bold text-xs transition-all ${
-                        feedback.tipo === t.id ? 'border-[#4C1D95] bg-purple-50 text-[#4C1D95]' : 'border-gray-100 text-slate-400'
-                      }`}>
-                      {t.icon} {t.label}
-                    </button>
-                  ))}
+              {boletim.cursos.map(curso => (
+                <div key={curso.id} className="bg-white rounded-[28px] border border-slate-100 overflow-hidden">
+                  <div className="p-5 border-b border-slate-50">
+                    <div className="flex items-center justify-between gap-3"><div><p className="text-[9px] font-black uppercase tracking-widest text-purple-400">Curso</p><h4 className="font-black text-slate-800 text-base mt-1">{curso.titulo}</h4></div><span className={"text-[9px] font-black uppercase px-3 py-1.5 rounded-full "+(curso.concluido?'bg-emerald-50 text-emerald-600':'bg-purple-50 text-[#4C1D95]')}>{curso.concluido?'Concluído':curso.progresso+'%'}</span></div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden mt-4"><div className="h-full bg-[#4C1D95] rounded-full" style={{width:curso.progresso+'%'}}/></div>
+                    <p className="text-[10px] text-slate-400 mt-2">{curso.aulasConcluidas} de {curso.totalAulas} aulas concluídas{curso.certificado?' · Certificado emitido':''}</p>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    {curso.materias.map(materia => (
+                      <div key={materia.id} className="rounded-2xl border border-slate-100 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div><p className="text-sm font-black text-slate-700">{materia.titulo}</p><p className="text-[10px] text-slate-400">{materia.concluidas}/{materia.totalAulas} aulas</p></div>
+                          <span className={"text-[9px] font-black uppercase px-2.5 py-1 rounded-full "+(materia.concluida?'bg-emerald-50 text-emerald-600':'bg-slate-100 text-slate-500')}>{materia.concluida?'Concluída':materia.progresso+'%'}</span>
+                        </div>
+                        {materia.avaliacao && <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between text-[10px]"><span className="font-bold text-slate-400">Avaliação · {materia.avaliacao.tentativas} tentativa(s)</span><span className={"font-black "+(materia.avaliacao.aprovado?'text-emerald-600':'text-amber-600')}>{materia.avaliacao.nota!==null?materia.avaliacao.nota+'%':'Não realizada'}{materia.avaliacao.aprovado?' · Aprovado':''}</span></div>}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              <div className="bg-white p-4 rounded-[24px] border border-gray-100">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Sua avaliação</p>
-                <div className="flex gap-2 justify-center">
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} onClick={() => setFeedback(f => ({ ...f, estrelas: n }))}
-                      aria-label={`${n} estrela${n > 1 ? 's' : ''}`}
-                      className="transition-transform active:scale-90">
-                      <Star size={32} className={n <= feedback.estrelas ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-100'} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white p-4 rounded-[24px] border border-gray-100">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Mensagem</p>
-                <textarea rows={4} maxLength={500} placeholder="Conta o que você está pensando..." value={feedback.mensagem}
-                  onChange={e => setFeedback(f => ({ ...f, mensagem: e.target.value }))}
-                  className="w-full text-sm text-slate-700 placeholder-gray-300 resize-none focus:outline-none leading-relaxed" />
-                <p className="text-[10px] text-gray-300 text-right mt-1">{feedback.mensagem.length}/500</p>
-              </div>
-
-              {erroFeedback && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-2xl border border-red-100 animate-in fade-in duration-200">
-                  <AlertTriangle size={14} className="text-red-500 shrink-0" />
-                  <p className="text-xs font-bold text-red-600">{erroFeedback}</p>
-                </div>
-              )}
-
-              <button onClick={enviarFeedback} disabled={feedbackLoading || !feedback.mensagem.trim()}
-                className="w-full py-5 rounded-[28px] font-bold text-white bg-[#4C1D95] shadow-lg shadow-purple-100 hover:bg-[#5B21B6] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
-                {feedbackLoading ? <Loader2 className="animate-spin" size={20} /> : <><MessageSquare size={18} /> Enviar Feedback</>}
-              </button>
+              ))}
             </div>
           )}
         </div>
