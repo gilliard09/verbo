@@ -8,7 +8,7 @@ import {
   Edit3, Check, GripVertical, AlertTriangle, UserCheck, BookOpen,
   Activity, MessageSquare, Star, Bug, Smile, Eye, EyeOff, Trophy, Flag,
   Zap, RefreshCw, DollarSign, Percent, TrendingDown, Calendar, List, Eye as EyeIcon,
-  ZoomIn, ZoomOut, GraduationCap, Search,
+  ZoomIn, ZoomOut, Search,
 } from 'lucide-react';
 
 const LS_METAS_KEY = 'verbo_admin_metas_celebradas';
@@ -804,6 +804,7 @@ const AdminDashboard = () => {
         { data: matriculas },
         { data: progresso },
         { data: tentativas },
+        { data: avaliacoes },
         { data: todosCursos },
         { data: todasAulas },
       ] = await Promise.all([
@@ -811,11 +812,13 @@ const AdminDashboard = () => {
         supabase.from('matriculas').select('user_id,curso_id,status,concluido_em'),
         supabase.from('progresso_aulas').select('user_id,aula_id,concluida_em'),
         supabase.from('tentativas_avaliacao').select('user_id,avaliacao_id,nota,acertos,total_questoes,aprovado,concluida_em'),
+        supabase.from('avaliacoes').select('id,titulo,materia_id,materias(id,titulo,curso_id)'),
         supabase.from('cursos').select('id,titulo'),
         supabase.from('aulas').select('id,curso_id,materia_id'),
       ]);
       if (perfisError) throw perfisError;
       const cursoMap = Object.fromEntries((todosCursos || []).map(c => [c.id, c]));
+      const avaliacaoMap = Object.fromEntries((avaliacoes || []).map(a => [a.id, a]));
       const aulaMap = Object.fromEntries((todasAulas || []).map(a => [a.id, a]));
       const matriculasPorAluno = {}, progressoPorAluno = {}, tentativasPorAluno = {};
       (matriculas || []).forEach(m => (matriculasPorAluno[m.user_id] ||= []).push(m));
@@ -831,7 +834,7 @@ const AdminDashboard = () => {
           return { id: cursoId, titulo: cursoMap[cursoId]?.titulo || 'Curso', totalAulas: aulasCurso.length, concluidas, progresso: aulasCurso.length ? Math.round((concluidas / aulasCurso.length) * 100) : 0, concluido: !!matricula?.concluido_em };
         });
         const notas = tent.map(t => Number(t.nota)).filter(Number.isFinite);
-        return { ...p, cursos: cursosAluno, totalCursos: cursosAluno.length, cursosConcluidos: cursosAluno.filter(c => c.concluido).length, aulasConcluidas: progs.filter(x => x.concluida_em).length, media: notas.length ? Math.round((notas.reduce((s,n) => s+n,0) / notas.length) * 10) / 10 : null, tentativas: tent.length, aprovadas: tent.filter(t => t.aprovado).length, tentativasDetalhes: tent };
+        return { ...p, cursos: cursosAluno, totalCursos: cursosAluno.length, cursosConcluidos: cursosAluno.filter(c => c.concluido).length, aulasConcluidas: progs.filter(x => x.concluida_em).length, media: notas.length ? Math.round((notas.reduce((s,n) => s+n,0) / notas.length) * 10) / 10 : null, tentativas: tent.length, aprovadas: tent.filter(t => t.aprovado).length, tentativasDetalhes: tent.map(t => ({ ...t, avaliacao: avaliacaoMap[t.avaliacao_id] || null })) };
       }));
     } catch (error) {
       console.error('Erro ao carregar alunos:', error);
@@ -1513,6 +1516,12 @@ const AdminDashboard = () => {
                   <div className="bg-blue-50 rounded-2xl p-4"><p className="text-xl font-black text-blue-600">{alunoSelecionado.tentativas}</p><p className="text-[9px] font-black uppercase text-blue-400">Avaliações</p></div>
                   <div className="bg-amber-50 rounded-2xl p-4"><p className="text-xl font-black text-amber-600">{alunoSelecionado.media!==null?alunoSelecionado.media:'—'}</p><p className="text-[9px] font-black uppercase text-amber-400">Média</p></div>
                 </div>
+                {alunoSelecionado.tentativasDetalhes.length>0&&(
+                  <div className="mb-5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-3">Notas das avaliações</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{alunoSelecionado.tentativasDetalhes.map((t,i)=><div key={t.avaliacao_id+'-'+i} className="border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-3"><div><p className="text-xs font-black text-slate-700">{t.avaliacao?.materias?.titulo||t.avaliacao?.titulo||'Avaliação'}</p><p className="text-[10px] text-slate-400">{t.acertos}/{t.total_questoes} acertos</p></div><span className={"text-sm font-black "+(t.aprovado?'text-emerald-600':'text-amber-600')}>{t.nota}%{t.aprovado?' · Aprovado':''}</span></div>)}</div>
+                  </div>
+                )}
                 <div className="space-y-3">{alunoSelecionado.cursos.map(c=><div key={c.id} className="border border-slate-100 rounded-2xl p-4"><div className="flex items-center justify-between gap-3 mb-2"><div><p className="text-sm font-black text-slate-700">{c.titulo}</p><p className="text-[10px] text-slate-400">{c.concluidas}/{c.totalAulas} aulas concluídas</p></div><span className={"text-[9px] font-black uppercase px-2.5 py-1 rounded-full "+(c.concluido?'bg-emerald-50 text-emerald-600':'bg-slate-100 text-slate-500')}>{c.concluido?'Concluído':c.progresso+'%'}</span></div><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-[#4C1D95]" style={{width:c.progresso+'%'}}/></div></div>)}</div>
               </div>
             )}
