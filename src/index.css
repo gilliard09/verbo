@@ -76,3 +76,26 @@ body[data-tema="escuro"] .bg-red-50 { background-color: #3b202b !important; }
 body[data-tema="escuro"] .bg-blue-50 { background-color: #1e2b42 !important; }
 body[data-tema="escuro"] .bg-pink-50 { background-color: #382338 !important; }
 body[data-tema="escuro"] .bg-amber-50 { background-color: #392f1c !important; }
+
+/* Correção de cobertura: algumas páginas usam fundos hexadecimais arbitrários
+   do Tailwind, que não eram alcançados pelas regras de bg-white/slate. */
+body[data-tema="escuro"] [class~="bg-[#F5F5F7]"],
+body[data-tema="escuro"] [class~="bg-[#FDFDFF]"],
+body[data-tema="escuro"] [class~="bg-[#F8F9FA]"],
+body[data-tema="escuro"] [class~="bg-[#FFFFFF]"],
+body[data-tema="escuro"] [class~="bg-[#fff]"] {
+  background-color: #14111b !important;
+}
+
+/* Evita títulos claros demais ou com contraste insuficiente nas páginas. */
+body[data-tema="escuro"] h1,
+body[data-tema="escuro"] h2,
+body[data-tema="escuro"] h3 {
+  color: #f3eef9;
+}
+
+/* Superfícies brancas translúcidas usadas em menus e overlays. */
+body[data-tema="escuro"] [class~="bg-white/95"],
+body[data-tema="escuro"] [class~="bg-white/90"] {
+  background-color: rgb(32 26 43 / 96%) !important;
+}
