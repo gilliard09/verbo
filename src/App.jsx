@@ -26,6 +26,7 @@ const Devocionais = lazy(() => import('./pages/Devocionais'));
 // --- COMPONENTES SÍNCRONOS (Precisam estar prontos na primeira render) ---
 import BibliaSidebar from './components/BibliaSidebar';
 import AcquisitionSourceModal from './components/AcquisitionSourceModal';
+import PlusVitalicioModal from './components/PlusVitalicioModal';
 import RotaAdmin from './components/RotaAdmin';
 import { Home, PenTool, User, Users, PlayCircle } from 'lucide-react';
 
@@ -228,6 +229,12 @@ function App() {
         <AcquisitionSourceModal
           session={session}
           onClose={() => setAcquisitionModalOpen(false)}
+        />
+      )}
+      {session && (
+        <PlusVitalicioModal
+          session={session}
+          outroModalAberto={acquisitionModalOpen}
         />
       )}
     </Router>
