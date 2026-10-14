@@ -707,6 +707,7 @@ const AdminDashboard = () => {
   const [usoPorRecurso, setUsoPorRecurso] = useState({});
   const [receita, setReceita] = useState({mr:0,ticketMedio:0,ltv:0,churn:null});
   const [planos, setPlanos] = useState({fundador:0,plus:0});
+  const [vitalicio, setVitalicio] = useState({quantidade:0, receita:0});
   const [funilUpgrade, setFunilUpgrade] = useState({exibiram:0,clicaram:0,assinaram:0});
   const [metas, setMetas] = useState(()=>{try{const s=JSON.parse(localStorage.getItem('verbo_admin_metas')||'{}');return{usuarios:s.usuarios??50,sermoes:s.sermoes??100,assinaturas:s.assinaturas??50,sermoesDiarios:s.sermoesDiarios??14};}catch{return{usuarios:50,sermoes:100,assinaturas:50,sermoesDiarios:14};}});
   const [editandoMeta, setEditandoMeta] = useState(null);
@@ -959,6 +960,19 @@ const AdminDashboard = () => {
 
   const carregarAnalytics = async () => {
     try {
+      // Vendas vitalícias são registros de pagamento único, não MRR.
+      const { data: vendasVitalicias, error: erroVitalicio } = await supabase
+        .from('subscriptions')
+        .select('user_id, price, status, created_at')
+        .eq('plan', 'plus_vitalicio')
+        .eq('status', 'active');
+      if (erroVitalicio) console.error('Erro ao carregar vendas vitalícias:', erroVitalicio);
+      const vitaliciosAtivos = vendasVitalicias || [];
+      const idsVitalicios = new Set(vitaliciosAtivos.map(v => v.user_id).filter(Boolean));
+      const totalVendasVitalicias = vitaliciosAtivos.length;
+      const receitaVitalicia = vitaliciosAtivos.reduce((s, v) => s + Number(v.price || 0), 0);
+      setVitalicio({ quantidade: totalVendasVitalicias, receita: receitaVitalicia });
+
       const hoje = new Date();
       const seteDiasAtras = new Date(hoje); seteDiasAtras.setDate(hoje.getDate()-7);
 
@@ -998,13 +1012,16 @@ const AdminDashboard = () => {
       const com3Sermoes = Object.values(contagemPorUser).filter(v=>v>=3).length;
       const voltaram2x  = Object.keys(contagemPorUser).filter(uid=>contagemPorUser[uid]>=2).length;
 
-      const mr = ((totalFundadores||0)*9.90)+((totalPlus||0)*47);
+      // Perfis Plus que também têm venda vitalícia não entram na receita recorrente.
+      const totalPlusRecorrente = Math.max(0, (totalPlus || 0) - idsVitalicios.size);
+      const totalAssinaturasRecorrentes = Math.max(0, (assinaturas || 0) - idsVitalicios.size);
+      const mr = ((totalFundadores||0)*9.90)+(totalPlusRecorrente*47);
       const taxaConclusao = assinaturas>0&&totalAulas>0?Math.round((progresso/(assinaturas*totalAulas))*100):0;
-      const novoStats = {totalUsuarios:usuarios||0,totalSermoes:sermoes||0,totalAssinaturas:assinaturas||0,totalProgresso:progresso||0,taxaConclusao:Math.min(taxaConclusao,100),mr,loadingStats:false};
+      const novoStats = {totalUsuarios:usuarios||0,totalSermoes:sermoes||0,totalAssinaturas:totalAssinaturasRecorrentes,totalProgresso:progresso||0,taxaConclusao:Math.min(taxaConclusao,100),mr,loadingStats:false};
       setStats(novoStats);
       setMetas(m=>{verificarMetas(novoStats,m);return m;});
 
-      setPlanos({fundador: totalFundadores||0, plus: totalPlus||0});
+      setPlanos({fundador: totalFundadores||0, plus: totalPlusRecorrente});
 
       // Origem informada no pop-up de aquisição, armazenada em profiles.acquisition_source.
       const { data: perfisOrigem, error: erroOrigem } = await supabase
@@ -1404,6 +1421,15 @@ const AdminDashboard = () => {
             </div>
 
             <ReceitaCard receita={receita}/>
+
+            <div className="bg-white/5 border border-amber-400/20 p-5 rounded-[24px]">
+              <div className="flex items-center gap-2 mb-3"><Sparkles size={16} className="text-amber-300"/><span className="text-[10px] font-black text-amber-200 uppercase tracking-widest">Verbo Plus Vitalício · vendas únicas</span></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><p className="text-2xl font-black text-white">{vitalicio.quantidade}</p><p className="text-[9px] text-slate-500 uppercase font-bold mt-1">Vendas vitalícias</p></div>
+                <div><p className="text-2xl font-black text-amber-300">{vitalicio.receita.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p><p className="text-[9px] text-slate-500 uppercase font-bold mt-1">Receita única registrada</p></div>
+              </div>
+              <p className="text-[9px] text-slate-500 mt-3">Não incluída na receita recorrente mensal.</p>
+            </div>
 
             <div className="bg-white/5 border border-white/10 rounded-[32px] overflow-hidden"><div className="p-6 border-b border-white/5 flex items-center justify-between"><h4 className="text-white font-bold text-sm flex items-center gap-2"><UserCheck size={16} className="text-orange-400"/>Assinantes Recentes</h4><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{matriculasRecentes.length} registros</span></div><div className="divide-y divide-white/5">{matriculasRecentes.length===0?<p className="p-6 text-center text-slate-500 text-xs">Nenhum assinante ainda.</p>:matriculasRecentes.map((m,i)=>(<div key={i} className="flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-purple-500/20 rounded-2xl flex items-center justify-center shrink-0"><span className="text-[10px] font-black text-purple-400">{(m.full_name||m.email||'?')[0].toUpperCase()}</span></div><div><p className="text-xs font-bold text-white">{m.full_name||m.email||'Usuário'}</p><span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${m.plano==='plus'?'bg-purple-500/20 text-purple-400':'bg-amber-500/20 text-amber-400'}`}>{m.plano}</span></div></div><span className="text-[9px] font-black text-slate-500 uppercase">{new Date(m.plano_atualizado_em||m.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span></div>))}</div></div>
           </div>
