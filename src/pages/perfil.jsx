@@ -5,7 +5,7 @@ import html2canvas from 'html2canvas';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { usePlano } from '../hooks/usePlano';
 import {
-  User, LogOut, Camera, Phone, Sun, Moon,
+  User, LogOut, Camera, Phone,
   CheckCircle2, Loader2, Save, KeyRound,
   ChevronRight, Instagram, Info, Share2, X,
   Download, Sparkles, ShieldCheck, Globe, Heart,
@@ -256,8 +256,6 @@ const Perfil = ({ onOpenBiblia }) => {
   const [success, setSuccess] = useState(false);
   const [erro, setErro] = useState('');
   const [modalLogout, setModalLogout] = useState(false);
-  const [tema, setTema] = useState(() => localStorage.getItem('verbo-tema') === 'escuro' ? 'escuro' : 'claro');
-  const alterarTema = (novoTema) => { setTema(novoTema); localStorage.setItem('verbo-tema', novoTema); window.dispatchEvent(new CustomEvent('verbo-tema-alterado', { detail: novoTema })); };
 
   // Crop
   const [imagemCropSrc, setImagemCropSrc] = useState(null);
@@ -639,10 +637,6 @@ const Perfil = ({ onOpenBiblia }) => {
             <ChevronRight size={18} className="text-gray-300" />
           </button>
 
-          <button onClick={() => setView('aparencia')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
-            <div className="flex items-center gap-4"><div className="p-3 bg-slate-100 text-slate-700 rounded-2xl"><Moon size={20} /></div><div className="text-left"><span className="font-bold text-slate-700 text-sm block">Aparência</span><span className="text-[10px] text-gray-400">Claro ou escuro</span></div></div><ChevronRight size={18} className="text-gray-300" />
-          </button>
-
           <button onClick={() => setView('sobre')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl"><Info size={20} /></div>
@@ -847,17 +841,6 @@ const Perfil = ({ onOpenBiblia }) => {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {view === 'aparencia' && (
-        <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4">
-          <div className="flex items-center justify-between mb-6"><div><h3 className="font-black text-slate-800 uppercase text-xs tracking-widest">Aparência</h3><p className="text-xs text-slate-400 mt-1">Escolha como o Verbo aparece neste dispositivo.</p></div><button onClick={() => setView('menu')} aria-label="Voltar" className="p-2 text-gray-400"><X size={20} /></button></div>
-          <div className="space-y-3">
-            <button onClick={() => alterarTema('claro')} className={"w-full p-5 rounded-[24px] border flex items-center gap-4 text-left transition-all " + (tema === 'claro' ? 'border-[#6D28D9] bg-purple-50 ring-2 ring-purple-100' : 'bg-white border-gray-100')}><div className="p-3 rounded-2xl bg-white border border-slate-200 text-slate-700"><Sun size={22}/></div><div className="flex-1"><p className="font-bold text-slate-800">Claro</p><p className="text-xs text-slate-500 mt-1">A aparência original do Verbo.</p></div>{tema === 'claro' && <CheckCircle2 className="text-[#6D28D9]" size={20}/>}</button>
-            <button onClick={() => alterarTema('escuro')} className={"w-full p-5 rounded-[24px] border flex items-center gap-4 text-left transition-all " + (tema === 'escuro' ? 'border-violet-400 bg-[#211A32] ring-2 ring-violet-900' : 'bg-white border-gray-100')}><div className="p-3 rounded-2xl bg-[#17121F] border border-white/10 text-violet-300"><Moon size={22}/></div><div className="flex-1"><p className={"font-bold " + (tema === 'escuro' ? 'text-white' : 'text-slate-800')}>Escuro</p><p className={"text-xs mt-1 " + (tema === 'escuro' ? 'text-slate-300' : 'text-slate-500')}>Tons profundos com o roxo do Verbo preservado.</p></div>{tema === 'escuro' && <CheckCircle2 className="text-violet-300" size={20}/>}</button>
-          </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed mt-5">A preferência fica salva neste dispositivo. A Academia Verbo e o Modo Púlpito mantêm sua aparência própria.</p>
         </div>
       )}
 
