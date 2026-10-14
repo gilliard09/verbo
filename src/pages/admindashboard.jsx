@@ -1043,7 +1043,7 @@ const AdminDashboard = () => {
       const totalCadastros = usuarios||0;
       const totalUsaram    = com1Sermao;
       const totalVoltaram  = voltaram2x;
-      const totalAssinaram = assinaturas||0;
+      const totalAssinaram = totalAssinaturasRecorrentes;
       const totalVisitantes = totalVisitantesVercel > 0 ? totalVisitantesVercel : totalCadastros * 3;
       setVisitantesEstimados(totalVisitantesVercel <= 0);
 
