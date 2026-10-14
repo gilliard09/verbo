@@ -119,8 +119,9 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
                 'Sermões ilimitados',
                 'Acesso completo à Academia Verbo',
                 'Modo Púlpito e recursos avançados',
-                'Acesso offline aos sermões',
-                'Recursos do plano PLUS em pagamento único',
+                'Acesso offline ilimitado aos sermões',
+                'Atualizações futuras do Verbo',
+                'Suporte prioritário',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5 text-sm leading-snug text-violet-50/90">
                   <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-300" />
