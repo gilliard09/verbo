@@ -38,18 +38,6 @@ const ROTAS_SEM_NAVBAR = ['/login', '/landing', '/reset-password'];
 const Navbar = ({ session, onOpenBiblia }) => {
   const location = useLocation();
 
-  useEffect(() => {
-    const aplicarTema = (tema) => {
-      const rotaProtegida = location.pathname.startsWith('/cursos') || location.pathname.startsWith('/editor') || ROTAS_SEM_NAVBAR.includes(location.pathname);
-      const ativo = tema === 'escuro' && !rotaProtegida;
-      document.body.dataset.tema = ativo ? 'escuro' : 'claro';
-      document.documentElement.style.colorScheme = ativo ? 'dark' : 'light';
-    };
-    aplicarTema(localStorage.getItem('verbo-tema') || 'claro');
-    const aoAlterar = (event) => aplicarTema(event.detail);
-    window.addEventListener('verbo-tema-alterado', aoAlterar);
-    return () => window.removeEventListener('verbo-tema-alterado', aoAlterar);
-  }, [location.pathname]);
 
   const isPublicPage = ROTAS_SEM_NAVBAR.includes(location.pathname);
   const isReading    = location.pathname.startsWith('/leitura');
