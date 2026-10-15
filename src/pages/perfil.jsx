@@ -9,7 +9,7 @@ import {
   CheckCircle2, Loader2, Save, KeyRound,
   ChevronRight, Instagram, Info, Share2, X,
   Download, Sparkles, ShieldCheck, Globe, Heart,
-  MessageSquare, Star, Bug, Smile,
+  MessageSquare, MessageCircle, Star, Bug, Smile,
   LayoutDashboard, Mail, Lock, Eye, EyeOff,
   PenTool, BookOpen, TrendingUp, Award, AlertTriangle,
   Crown, Zap, Book, ZoomIn, ZoomOut, Check, GraduationCap
@@ -617,6 +617,23 @@ const Perfil = ({ onOpenBiblia }) => {
             </div>
             <Share2 size={18} className="text-gray-300" />
           </button>
+
+          <a
+            href="https://chat.whatsapp.com/L0ynpLv8gnL7yxs6VQYd2J?s=cl&p=i&ilr=4&iam=0"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Entrar na Comunidade de Pregadores Verbo no WhatsApp"
+            className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all hover:border-green-100"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-50 text-green-600 rounded-2xl"><MessageCircle size={20} /></div>
+              <div className="text-left">
+                <span className="font-bold text-slate-700 text-sm block">Comunidade de Pregadores Verbo</span>
+                <span className="text-[10px] text-gray-400">Troque experiências com outros pregadores</span>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-gray-300" />
+          </a>
 
           <button onClick={() => setView('boletim')} className="w-full bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
             <div className="flex items-center gap-4">
