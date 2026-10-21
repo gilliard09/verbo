@@ -112,12 +112,12 @@ export default function LpExclusivo() {
               <div className="absolute -inset-5 rounded-[2rem] bg-violet-500/20 blur-3xl" />
               <div className="relative rounded-[1.7rem] border border-white/15 bg-white/10 p-2 shadow-2xl backdrop-blur">
                 <div className="overflow-hidden rounded-[1.2rem] bg-white">
-                  <img src="/images/lp-esclusivo/editor-sermoes.webp" alt="Editor de sermões do aplicativo Verbo" className="aspect-[4/3] w-full object-cover object-top" />
+                  <img src="/images/lp-esclusivo/editor-sermoes.webp" alt="Editor de sermões do aplicativo Verbo" className="aspect-video w-full object-contain object-top" />
                 </div>
                 <div className="absolute -bottom-5 -left-3 rounded-2xl border border-white/20 bg-[#281443] p-4 shadow-xl sm:-left-8 sm:p-5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/15 text-orange-300"><PenTool size={20} /></div>
-                    <div><p className="text-sm font-bold text-white">Seu sermão, organizado</p><p className="mt-1 text-xs text-white/60">Pronto para acompanhar você</p></div>
+                    <div><p className="text-sm font-bold text-white">Da preparação ao púlpito</p><p className="mt-1 max-w-56 text-xs leading-5 text-white/65">Seu estudo, seu esboço e sua mensagem em um só lugar</p></div>
                   </div>
                 </div>
               </div>
