@@ -14,6 +14,7 @@ const Leitura = lazy(() => import('./pages/leitura'));
 const Perfil = lazy(() => import('./pages/perfil'));
 const Biblioteca = lazy(() => import('./pages/biblioteca'));
 const LandingPage = lazy(() => import('./pages/landingpage'));
+const LpExclusivo = lazy(() => import('./pages/lp-exclusivo'));
 const Cursos = lazy(() => import('./pages/cursos'));
 const Curso = lazy(() => import('./pages/curso'));
 const Aulas = lazy(() => import('./pages/aulas'));
@@ -32,7 +33,7 @@ import { Home, PenTool, User, Users, PlayCircle } from 'lucide-react';
 
 // Rotas de autenticação/marketing onde a navbar inferior nunca deve aparecer,
 // independente do estado de sessão (login, landing e recuperação de senha).
-const ROTAS_SEM_NAVBAR = ['/login', '/landing', '/reset-password'];
+const ROTAS_SEM_NAVBAR = ['/login', '/landing', '/lp-exclusivo', '/reset-password'];
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 const Navbar = ({ session, onOpenBiblia }) => {
@@ -105,6 +106,7 @@ const AppShell = ({ session, bibliaAberta, setBibliaAberta }) => {
             <Route path="/login" element={!session ? <Login /> : <Navigate to="/" replace />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/landing" element={<LandingPage />} />
+            <Route path="/lp-exclusivo" element={<LpExclusivo />} />
             <Route path="/cursos" element={session ? <Cursos /> : <Navigate to="/login" replace />} />
             <Route path="/cursos/:cursoId/materia/:materiaId" element={session ? <Aulas /> : <Navigate to="/login" replace />} />
             <Route path="/cursos/:cursoId/materia/:materiaId/avaliacao/:avaliacaoId" element={session ? <Avaliacao /> : <Navigate to="/login" replace />} />
