@@ -112,7 +112,7 @@ export default function LpExclusivo() {
               <div className="absolute -inset-5 rounded-[2rem] bg-violet-500/20 blur-3xl" />
               <div className="relative rounded-[1.7rem] border border-white/15 bg-white/10 p-2 shadow-2xl backdrop-blur">
                 <div className="overflow-hidden rounded-[1.2rem] bg-white">
-                  <img src="/images/lp-exclusivo/editor-sermoes.webp" alt="Editor de sermões do aplicativo Verbo" className="aspect-[4/3] w-full object-cover object-top" />
+                  <img src="/images/lp-esclusivo/editor-sermoes.webp" alt="Editor de sermões do aplicativo Verbo" className="aspect-[4/3] w-full object-cover object-top" />
                 </div>
                 <div className="absolute -bottom-5 -left-3 rounded-2xl border border-white/20 bg-[#281443] p-4 shadow-xl sm:-left-8 sm:p-5">
                   <div className="flex items-center gap-3">
@@ -165,11 +165,11 @@ export default function LpExclusivo() {
             </div>
             <div className="grid gap-6 md:grid-cols-2">
               {[
-                ['/images/lp-exclusivo/academia-verbo.webp', 'Academia Verbo', 'Conheça a área de cursos e conteúdos de formação.'],
-                ['/images/lp-exclusivo/academia-cursos.webp', 'Academia Verbo — cursos', 'Acesse os conteúdos de aprendizado dentro do Verbo.'],
-                ['/images/lp-exclusivo/dashboard.webp', 'Dashboard', 'Visualize e organize seus sermões em um só lugar.'],
-                ['https://drive.google.com/uc?export=view&id=146bRXLVXWp9DS3nTORjWKcbCTAW1mn3y', 'Editor de Sermões', 'Escreva, formate e organize seus esboços com salvamento automático.'],
-                ['/images/lp-exclusivo/modo-pulpito.webp', 'Modo Púlpito', 'Mantenha o foco na mensagem com uma leitura limpa e ajustável.'],
+                ['/images/lp-esclusivo/academia-verbo.webp', 'Academia Verbo', 'Conheça a área de cursos e conteúdos de formação.'],
+                ['/images/lp-esclusivo/academia-cursos.webp', 'Academia Verbo — cursos', 'Acesse os conteúdos de aprendizado dentro do Verbo.'],
+                ['/images/lp-esclusivo/dashboard.webp', 'Dashboard', 'Visualize e organize seus sermões em um só lugar.'],
+                ['/images/lp-esclusivo/editor-sermoes.webp', 'Editor de Sermões', 'Escreva, formate e organize seus esboços com salvamento automático.'],
+                ['/images/lp-esclusivo/modo-pulpito.webp', 'Modo Púlpito', 'Mantenha o foco na mensagem com uma leitura limpa e ajustável.'],
               ].map(([src, title, desc]) => <article key={title} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                 <div className="overflow-hidden bg-slate-100"><img src={src} alt={title} loading="lazy" className="aspect-[16/9] w-full object-cover object-top transition duration-500 hover:scale-[1.02]" /></div>
                 <div className="p-6"><h3 className="font-extrabold">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{desc}</p></div>
