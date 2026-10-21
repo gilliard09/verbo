@@ -36,7 +36,7 @@ const FAQS = [
   ['Posso usar no celular e no computador?', 'O Verbo foi pensado para acompanhar sua rotina de preparação. Acesse pelo navegador nos dispositivos compatíveis e entre com sua conta.'],
   ['O que está incluído em cada plano?', 'Os limites e recursos variam conforme o plano. Confira as condições apresentadas no checkout antes de concluir a compra.'],
   ['Como funciona o plano Fundador?', 'O Fundador custa R$ 9,90 por mês. A cobrança é recorrente conforme as condições informadas no checkout da Cakto.'],
-  ['Como funciona o Vitalício?', 'O Vitalício é uma oferta de pagamento único. Consulte no checkout o valor, o escopo do acesso e as condições específicas da oferta antes de pagar.'],
+  ['Como funciona o Vitalício?', 'O Vitalício custa 1x de R$ 97, em pagamento único, e dá acesso ao plano Plus para sempre, sem mensalidade recorrente.'],
   ['Posso cancelar uma assinatura?', 'Para as condições de cancelamento, reembolso e cobrança, consulte os termos apresentados no checkout e as políticas aplicáveis à sua compra.'],
 ];
 
@@ -217,21 +217,31 @@ export default function LpExclusivo() {
                 <h3 className="mt-3 text-2xl font-black">Plus</h3>
                 <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 47,00</span><span className="text-sm text-slate-500">/mês</span></p>
                 <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Para quem quer usar o Verbo de forma recorrente na preparação e organização das mensagens.</p>
-                <ul className="my-7 space-y-3 text-sm text-slate-700">{['Experiência completa conforme o plano', 'Recursos e limites definidos na oferta', 'Acesso recorrente enquanto a assinatura estiver ativa'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
+                <ul className="my-7 space-y-3 text-sm text-slate-700">{[
+                  'Editor de sermões com formatação e salvamento automático',
+                  'Modo Púlpito com leitura em tela cheia e ajustes de fonte',
+                  'Bíblia integrada ao editor',
+                  'Academia Verbo com acesso a todos os cursos e certificados inclusos',
+                  'Acesso offline aos sermões salvos',
+                  'Organização dos sermões e histórico de versões',
+                  'Devocionais',
+                  'Sermões ilimitados',
+                  'Comunidade de pregadores',
+                ].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
                 <CheckoutButton href={CHECKOUTS.plus} className="mt-auto">Escolher Plus</CheckoutButton>
               </article>
 
               <article className="flex flex-col rounded-3xl border border-orange-200 bg-[#241435] p-7 text-white shadow-sm sm:p-8">
                 <div className="mb-4 inline-flex items-center gap-2 self-start rounded-full bg-orange-400/15 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-orange-200"><Clock3 size={13} /> Oferta promocional</div>
                 <h3 className="text-2xl font-black">Vitalício</h3>
-                <p className="mt-4 text-3xl font-black tracking-tight">Pagamento único</p>
-                <p className="mt-4 min-h-12 text-sm leading-6 text-white/70">Uma única compra, sem mensalidade recorrente para o acesso vitalício descrito nas condições da oferta.</p>
-                <ul className="my-7 space-y-3 text-sm text-white/85">{['Pagamento único', 'Sem cobrança mensal recorrente', 'Confira escopo e condições no checkout'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-orange-300" />{t}</li>)}</ul>
+                <p className="mt-4 flex flex-wrap items-baseline gap-2"><span className="text-4xl font-black tracking-tight">1x de R$ 97</span><span className="text-sm text-white/60">pagamento único</span></p>
+                <p className="mt-4 min-h-12 text-sm leading-6 text-white/70">Pague uma única vez e tenha acesso ao plano Plus para sempre, sem mensalidade.</p>
+                <ul className="my-7 space-y-3 text-sm text-white/85">{['Acesso ao Plus para sempre', 'Pagamento único de R$ 97', 'Sem mensalidade recorrente'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-orange-300" />{t}</li>)}</ul>
                 <CheckoutButton href={CHECKOUTS.vitalicio} className="mt-auto">Ver oferta Vitalícia</CheckoutButton>
-                <p className="mt-3 text-center text-[11px] leading-5 text-white/45">Consulte o preço e as condições vigentes no checkout.</p>
+                <p className="mt-3 text-center text-[11px] leading-5 text-white/45">Acesso Plus vitalício mediante pagamento único.</p>
               </article>
             </div>
-            <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-slate-500">Os preços, recursos, limites de uso, forma de cobrança e condições do Vitalício devem ser conferidos no checkout antes da compra. A disponibilidade promocional está sujeita às condições informadas na oferta.</p>
+            <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-slate-500">O Fundador e o Plus são assinaturas mensais. O Vitalício custa 1x de R$ 97 e dá acesso ao Plus para sempre, sem mensalidade recorrente.</p>
           </div>
         </section>
 
