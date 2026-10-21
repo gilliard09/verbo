@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
   ArrowRight, Check, ChevronDown, CirclePlay, Clock3, BookOpen,
-  PenTool, Mic2, Wifi, GraduationCap, ShieldCheck, Infinity,
-  Star, Quote, Smartphone, Laptop, Sparkles
+  PenTool, Mic2, Wifi, GraduationCap, Star, Quote, Sparkles
 } from 'lucide-react';
 
 const CHECKOUTS = {
