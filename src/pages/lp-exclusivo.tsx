@@ -112,7 +112,7 @@ export default function LpExclusivo() {
               <div className="absolute -inset-5 rounded-[2rem] bg-violet-500/20 blur-3xl" />
               <div className="relative rounded-[1.7rem] border border-white/15 bg-white/10 p-2 shadow-2xl backdrop-blur">
                 <div className="overflow-hidden rounded-[1.2rem] bg-white">
-                  <img src="/screenshot-editor.jpg" alt="Editor de sermões do aplicativo Verbo" className="aspect-[4/3] w-full object-cover object-top" />
+                  <img src="https://drive.google.com/uc?export=view&id=146bRXLVXWp9DS3nTORjWKcbCTAW1mn3y" alt="Editor de sermões do aplicativo Verbo" className="aspect-[4/3] w-full object-cover object-top" />
                 </div>
                 <div className="absolute -bottom-5 -left-3 rounded-2xl border border-white/20 bg-[#281443] p-4 shadow-xl sm:-left-8 sm:p-5">
                   <div className="flex items-center gap-3">
@@ -165,10 +165,11 @@ export default function LpExclusivo() {
             </div>
             <div className="grid gap-6 md:grid-cols-2">
               {[
-                ['/screenshot-editor.jpg', 'Editor de Sermões', 'Escreva, formate e organize seus esboços com salvamento automático.'],
-                ['/screenshot-dashboard.jpg', 'Seus sermões organizados', 'Encontre suas mensagens salvas em um só lugar.'],
-                ['/screenshot-academia.png', 'Academia Verbo', 'Acesse cursos de teologia e pregação e acompanhe seu progresso.'],
-                ['/screenshot-pulpito-limpo.jpg', 'Modo Púlpito', 'Mantenha o foco na mensagem com uma leitura limpa e ajustável.'],
+                ['https://drive.google.com/uc?export=view&id=1zhrUV9C7DVWEdoLhvYIbmKWMsB_b2y9C', 'Academia Verbo', 'Conheça a área de cursos e conteúdos de formação.'],
+                ['https://drive.google.com/uc?export=view&id=1r_zPVbERF8gx4Fix-7UAutD2XnQewCYM', 'Academia Verbo — cursos', 'Acesse os conteúdos de aprendizado dentro do Verbo.'],
+                ['https://drive.google.com/uc?export=view&id=1O39BimppPTdh1MlhVdvnzCMLCQd2PjGR', 'Dashboard', 'Visualize e organize seus sermões em um só lugar.'],
+                ['https://drive.google.com/uc?export=view&id=146bRXLVXWp9DS3nTORjWKcbCTAW1mn3y', 'Editor de Sermões', 'Escreva, formate e organize seus esboços com salvamento automático.'],
+                ['https://drive.google.com/uc?export=view&id=1m2xFObYtc7HjVkpJxSUIJA1t65Tr5oRw', 'Modo Púlpito', 'Mantenha o foco na mensagem com uma leitura limpa e ajustável.'],
               ].map(([src, title, desc]) => <article key={title} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                 <div className="overflow-hidden bg-slate-100"><img src={src} alt={title} loading="lazy" className="aspect-[16/9] w-full object-cover object-top transition duration-500 hover:scale-[1.02]" /></div>
                 <div className="p-6"><h3 className="font-extrabold">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{desc}</p></div>
@@ -207,7 +208,14 @@ export default function LpExclusivo() {
                 <h3 className="mt-3 text-2xl font-black">Fundador</h3>
                 <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 9,90</span><span className="text-sm text-slate-500">/mês</span></p>
                 <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Uma forma acessível de começar a organizar suas mensagens com o Verbo.</p>
-                <ul className="my-7 space-y-3 text-sm text-slate-700">{['Plano mensal recorrente', 'Ferramentas incluídas conforme a oferta', 'Acesso conforme os limites do plano'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
+                <ul className="my-7 space-y-3 text-sm text-slate-700">{[
+                  'Até 50 sermões',
+                  'Editor de sermões com formatação e salvamento automático',
+                  'Modo Púlpito com leitura em tela cheia e ajustes de fonte',
+                  'Bíblia integrada ao editor',
+                  'Assinatura mensal',
+                  'Acesso ao curso Fundamentos da Pregação do Zero',
+                ].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
                 <CheckoutButton href={CHECKOUTS.fundador} secondary className="mt-auto !border-slate-200 !bg-white !text-[#4C1D95] hover:!bg-violet-50">Assinar Fundador</CheckoutButton>
               </article>
 
