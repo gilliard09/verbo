@@ -36,7 +36,7 @@ const FAQS = [
   ['Posso usar no celular e no computador?', 'O Verbo foi pensado para acompanhar sua rotina de preparação. Acesse pelo navegador nos dispositivos compatíveis e entre com sua conta.'],
   ['O que está incluído em cada plano?', 'Os limites e recursos variam conforme o plano. Confira as condições apresentadas no checkout antes de concluir a compra.'],
   ['Como funciona o plano Fundador?', 'O Fundador custa R$ 9,90 por mês. A cobrança é recorrente conforme as condições informadas no checkout da Cakto.'],
-  ['Como funciona o Vitalício?', 'O Vitalício custa 1x de R$ 147, em pagamento único, e dá acesso ao plano Plus para sempre, sem mensalidade recorrente.'],
+  ['Como funciona o Vitalício?', 'O Vitalício custa R$ 147 à vista ou 12x de R$ 15,27 no parcelamento, e dá acesso ao plano Plus para sempre.'],
   ['Posso cancelar uma assinatura?', 'Para as condições de cancelamento, reembolso e cobrança, consulte os termos apresentados no checkout e as políticas aplicáveis à sua compra.'],
 ];
 
@@ -242,14 +242,14 @@ export default function LpExclusivo() {
               <article className="flex flex-col rounded-3xl border border-orange-200 bg-[#241435] p-7 text-white shadow-sm sm:p-8">
                 <div className="mb-4 inline-flex items-center gap-2 self-start rounded-full bg-orange-400/15 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-orange-200"><Clock3 size={13} /> Oferta promocional</div>
                 <h3 className="text-2xl font-black">Vitalício</h3>
-                <p className="mt-4 flex flex-wrap items-baseline gap-2"><span className="text-4xl font-black tracking-tight">1x de R$ 147</span><span className="text-sm text-white/60">pagamento único</span></p>
+                <div className="mt-4"><p className="text-4xl font-black tracking-tight">R$ 147</p><p className="mt-1 text-sm text-white/60">pagamento único à vista</p><p className="mt-3 text-base font-bold text-white">ou 12x de R$ 15,27</p></div>
                 <p className="mt-4 min-h-12 text-sm leading-6 text-white/70">Pague uma única vez e tenha acesso ao plano Plus para sempre, sem mensalidade.</p>
-                <ul className="my-7 space-y-3 text-sm text-white/85">{['Acesso ao Plus para sempre', 'Pagamento único de R$ 147', 'Sem mensalidade recorrente'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-orange-300" />{t}</li>)}</ul>
+                <ul className="my-7 space-y-3 text-sm text-white/85">{['Acesso ao Plus para sempre', 'Pagamento à vista ou parcelado', 'Sem mensalidade recorrente'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-orange-300" />{t}</li>)}</ul>
                 <CheckoutButton href={CHECKOUTS.vitalicio} className="mt-auto">Ver oferta Vitalícia</CheckoutButton>
                 <p className="mt-3 text-center text-[11px] leading-5 text-white/45">Acesso Plus vitalício mediante pagamento único.</p>
               </article>
             </div>
-            <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-slate-500">O Fundador e o Plus são assinaturas mensais. O Vitalício custa 1x de R$ 147 e dá acesso ao Plus para sempre, sem mensalidade recorrente.</p>
+            <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-slate-500">O Fundador e o Plus são assinaturas mensais. O Vitalício custa R$ 147 à vista ou 12x de R$ 15,27 no parcelamento, com acesso ao Plus para sempre.</p>
           </div>
         </section>
 
