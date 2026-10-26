@@ -1463,7 +1463,7 @@ const AdminDashboard = () => {
 
             {cursoSelecionadoAulas&&!materiasDoCurso.length&&<div className="bg-white rounded-[28px] border border-dashed border-purple-200 p-10 text-center"><BookOpen size={32} className="text-purple-200 mx-auto mb-3"/><h3 className="font-black text-slate-700">Este curso ainda não possui matérias</h3><p className="text-xs text-slate-400 mt-2 mb-5">Crie a primeira matéria para começar a organizar as aulas.</p><button type="button" onClick={()=>iniciarNovaMateria(cursoSelecionadoAulas)} className="px-5 py-3 bg-[#4C1D95] text-white rounded-2xl font-black text-[10px] uppercase"><Plus size={13} className="inline mr-2"/>Criar primeira matéria</button></div>}
 
-            {cursoSelecionadoAulas&&materiasDoCurso.length>0&&<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {cursoSelecionadoAulas&&<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="space-y-4">
                 <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-4"><div><p className="text-[9px] font-black uppercase tracking-widest text-slate-300">Curso</p><h3 className="font-black text-slate-800 text-sm">Matérias</h3></div><span className="text-[9px] font-black text-slate-300 uppercase">{materiasDoCurso.length}</span></div>
