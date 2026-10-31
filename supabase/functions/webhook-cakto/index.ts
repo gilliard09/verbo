@@ -21,33 +21,27 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // ── 1. Ler body ────────────────────────────────────────────────────────
     const rawBody = await req.text()
 
     let body: Record<string, unknown>
     try {
       body = JSON.parse(rawBody)
     } catch {
-      console.error("Body não é JSON válido:", rawBody)
+      // Nunca registrar o corpo recebido: pode conter dados pessoais ou credenciais.
+      console.error("Webhook Cakto recebeu JSON inválido.")
       return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 })
     }
 
-    // ── 2. Verificar chave secreta da Cakto ────────────────────────────────
     const secretNoBody   = (body.secret as string | undefined) ?? ''
     const secretNoHeader = req.headers.get('x-cakto-secret') ?? ''
     const secretRecebido = secretNoBody || secretNoHeader
 
     if (CAKTO_SECRET && secretRecebido !== CAKTO_SECRET) {
-      console.warn("Secret inválido recebido:", secretRecebido)
+      // Não registrar o segredo recebido nem qualquer parte dele.
+      console.warn("Webhook Cakto recusado: segredo inválido.")
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
     }
 
-    // ── 3. Extrair campos do payload da Cakto ─────────────────────────────
-    // Estrutura real confirmada:
-    // body.event
-    // body.data.subscription.customer.email
-    // body.data.subscription.product  (UUID direto, string)
-    // body.data.subscription.id
     const evento       = (body.event as string | undefined) ?? ''
     const data         = (body.data as Record<string, unknown> | undefined) ?? {}
     const subscription = (data.subscription as Record<string, unknown> | undefined) ?? {}
@@ -57,9 +51,9 @@ serve(async (req) => {
     const produtoId      = (subscription.product as string | undefined)?.toString() ?? ''
     const subscriptionId = (subscription.id as string | undefined)?.toString() ?? null
 
-    console.log("Evento Cakto:", evento, "| Produto:", produtoId, "| Email:", email)
+    // Registrar apenas metadados não pessoais do evento.
+    console.log("Evento Cakto recebido:", evento, "| Produto:", produtoId)
 
-    // ── 4. Eventos que ativam o plano ─────────────────────────────────────
     const eventosCompra = [
       'purchase_approved',    'PURCHASE_APPROVED',
       'subscription_created', 'SUBSCRIPTION_CREATED',
@@ -67,14 +61,12 @@ serve(async (req) => {
     ]
 
     if (eventosCompra.includes(evento) && email && produtoId) {
-
       const ehPlus     = produtoId === PRODUTO_PLUS
       const ehFundador = produtoId === PRODUTO_FUNDADOR
 
       if (ehPlus || ehFundador) {
         const novoPlano = ehFundador ? 'fundador' : 'plus'
 
-        // Buscar usuário pelo e-mail
         const { data: perfil, error: errPerfil } = await supabaseClient
           .from('profiles')
           .select('id')
@@ -82,8 +74,7 @@ serve(async (req) => {
           .single()
 
         if (errPerfil || !perfil) {
-          // Usuário ainda não se cadastrou — salvar como pendente
-          console.warn("Usuário não encontrado, salvando como pendente:", email)
+          console.warn("Usuário não localizado; plano será registrado como pendente.")
           await supabaseClient
             .from('planos_pendentes')
             .upsert(
@@ -97,7 +88,6 @@ serve(async (req) => {
           )
         }
 
-        // Atualizar plano na tabela profiles
         const { error: errUpdate } = await supabaseClient
           .from('profiles')
           .update({
@@ -110,21 +100,20 @@ serve(async (req) => {
 
         if (errUpdate) throw errUpdate
 
-        console.log(`Plano ${novoPlano} ativado para:`, email)
+        console.log("Plano ativado com sucesso:", novoPlano)
         return new Response(
           JSON.stringify({ message: `Plano ${novoPlano} ativado com sucesso!` }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
       }
 
-      console.warn("Produto não mapeado como Plus ou Fundador:", produtoId)
+      console.warn("Produto recebido não está mapeado como Plus ou Fundador.")
       return new Response(
         JSON.stringify({ message: 'Produto não mapeado, evento ignorado.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       )
     }
 
-    // ── 5. Cancelamento / reembolso → rebaixar para gratuito ──────────────
     const eventosCancelamento = [
       'subscription_cancellation', 'SUBSCRIPTION_CANCELLATION',
       'subscription_canceled',     'SUBSCRIPTION_CANCELED',
@@ -152,7 +141,7 @@ serve(async (req) => {
           })
           .eq('id', perfil.id)
 
-        console.log("Plano rebaixado para gratuito:", email)
+        console.log("Plano rebaixado para gratuito.")
       }
 
       return new Response(
@@ -161,15 +150,14 @@ serve(async (req) => {
       )
     }
 
-    // ── 6. Qualquer outro evento — ignorar sem erro ────────────────────────
-    console.log("Evento ignorado:", evento)
+    console.log("Evento Cakto ignorado:", evento)
     return new Response(
       JSON.stringify({ message: 'Evento recebido e ignorado.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
 
   } catch (error) {
-    console.error("Erro no processamento:", (error as Error).message)
+    console.error("Erro no processamento do webhook Cakto:", (error as Error).message)
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
