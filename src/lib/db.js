@@ -71,10 +71,19 @@ export async function upsertSermaoLocal(sermao) {
 export async function upsertSermoesLocais(sermoes) {
   const db = await getDB();
   const tx = db.transaction('sermoes_local', 'readwrite');
-  await Promise.all([
-    ...sermoes.map(s => tx.store.put({ ...s, _synced: true })),
-    tx.done,
-  ]);
+
+  for (const sermao of sermoes) {
+    const local = await tx.store.get(sermao.id);
+    const localAtualizacao = new Date(local?.updated_at || local?.created_at || 0).getTime();
+    const remotaAtualizacao = new Date(sermao.updated_at || sermao.created_at || 0).getTime();
+
+    // Um download nunca deve apagar uma edição local ainda não sincronizada
+    // quando ela é mais recente que a cópia remota.
+    if (local && local._synced === false && localAtualizacao > remotaAtualizacao) continue;
+    await tx.store.put({ ...sermao, _synced: true });
+  }
+
+  await tx.done;
 }
 
 /** Remove um sermão local pelo id */
