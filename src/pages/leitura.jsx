@@ -146,14 +146,23 @@ const Leitura = () => {
 
   const renderizarMarkdown = useCallback((texto) => {
     if (!texto) return '';
-    return texto
+    // O conteúdo vem de arquivos externos e pode conter HTML arbitrário.
+    // Escapamos o texto antes de aplicar apenas os marcadores permitidos pelo Verbo.
+    const seguro = texto
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    return seguro
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-black">$1</strong>')
       .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
       .replace(/==(.*?)==/g, (_, p1) => {
         const c = tema === 'dark' ? 'bg-purple-900/50 text-purple-100' : 'bg-purple-100 text-purple-900';
         return `<span class="px-1 rounded ${c}">${p1}</span>`;
       })
-      .replace(/^> (.*$)/gim, (_, p1) => {
+      .replace(/^&gt; (.*$)/gim, (_, p1) => {
         const b = tema === 'dark' ? 'border-white/20' : 'border-black/10';
         return `<blockquote class="border-l-4 ${b} pl-4 my-4 italic opacity-80">${p1}</blockquote>`;
       });
