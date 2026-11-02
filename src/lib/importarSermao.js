@@ -54,7 +54,6 @@ function formatarRun(run) {
   let formatado = texto;
   if (nomes.has('b') || nomes.has('bCs')) formatado = `**${formatado}**`;
   if (nomes.has('i') || nomes.has('iCs')) formatado = `*${formatado}*`;
-  if (nomes.has('u')) formatado = `<u>${formatado}</u>`;
   return formatado;
 }
 
