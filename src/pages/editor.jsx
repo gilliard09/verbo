@@ -673,10 +673,10 @@ Oração:`
   function confirmarImportacao() {
     if (!previewImportacao) return;
     const jaExisteConteudo = Boolean(titulo.trim() || conteudo.trim() || referencia.trim());
-    if (jaExisteConteudo && !window.confirm('A importação substituirá o título e o conteúdo atuais deste editor. Deseja continuar?')) return;
+    if (jaExisteConteudo && !window.confirm('A importação substituirá o título, a referência e o conteúdo atuais deste editor. Deseja continuar?')) return;
 
     setTitulo(previewImportacao.titulo || titulo);
-    setReferencia(previewImportacao.referencia || referencia);
+    setReferencia(previewImportacao.referencia);
     setConteudo(previewImportacao.conteudo);
     setPreviewImportacao(null);
     mostrarToast('Documento importado. Revise e salve seu sermão.', 'sucesso', 4500);
