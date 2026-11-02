@@ -491,7 +491,9 @@ Oração:`
       if (data) {
         const localAt  = local ? new Date(local.updated_at || local.created_at || 0) : new Date(0);
         const remotoAt = new Date(data.updated_at || data.created_at || 0);
-        if (remotoAt >= localAt) {
+        // Uma edição pendente local nunca deve ser substituída por uma cópia remota,
+        // mesmo se o relógio do dispositivo estiver atrasado.
+        if (local?._synced !== false && remotoAt >= localAt) {
           setTitulo(data.titulo || '');
           setConteudo(data.conteudo || '');
           setReferencia(data.referencia_biblica || '');
