@@ -74,12 +74,9 @@ export async function upsertSermoesLocais(sermoes) {
 
   for (const sermao of sermoes) {
     const local = await tx.store.get(sermao.id);
-    const localAtualizacao = new Date(local?.updated_at || local?.created_at || 0).getTime();
-    const remotaAtualizacao = new Date(sermao.updated_at || sermao.created_at || 0).getTime();
-
-    // Um download nunca deve apagar uma edição local ainda não sincronizada
-    // quando ela é mais recente que a cópia remota.
-    if (local && local._synced === false && localAtualizacao > remotaAtualizacao) continue;
+    // Qualquer edição pendente tem prioridade até a fila conseguir sincronizá-la.
+    // Não dependemos do relógio do dispositivo para decidir se ela é mais nova.
+    if (local && local._synced === false) continue;
     await tx.store.put({ ...sermao, _synced: true });
   }
 
