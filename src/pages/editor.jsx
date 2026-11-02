@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient';
 import {
   Save, ArrowLeft, Book, Loader2,
   Bold, Italic, Quote, Highlighter, CheckCircle2,
-  Clock, AlignLeft, RotateCcw, Maximize2, Minimize2,
+  Clock, AlignLeft, RotateCcw, FileUp,
   AlertTriangle, X, Lock, WifiOff, Sparkles, ArrowRight,
 } from 'lucide-react';
 
@@ -14,6 +14,7 @@ import { getSermaoLocal, upsertSermaoLocal, enqueueOp } from '../lib/db';
 import { gerarIdLocal } from '../lib/sync';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { usePlano } from '../hooks/usePlano';
+import { importarArquivoSermao } from '../lib/importarSermao';
 
 const PALAVRAS_POR_MINUTO = 120;
 const AUTO_SAVE_DELAY     = 30000;
@@ -272,7 +273,10 @@ const Editor = () => {
   const [conteudo,   setConteudo]   = useState('');
   const [referencia, setReferencia] = useState('');
   const [loading,    setLoading]    = useState(false);
-  const [telaCheia,  setTelaCheia]  = useState(true);
+  const telaCheia = true;
+  const arquivoImportacaoRef = useRef(null);
+  const [importando, setImportando] = useState(false);
+  const [previewImportacao, setPreviewImportacao] = useState(null);
   const [autoSaveAtivo, setAutoSaveAtivo] = useState(false);
   const autoSaveRef = useRef(null);
   const [historico,       setHistorico]       = useState([]);
@@ -560,7 +564,7 @@ Oração:`
       const eraSermaoNovo = !id; // só sermões recém-criados contam pro gatilho de upgrade por degrau
       try {
         const res = id
-          ? await supabase.from('sermoes').update(dadosSermao).eq('id', id)
+          ? await supabase.from('sermoes').update(dadosSermao).eq('id', id).select().single()
           : await supabase.from('sermoes').insert([dadosSermao]).select().single();
 
         if (!res.error) {
@@ -570,6 +574,7 @@ Oração:`
               ...dadosSermao,
               id: idFinal,
               created_at: res.data?.created_at || agora,
+              updated_at: res.data?.updated_at || agora,
               _synced: true,
             });
           }
@@ -618,7 +623,7 @@ Oração:`
       if (!salvouOnline) {
         if (id) {
           const local = await getSermaoLocal(id) || {};
-          const atualizado = { ...local, ...dadosSermao, id, _synced: false };
+          const atualizado = { ...local, ...dadosSermao, id, updated_at: agora, _synced: false };
           await upsertSermaoLocal(atualizado);
           await enqueueOp('update', id, atualizado);
         } else {
@@ -629,6 +634,7 @@ Oração:`
             ...dadosSermao,
             id: localIdRef.current,
             created_at: agora,
+            updated_at: agora,
             local_temp_id: localIdRef.current,
             _synced: false,
           };
@@ -646,6 +652,35 @@ Oração:`
     } finally {
       setLoading(false);
     }
+  }
+
+  async function selecionarArquivoImportacao(event) {
+    const arquivo = event.target.files?.[0];
+    event.target.value = '';
+    if (!arquivo) return;
+
+    setImportando(true);
+    try {
+      const resultado = await importarArquivoSermao(arquivo);
+      setPreviewImportacao(resultado);
+    } catch (error) {
+      mostrarToast(error.message || 'Não foi possível importar este arquivo.', 'erro', 6000);
+    } finally {
+      setImportando(false);
+    }
+  }
+
+  function confirmarImportacao() {
+    if (!previewImportacao) return;
+    const jaExisteConteudo = Boolean(titulo.trim() || conteudo.trim() || referencia.trim());
+    if (jaExisteConteudo && !window.confirm('A importação substituirá o título e o conteúdo atuais deste editor. Deseja continuar?')) return;
+
+    setTitulo(previewImportacao.titulo || titulo);
+    setReferencia(previewImportacao.referencia || referencia);
+    setConteudo(previewImportacao.conteudo);
+    setPreviewImportacao(null);
+    mostrarToast('Documento importado. Revise e salve seu sermão.', 'sucesso', 4500);
+    requestAnimationFrame(() => textAreaRef.current?.focus());
   }
 
   const restaurarVersao = (versao) => {
@@ -714,6 +749,40 @@ Oração:`
         }}
       />
 
+      {/* Prévia da importação: nada é aplicado ao sermão até a confirmação. */}
+      {previewImportacao && (
+        <div className="fixed inset-0 z-[260] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-6">
+          <div className="w-full max-w-2xl max-h-[92dvh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between gap-3 p-5 border-b border-slate-100">
+              <div className="min-w-0">
+                <h2 className="font-black text-slate-800">Revisar sermão importado</h2>
+                <p className="text-xs text-slate-400 mt-1 truncate">{previewImportacao.nomeArquivo} · {previewImportacao.formato}</p>
+              </div>
+              <button onClick={() => setPreviewImportacao(null)} aria-label="Fechar prévia" className="p-2 text-slate-400 hover:text-slate-700"><X size={20} /></button>
+            </div>
+            <div className="p-5 space-y-4 overflow-y-auto">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Título do sermão</label>
+                <input value={previewImportacao.titulo} onChange={e => setPreviewImportacao(p => ({ ...p, titulo: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 outline-none focus:border-purple-400" placeholder="Título da pregação" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Referência bíblica (opcional)</label>
+                <input value={previewImportacao.referencia} onChange={e => setPreviewImportacao(p => ({ ...p, referencia: e.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 outline-none focus:border-purple-400" placeholder="Ex.: João 3:16" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Conteúdo extraído · você pode revisar antes de importar</label>
+                <textarea value={previewImportacao.conteudo} onChange={e => setPreviewImportacao(p => ({ ...p, conteudo: e.target.value }))} rows={12} className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm leading-relaxed text-slate-700 outline-none focus:border-purple-400 resize-y" />
+              </div>
+              <p className="text-[11px] leading-relaxed text-slate-400">A importação não usa IA. O texto extraído será inserido no editor somente depois da sua confirmação. Revise quebras de linha e referências antes de salvar.</p>
+            </div>
+            <div className="flex gap-2 p-5 border-t border-slate-100">
+              <button onClick={() => setPreviewImportacao(null)} className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm">Cancelar</button>
+              <button onClick={confirmarImportacao} disabled={!previewImportacao.conteudo.trim()} className="flex-1 py-3 rounded-xl bg-[#4C1D95] text-white font-bold text-sm disabled:opacity-40">Importar no editor</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div
         className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0"
@@ -736,8 +805,9 @@ Oração:`
         </div>
 
         <div className="flex items-center gap-1">
-          <button onClick={() => setTelaCheia(t => !t)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-slate-600 transition-colors">
-            {telaCheia ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          <input ref={arquivoImportacaoRef} type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={selecionarArquivoImportacao} />
+          <button onClick={() => arquivoImportacaoRef.current?.click()} disabled={importando} title="Importar sermão (PDF ou Word)" aria-label="Importar sermão (PDF ou Word)" className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl text-[#4C1D95] hover:bg-purple-50 disabled:opacity-50 transition-all">
+            {importando ? <Loader2 className="animate-spin" size={19} /> : <FileUp size={19} />}
           </button>
           {historico.length > 0 && (
             <button onClick={() => setMostrarHistorico(true)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-[#4C1D95] transition-colors">
