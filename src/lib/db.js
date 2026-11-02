@@ -71,10 +71,16 @@ export async function upsertSermaoLocal(sermao) {
 export async function upsertSermoesLocais(sermoes) {
   const db = await getDB();
   const tx = db.transaction('sermoes_local', 'readwrite');
-  await Promise.all([
-    ...sermoes.map(s => tx.store.put({ ...s, _synced: true })),
-    tx.done,
-  ]);
+
+  for (const sermao of sermoes) {
+    const local = await tx.store.get(sermao.id);
+    // Qualquer edição pendente tem prioridade até a fila conseguir sincronizá-la.
+    // Não dependemos do relógio do dispositivo para decidir se ela é mais nova.
+    if (local && local._synced === false) continue;
+    await tx.store.put({ ...sermao, _synced: true });
+  }
+
+  await tx.done;
 }
 
 /** Remove um sermão local pelo id */

@@ -82,13 +82,21 @@ async function processarItem(item, userId) {
 
   if (operacao === 'update') {
     const { _synced, updated_at, local_temp_id, ...dadosLimpos } = payload;
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('sermoes')
       .update(dadosLimpos)
-      .eq('id', local_id);
+      .eq('id', local_id)
+      .select('updated_at')
+      .single();
     if (error) throw error;
     const local = await getSermaoLocal(local_id);
-    if (local) await upsertSermaoLocal({ ...local, _synced: true });
+    if (local) {
+      await upsertSermaoLocal({
+        ...local,
+        updated_at: data?.updated_at || new Date().toISOString(),
+        _synced: true,
+      });
+    }
   }
 }
 
