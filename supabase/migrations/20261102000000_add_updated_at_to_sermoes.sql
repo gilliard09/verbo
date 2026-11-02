@@ -1,10 +1,15 @@
 -- Add a reliable server timestamp for offline conflict resolution.
+-- Backfill existing rows before applying NOT NULL and the DEFAULT.
 ALTER TABLE public.sermoes
-  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz;
 
 UPDATE public.sermoes
 SET updated_at = COALESCE(created_at, data_criacao, now())
 WHERE updated_at IS NULL;
+
+ALTER TABLE public.sermoes
+  ALTER COLUMN updated_at SET DEFAULT now(),
+  ALTER COLUMN updated_at SET NOT NULL;
 
 CREATE OR REPLACE FUNCTION public.set_sermoes_updated_at()
 RETURNS trigger
