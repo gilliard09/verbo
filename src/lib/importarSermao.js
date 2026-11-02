@@ -102,6 +102,7 @@ async function lerEntradaZip(buffer, nomeArquivo) {
     }
     const metodo = view.getUint16(cursor + 10, true);
     const tamanhoComprimido = view.getUint32(cursor + 20, true);
+    const tamanhoDescomprimido = view.getUint32(cursor + 24, true);
     const tamanhoNome = view.getUint16(cursor + 28, true);
     const tamanhoExtra = view.getUint16(cursor + 30, true);
     const tamanhoComentario = view.getUint16(cursor + 32, true);
@@ -109,6 +110,9 @@ async function lerEntradaZip(buffer, nomeArquivo) {
     const nome = new TextDecoder().decode(bytes.slice(cursor + 46, cursor + 46 + tamanhoNome));
 
     if (nome === nomeArquivo) {
+      if (tamanhoDescomprimido > 30 * 1024 * 1024) {
+        throw new Error('O conteúdo interno do documento Word é muito grande para processar com segurança.');
+      }
       if (view.getUint32(offsetLocal, true) !== 0x04034b50) {
         throw new Error('O conteúdo interno do documento Word é inválido.');
       }
@@ -120,8 +124,12 @@ async function lerEntradaZip(buffer, nomeArquivo) {
       if (metodo !== 8 || typeof DecompressionStream === 'undefined') {
         throw new Error('Este navegador não oferece suporte à descompactação deste documento Word.');
       }
-      const stream = new Blob([dados]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-      return new Uint8Array(await new Response(stream).arrayBuffer());
+      try {
+        const stream = new Blob([dados]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+      } catch {
+        throw new Error('Não foi possível descompactar este arquivo Word neste navegador. Atualize o navegador e tente novamente.');
+      }
     }
     cursor += 46 + tamanhoNome + tamanhoExtra + tamanhoComentario;
   }
