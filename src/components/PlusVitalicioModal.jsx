@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Zap, CheckCircle2, ArrowUpRight, ShieldCheck, GraduationCap } from 'lucide-react';
 import { usePlano } from '../hooks/usePlano';
+import { supabase } from '../supabaseClient';
 
 // Controle manual da campanha: altere para false para interromper a exibição.
 const CAMPANHA_VITALICIO_ATIVA = true;
@@ -13,6 +14,17 @@ const VAGAS_ANUNCIADAS = 17;
 const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
   const { plano, loading } = usePlano();
   const [aberto, setAberto] = useState(false);
+
+  // Todos os eventos do pop-up ficam associados ao usuário e à variante da oferta.
+  const registrarEvento = (acao) => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    supabase.from('eventos_modal_upgrade')
+      .insert({ user_id: userId, acao, variante: 'vitalicio_147' })
+      .then(({ error }) => {
+        if (error) console.warn('Não foi possível registrar evento do Vitalício:', error.message);
+      });
+  };
 
   useEffect(() => {
     if (!CAMPANHA_VITALICIO_ATIVA || !session?.user?.id || loading || outroModalAberto) {
@@ -43,6 +55,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
         if (!estadoSalvo) {
           localStorage.setItem(chaveUsuario, JSON.stringify({ inicio: agora, ultimaExibicao: agora }));
           setAberto(true);
+          registrarEvento('exibido');
           return;
         }
 
@@ -52,11 +65,13 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
             ultimaExibicao: agora,
           }));
           setAberto(true);
+          registrarEvento('exibido');
         } else {
           setAberto(false);
         }
       } catch {
         setAberto(true);
+        registrarEvento('exibido');
       }
     };
 
@@ -70,9 +85,13 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     };
   }, [session?.user?.id, plano, loading, outroModalAberto]);
 
-  const fechar = () => setAberto(false);
+  const fechar = () => {
+    registrarEvento('dispensou');
+    setAberto(false);
+  };
 
   const abrirCheckout = () => {
+    registrarEvento('clicou');
     window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer');
   };
 
