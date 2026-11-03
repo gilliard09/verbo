@@ -49,27 +49,32 @@ const Navbar = ({ session, onOpenBiblia }) => {
 
   if (!session || isPublicPage || isReading || isAdminPage || isEditor || isUpgrade || isCursos) return null;
 
+  const navItemClass = (active) =>
+    `flex flex-col items-center justify-center min-w-[3.5rem] rounded-xl px-2 py-1.5 border backdrop-blur-md transition-all duration-200 ${active
+      ? 'text-[#4C1D95] bg-white/65 border-white/80 shadow-[0_2px_10px_rgba(76,29,149,0.10)]'
+      : 'text-gray-500 bg-white/25 border-white/35 hover:bg-white/55 hover:text-[#4C1D95]'}`;
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-between items-center z-[100] pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-      <Link to="/" className={`flex flex-col items-center ${location.pathname === '/' ? 'text-[#4C1D95]' : 'text-gray-400'}`}>
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/65 backdrop-blur-2xl border-t border-white/70 px-4 py-3 flex justify-between items-center z-[100] pb-8 shadow-[0_-8px_30px_rgba(31,24,48,0.10)]">
+      <Link to="/" className={navItemClass(location.pathname === '/')}>
         <Home size={22} /><span className="text-[10px] font-bold mt-1">Início</span>
       </Link>
 
-      <Link to="/cursos" className={`flex flex-col items-center ${location.pathname.startsWith('/cursos') ? 'text-[#4C1D95]' : 'text-gray-400'}`}>
+      <Link to="/cursos" className={navItemClass(location.pathname.startsWith('/cursos'))}>
         <PlayCircle size={22} /><span className="text-[10px] font-bold mt-1">Academia</span>
       </Link>
 
-      <Link to="/editor" className="flex flex-col items-center -mt-10">
-        <div className="bg-[#4C1D95] p-4 rounded-full text-white shadow-lg shadow-purple-200 hover:scale-105 active:scale-95 transition-all">
+      <Link to="/editor" aria-label="Novo Sermão" className="flex flex-col items-center -mt-10">
+        <div className="bg-[#4C1D95]/90 backdrop-blur-xl p-4 rounded-full text-white border border-white/40 shadow-[0_8px_24px_rgba(76,29,149,0.30)] hover:scale-105 active:scale-95 transition-all">
           <PenTool size={24} />
         </div>
       </Link>
 
-      <Link to="/devocionais" className={`flex flex-col items-center ${location.pathname.startsWith('/devocionais') ? 'text-[#4C1D95]' : 'text-gray-400'}`}>
+      <Link to="/devocionais" className={navItemClass(location.pathname.startsWith('/devocionais'))}>
         <Users size={22} /><span className="text-[10px] font-bold mt-1">Devocionais</span>
       </Link>
 
-      <Link to="/perfil" className={`flex flex-col items-center ${location.pathname === '/perfil' ? 'text-[#4C1D95]' : 'text-gray-400'}`}>
+      <Link to="/perfil" className={navItemClass(location.pathname === '/perfil')}>
         <User size={22} /><span className="text-[10px] font-bold mt-1">Perfil</span>
       </Link>
     </nav>
