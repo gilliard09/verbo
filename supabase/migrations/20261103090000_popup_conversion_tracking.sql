@@ -64,6 +64,18 @@ USING (
 ALTER TABLE public.subscriptions
   ADD COLUMN IF NOT EXISTS cakto_order_id text;
 
+DROP POLICY IF EXISTS "admins podem ler subscriptions" ON public.subscriptions;
+CREATE POLICY "admins podem ler subscriptions"
+ON public.subscriptions
+FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = (SELECT auth.uid()) AND p.is_admin IS TRUE
+  )
+);
+
 DO $$
 BEGIN
   IF NOT EXISTS (
