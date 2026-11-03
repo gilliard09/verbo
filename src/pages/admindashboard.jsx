@@ -439,53 +439,38 @@ const OrigemAquisicaoCard = ({ origens }) => {
 // Funil do modal de upgrade — exposição → clique → assinatura. Antes esse
 // dado só existia como investigação manual via SQL a cada revisão; agora
 // fica visível de forma permanente no dashboard.
-const FunilUpgradeCard = ({ funil }) => {
-  const etapas = [
-    {label:'Viram o Modal',valor:funil.exibiram,cor:'bg-pink-400',emoji:'👁️'},
-    {label:'Clicaram em Upgrade',valor:funil.clicaram,cor:'bg-fuchsia-400',emoji:'👆'},
-    {label:'Assinaram',valor:funil.assinaram,cor:'bg-green-400',emoji:'💎'},
-  ];
-  const max = etapas[0].valor || 1;
-  const pctClique = etapas[0].valor > 0 ? Math.round((etapas[1].valor/etapas[0].valor)*100) : 0;
-  const pctConversao = etapas[1].valor > 0 ? Math.round((etapas[2].valor/etapas[1].valor)*100) : 0;
-  return (
-    <div className="bg-white/5 border border-white/10 p-7 rounded-[32px] backdrop-blur-md">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2.5 bg-pink-500/20 rounded-2xl"><Sparkles size={20} className="text-pink-400"/></div>
-        <div><h3 className="font-black text-white text-sm uppercase tracking-tight">Funil do Modal de Upgrade</h3><p className="text-[10px] text-slate-500 font-bold">Exposição → clique → assinatura</p></div>
-      </div>
-      <div className="space-y-3">
-        {etapas.map((etapa) => {
-          const pct = max > 0 ? Math.round((etapa.valor/max)*100) : 0;
-          return (
-            <div key={etapa.label} className="flex items-center gap-3">
-              <span className="text-base w-6 shrink-0">{etapa.emoji}</span>
-              <div className="flex-1">
-                <div className="flex justify-between mb-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{etapa.label}</span>
-                  <span className="text-[10px] font-black text-white">{etapa.valor.toLocaleString('pt-BR')}</span>
-                </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${etapa.cor} transition-all duration-1000`} style={{width:`${pct}%`,opacity:0.85}}/>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="grid grid-cols-2 gap-3 mt-5">
-        <div className="bg-white/5 rounded-2xl p-3 text-center border border-white/5">
-          <p className="text-lg font-black text-pink-400">{pctClique}%</p>
-          <p className="text-[8px] font-black text-slate-500 uppercase mt-1">taxa de clique</p>
-        </div>
-        <div className="bg-white/5 rounded-2xl p-3 text-center border border-white/5">
-          <p className="text-lg font-black text-green-400">{pctConversao}%</p>
-          <p className="text-[8px] font-black text-slate-500 uppercase mt-1">clique → assinatura</p>
-        </div>
+const FunilUpgradeCard = ({ relatorio }) => (
+  <div className="bg-white/5 border border-white/10 p-7 rounded-[32px] backdrop-blur-md">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="p-2.5 bg-pink-500/20 rounded-2xl"><Sparkles size={20} className="text-pink-400"/></div>
+      <div>
+        <h3 className="font-black text-white text-sm uppercase tracking-tight">Conversão por pop-up</h3>
+        <p className="text-[10px] text-slate-500 font-bold">Usuários únicos · cliques · compras aprovadas na Cakto</p>
       </div>
     </div>
-  );
-};
+    <div className="space-y-4">
+      {relatorio.map(item => (
+        <div key={item.variante} className="border-b border-white/10 pb-4 last:border-0 last:pb-0">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div>
+              <p className="text-xs font-black text-white">{item.label}</p>
+              <p className="text-[9px] text-slate-500 mt-0.5">{item.vendas} compra(s) · {item.receita.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p>
+            </div>
+            <span className="text-sm font-black text-green-400">{item.taxaConversao}%</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="bg-white/5 rounded-xl p-2 text-center"><p className="text-sm font-black text-pink-300">{item.exibiram}</p><p className="text-[8px] uppercase text-slate-500">viram</p></div>
+            <div className="bg-white/5 rounded-xl p-2 text-center"><p className="text-sm font-black text-fuchsia-300">{item.clicaram}</p><p className="text-[8px] uppercase text-slate-500">clicaram</p></div>
+            <div className="bg-white/5 rounded-xl p-2 text-center"><p className="text-sm font-black text-green-300">{item.compradores}</p><p className="text-[8px] uppercase text-slate-500">compraram</p></div>
+            <div className="bg-white/5 rounded-xl p-2 text-center"><p className="text-sm font-black text-slate-300">{item.dispensaram}</p><p className="text-[8px] uppercase text-slate-500">fecharam</p></div>
+          </div>
+        </div>
+      ))}
+      {relatorio.length===0&&<p className="text-xs text-slate-500">Ainda não há eventos de pop-up registrados.</p>}
+    </div>
+    <p className="text-[9px] leading-relaxed text-slate-600 mt-5">A conversão considera compradores únicos atribuídos ao último clique do pop-up registrado antes da compra. Compras sem clique identificado ficam fora da atribuição.</p>
+  </div>
+);
 
 const AtivacaoCard = ({ ativacao }) => {
   const itens = [
@@ -708,7 +693,7 @@ const AdminDashboard = () => {
   const [receita, setReceita] = useState({mr:0,ticketMedio:0,ltv:0,churn:null});
   const [planos, setPlanos] = useState({fundador:0,plus:0});
   const [vitalicio, setVitalicio] = useState({quantidade:0, receita:0});
-  const [funilUpgrade, setFunilUpgrade] = useState({exibiram:0,clicaram:0,assinaram:0});
+  const [relatorioPopups, setRelatorioPopups] = useState([]);
   const [metas, setMetas] = useState(()=>{try{const s=JSON.parse(localStorage.getItem('verbo_admin_metas')||'{}');return{usuarios:s.usuarios??50,sermoes:s.sermoes??100,assinaturas:s.assinaturas??50,sermoesDiarios:s.sermoesDiarios??14};}catch{return{usuarios:50,sermoes:100,assinaturas:50,sermoesDiarios:14};}});
   const [editandoMeta, setEditandoMeta] = useState(null);
   const [metaTemp, setMetaTemp] = useState('');
@@ -1058,51 +1043,49 @@ const AdminDashboard = () => {
       setReceita({mr,ticketMedio,ltv:ticketMedio*12,churn:null});
 
       try {
-        const { data: eventosModal, error: erroEventosModal } = await supabase
-          .from('eventos_modal_upgrade')
-          .select('user_id,acao');
+        const [
+          { data: eventosModal, error: erroEventosModal },
+          { data: vendasPopups, error: erroVendasPopups },
+        ] = await Promise.all([
+          supabase.from('eventos_modal_upgrade').select('user_id,acao,variante'),
+          supabase.from('cakto_purchases').select('user_id,plan,amount,popup_variant,status,paid_at').eq('status','approved'),
+        ]);
 
-        if (erroEventosModal) {
-          console.error('Erro ao carregar eventos do modal de upgrade:', erroEventosModal);
-          setFunilUpgrade({exibiram:0,clicaram:0,assinaram:0});
-        } else {
-          const usuariosExibiram = new Set(
-            (eventosModal || [])
-              .filter(e => e.user_id && e.acao === 'exibido')
-              .map(e => e.user_id)
-          );
+        if (erroEventosModal) throw erroEventosModal;
+        if (erroVendasPopups) throw erroVendasPopups;
 
-          const usuariosClicaram = new Set(
-            (eventosModal || [])
-              .filter(e => e.user_id && ['clicou_upgrade','clicou_plus'].includes(e.acao))
-              .map(e => e.user_id)
-          );
+        const variantes = [
+          { variante: 'degrau_1', label: 'Primeiro sermão → oferta' },
+          { variante: 'degrau_2', label: 'Segundo sermão → oferta' },
+          { variante: 'degrau_3', label: 'Terceiro sermão → oferta' },
+          { variante: 'fundador', label: 'Essencial → Plus' },
+          { variante: 'vitalicio_147', label: 'Plus Vitalício · R$ 147' },
+        ];
 
-          // O status da assinatura vem de profiles, que é a fonte oficial do plano.
-          let assinaramAposClicar = 0;
-          if (usuariosClicaram.size > 0) {
-            const { count: countAssinantes, error: erroAssinantes } = await supabase
-              .from('profiles')
-              .select('id', { count: 'exact', head: true })
-              .in('id', [...usuariosClicaram])
-              .in('plano', ['fundador','plus']);
+        const novoRelatorio = variantes.map(({ variante, label }) => {
+          const eventos = (eventosModal || []).filter(e => e.variante === variante && e.user_id);
+          const vendas = (vendasPopups || []).filter(v => v.popup_variant === variante && v.user_id);
+          const usuariosUnicos = (acao) => new Set(eventos.filter(e => acao(e.acao)).map(e => e.user_id)).size;
+          const compradores = new Set(vendas.map(v => v.user_id)).size;
+          const exibiram = usuariosUnicos(acao => acao === 'exibido');
+          const clicaram = usuariosUnicos(acao => ['clicou','clicou_plus','clicou_vitalicio'].includes(acao));
+          return {
+            variante,
+            label,
+            exibiram,
+            clicaram,
+            dispensaram: usuariosUnicos(acao => acao === 'dispensou'),
+            compradores,
+            vendas: vendas.length,
+            receita: vendas.reduce((soma, venda) => soma + Number(venda.amount || 0), 0),
+            taxaConversao: exibiram > 0 ? Math.round((compradores / exibiram) * 100) : 0,
+          };
+        });
 
-            if (erroAssinantes) {
-              console.error('Erro ao cruzar assinaturas do modal com profiles:', erroAssinantes);
-            } else {
-              assinaramAposClicar = countAssinantes || 0;
-            }
-          }
-
-          setFunilUpgrade({
-            exibiram: usuariosExibiram.size,
-            clicaram: usuariosClicaram.size,
-            assinaram: assinaramAposClicar,
-          });
-        }
+        setRelatorioPopups(novoRelatorio);
       } catch (e) {
-        console.error('Erro ao calcular funil do modal de upgrade:', e);
-        setFunilUpgrade({exibiram:0,clicaram:0,assinaram:0});
+        console.error('Erro ao calcular relatório de conversão dos pop-ups:', e);
+        setRelatorioPopups([]);
       }
 
       const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -1370,7 +1353,7 @@ const AdminDashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <OrigemAquisicaoCard origens={origensAquisicao}/>
-              <FunilUpgradeCard funil={funilUpgrade}/>
+              <FunilUpgradeCard relatorio={relatorioPopups}/>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
