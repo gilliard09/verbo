@@ -277,6 +277,7 @@ const Editor = () => {
   const arquivoImportacaoRef = useRef(null);
   const [importando, setImportando] = useState(false);
   const [previewImportacao, setPreviewImportacao] = useState(null);
+  const [modalImportacaoPlus, setModalImportacaoPlus] = useState(false);
   const [autoSaveAtivo, setAutoSaveAtivo] = useState(false);
   const autoSaveRef = useRef(null);
   const [historico,       setHistorico]       = useState([]);
@@ -656,6 +657,39 @@ Oração:`
     }
   }
 
+  // Confere o plano diretamente no perfil antes de abrir o seletor e antes
+  // de processar o arquivo. Não depende apenas do estado em cache do hook.
+  async function verificarAcessoImportacao() {
+    const { data: { user }, error: erroAuth } = await supabase.auth.getUser();
+    if (erroAuth) throw erroAuth;
+    if (!user) return false;
+
+    const { data: perfil, error } = await supabase
+      .from('profiles')
+      .select('plano, plano_expira_em')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (perfil?.plano !== 'plus') return false;
+    if (perfil.plano_expira_em && new Date(perfil.plano_expira_em).getTime() <= Date.now()) return false;
+    return true;
+  }
+
+  async function abrirSeletorImportacao() {
+    if (importando) return;
+    try {
+      const temAcesso = await verificarAcessoImportacao();
+      if (!temAcesso) {
+        setModalImportacaoPlus(true);
+        return;
+      }
+      arquivoImportacaoRef.current?.click();
+    } catch (error) {
+      mostrarToast('Não foi possível validar sua assinatura PLUS. Verifique sua conexão e tente novamente.', 'erro', 6000);
+    }
+  }
+
   async function selecionarArquivoImportacao(event) {
     const arquivo = event.target.files?.[0];
     event.target.value = '';
@@ -663,6 +697,12 @@ Oração:`
 
     setImportando(true);
     try {
+      // Segunda validação imediatamente antes de ler o conteúdo do documento.
+      const temAcesso = await verificarAcessoImportacao();
+      if (!temAcesso) {
+        setModalImportacaoPlus(true);
+        return;
+      }
       const resultado = await importarArquivoSermao(arquivo);
       setPreviewImportacao(resultado);
     } catch (error) {
@@ -751,6 +791,37 @@ Oração:`
         }}
       />
 
+      {/* Recurso de importação exclusivo para assinantes PLUS. */}
+      {modalImportacaoPlus && (
+        <div className="fixed inset-0 z-[255] flex items-end sm:items-center justify-center p-4">
+          <button className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setModalImportacaoPlus(false)} aria-label="Fechar" />
+          <div className="relative w-full max-w-sm bg-white rounded-[30px] shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] p-7 text-center text-white">
+              <button onClick={() => setModalImportacaoPlus(false)} aria-label="Fechar" className="absolute top-3 right-3 p-2 text-white/70 hover:text-white"><X size={18} /></button>
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/15 flex items-center justify-center">
+                <FileUp size={25} />
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">Benefício PLUS</p>
+              <h2 className="text-xl font-black leading-tight">Importe seus sermões em PDF e Word</h2>
+            </div>
+            <div className="p-6 text-center">
+              <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                Traga suas mensagens para o Verbo sem precisar copiar e colar. A importação de documentos é exclusiva do plano PLUS.
+              </p>
+              <button
+                onClick={() => navigate('/upgrade?motivo=importar_sermao')}
+                className="w-full bg-[#4C1D95] text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-[#5B21B6] active:scale-95 transition-all"
+              >
+                Conhecer o PLUS
+              </button>
+              <button onClick={() => setModalImportacaoPlus(false)} className="w-full text-slate-400 text-xs font-bold py-3 mt-1">
+                Continuar no meu plano
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Prévia da importação: nada é aplicado ao sermão até a confirmação. */}
       {previewImportacao && (
         <div className="fixed inset-0 z-[260] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-6">
@@ -808,8 +879,9 @@ Oração:`
 
         <div className="flex items-center gap-1">
           <input ref={arquivoImportacaoRef} type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={selecionarArquivoImportacao} />
-          <button onClick={() => arquivoImportacaoRef.current?.click()} disabled={importando} title="Importar sermão (PDF ou Word)" aria-label="Importar sermão (PDF ou Word)" className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl text-[#4C1D95] hover:bg-purple-50 disabled:opacity-50 transition-all">
+          <button onClick={abrirSeletorImportacao} disabled={importando} title="Importar sermão (PDF ou Word) — exclusivo PLUS" aria-label="Importar sermão (PDF ou Word) — exclusivo PLUS" className="relative min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl text-[#4C1D95] hover:bg-purple-50 disabled:opacity-50 transition-all">
             {importando ? <Loader2 className="animate-spin" size={19} /> : <FileUp size={19} />}
+            {!isPlus && <span className="absolute -top-1 -right-2 rounded-full bg-[#4C1D95] px-1.5 py-0.5 text-[8px] leading-none font-black tracking-wide text-white shadow-sm">PLUS</span>}
           </button>
           {historico.length > 0 && (
             <button onClick={() => setMostrarHistorico(true)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-[#4C1D95] transition-colors">
