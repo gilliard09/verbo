@@ -31,11 +31,13 @@ const BENEFICIOS_PLUS = [
   { icon: WifiOff,        texto: 'Acesso offline ilimitado' },
   { icon: Sparkles,       texto: 'Todas as atualizações futuras incluídas' },
   { icon: Star,           texto: 'Suporte prioritário' },
+  { icon: BookOpen,       texto: 'Importação de sermões em PDF e Word' },
 ];
 
 const MOTIVOS = {
   limite_sermoes: { emoji: '📝', texto: 'Você atingiu o limite de sermões do plano gratuito.' },
   academia:       { emoji: '🎓', texto: 'A Academia Verbo é exclusiva para assinantes.' },
+  importar_sermao: { emoji: '📄', texto: 'A importação de sermões em PDF e Word é um benefício exclusivo do plano PLUS.' },
 };
 
 const Upgrade = () => {
