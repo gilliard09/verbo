@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Zap, CheckCircle2, ShieldCheck, GraduationCap } from 'lucide-react';
+import { X, Zap, CheckCircle2, ShieldCheck, GraduationCap, CalendarCheck } from 'lucide-react';
 import { usePlano } from '../hooks/usePlano';
 import { supabase } from '../supabaseClient';
 
@@ -7,6 +7,7 @@ import { supabase } from '../supabaseClient';
 const CAMPANHA_VITALICIO_ATIVA = true;
 const CHECKOUT_ANUAL = 'https://pay.cakto.com.br/s9tdarf_1199602';
 const CHECKOUT_VITALICIO = 'https://pay.cakto.com.br/zeegt89_920646';
+const CHECKOUT_MENSAL = 'https://pay.cakto.com.br/ykwdiud_920168';
 const STORAGE_KEY = 'verbo-black-friday-2026';
 const DURACAO_CAMPANHA_MS = 10 * 24 * 60 * 60 * 1000;
 const INTERVALO_DIARIO_MS = 24 * 60 * 60 * 1000;
@@ -14,6 +15,7 @@ const INTERVALO_DIARIO_MS = 24 * 60 * 60 * 1000;
 const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
   const { plano, loading } = usePlano();
   const [aberto, setAberto] = useState(false);
+  const [ofertaMensalAberta, setOfertaMensalAberta] = useState(false);
 
   // Todos os eventos do pop-up ficam associados ao usuário e à variante da oferta.
   const registrarEvento = (acao) => {
@@ -90,13 +92,69 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     setAberto(false);
   };
 
+  // A oferta mensal só aparece após a recusa explícita da Black Friday e
+  // apenas uma vez por usuário. Fechar no X ou clicar fora não a dispara.
+  const recusarBlackFriday = () => {
+    registrarEvento('recusou_black_abriu_mensal');
+    setAberto(false);
+    try {
+      const chaveUsuario = `${STORAGE_KEY}-${session.user.id}`;
+      const estadoSalvo = JSON.parse(localStorage.getItem(chaveUsuario) || 'null') || {};
+      if (estadoSalvo.ofertaMensalExibida) return;
+      localStorage.setItem(chaveUsuario, JSON.stringify({ ...estadoSalvo, ofertaMensalExibida: true }));
+    } catch (error) {
+      console.warn('Não foi possível salvar a exibição da oferta mensal:', error);
+    }
+    setOfertaMensalAberta(true);
+    registrarEvento('oferta_mensal_exibida');
+  };
+
+  const fecharOfertaMensal = () => {
+    registrarEvento('dispensou_oferta_mensal');
+    setOfertaMensalAberta(false);
+  };
+
+  const abrirCheckoutMensal = () => {
+    registrarEvento('clicou_mensal');
+    window.open(CHECKOUT_MENSAL, '_blank', 'noopener,noreferrer');
+    setOfertaMensalAberta(false);
+  };
+
   const abrirCheckout = (tipo) => {
     registrarEvento(`clicou_${tipo}`);
     const checkout = tipo === 'anual' ? CHECKOUT_ANUAL : CHECKOUT_VITALICIO;
     window.open(checkout, '_blank', 'noopener,noreferrer');
   };
 
-  if (!aberto || loading || !session?.user?.id || outroModalAberto) return null;
+  if (loading || !session?.user?.id || outroModalAberto) return null;
+
+  if (ofertaMensalAberta) {
+    return (
+      <div className="fixed inset-0 z-[251] flex items-center justify-center overflow-y-auto bg-slate-950/70 px-3 py-4 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="plus-mensal-title" onMouseDown={(event) => { if (event.target === event.currentTarget) fecharOfertaMensal(); }}>
+        <div className="relative my-auto w-full max-w-[390px] rounded-[22px] border border-white/10 bg-[#171123] p-5 text-white shadow-2xl shadow-black/30 animate-in fade-in zoom-in-95 duration-200 sm:p-6">
+          <button type="button" onClick={fecharOfertaMensal} aria-label="Fechar oferta" className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/80 transition hover:bg-white/20"><X size={18} /></button>
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-300"><CalendarCheck size={22} /></div>
+          <p className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">UMA ALTERNATIVA PARA COMEÇAR</p>
+          <h2 id="plus-mensal-title" className="mt-2 text-center text-2xl font-black leading-tight">Comece pelo Verbo Plus</h2>
+          <p className="mx-auto mt-2 max-w-xs text-center text-sm leading-relaxed text-violet-100/80">Você não precisa contratar um plano anual para aproveitar todos os recursos do Verbo.</p>
+          <div className="my-5 rounded-2xl border border-violet-300/20 bg-white/[0.05] px-4 py-4 text-center">
+            <p className="text-4xl font-black tracking-tight">R$ 47<span className="text-lg font-bold text-violet-200">/mês</span></p>
+            <p className="mt-1 text-xs font-semibold text-emerald-300">Cancele quando quiser</p>
+          </div>
+          <ul className="mb-5 space-y-2.5">
+            {['Todos os recursos do Plus', 'Todos os cursos da Academia Verbo', 'Sermões ilimitados', 'Importação de sermões em PDF e DOCX', 'Acesso às novas funcionalidades do Plus'].map((item) => (
+              <li key={item} className="flex items-start gap-2 text-sm leading-snug text-violet-50/90"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-300" /><span>{item}</span></li>
+            ))}
+          </ul>
+          <button type="button" onClick={abrirCheckoutMensal} className="w-full rounded-xl bg-emerald-400 px-4 py-3.5 text-sm font-black text-[#10251D] transition hover:bg-emerald-300">QUERO ASSINAR O PLUS</button>
+          <button type="button" onClick={fecharOfertaMensal} className="mt-2 w-full rounded-xl px-4 py-2.5 text-xs font-semibold text-violet-200/70 transition hover:text-white">Não quero continuar agora</button>
+          <p className="mt-2 text-center text-[10px] leading-relaxed text-violet-200/45">Assinatura mensal de R$ 47. Você será direcionado ao checkout seguro da Cakto.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!aberto) return null;
 
   const beneficios = [
     'Sermões ilimitados no editor',
@@ -206,10 +264,10 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
 
           <button
             type="button"
-            onClick={fechar}
+            onClick={recusarBlackFriday}
             className="mt-1 w-full rounded-xl px-4 py-2 text-xs font-semibold text-violet-200/70 transition hover:text-white"
           >
-            Agora não, continuar usando o Verbo
+            Não quero essa oportunidade
           </button>
 
           <p className="mt-1 text-center text-[9px] leading-relaxed text-violet-200/45">
