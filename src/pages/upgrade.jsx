@@ -210,8 +210,8 @@ const Upgrade = () => {
               <div>
                 <p className="font-black text-slate-800">Plano Essencial</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">10 sermões por mês + recursos intermediários + Modo Púlpito.</p>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-black text-[#4C1D95]">R$9,90</span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-4">
+                  <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-[#4C1D95]">R$9,90</span>
                   <span className="text-xs text-gray-400 font-bold">/mês para sempre</span>
                 </div>
                 <p className="text-[10px] text-amber-600 font-black uppercase tracking-widest mt-1">Acesso parcial à Academia</p>
@@ -229,15 +229,15 @@ const Upgrade = () => {
             <div className="absolute top-4 right-4 bg-[#4C1D95] text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
               <Zap size={9} /> Mais completo
             </div>
-            <div className="flex items-start gap-3 pr-24">
+            <div className="flex items-start gap-3 pr-2">
               <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${planoSelecionado === 'plus' ? 'border-[#4C1D95] bg-[#4C1D95]' : 'border-slate-300'}`}>
                 {planoSelecionado === 'plus' && <div className="w-2 h-2 bg-white rounded-full" />}
               </div>
               <div>
                 <p className="font-black text-slate-800">Plano Plus</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">Todos os cursos da Academia + app completo.</p>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-black text-[#4C1D95]">R$47</span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-4">
+                  <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-[#4C1D95]">R$47</span>
                   <span className="text-xs text-gray-400 font-bold">/mês</span>
                 </div>
                 <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mt-1 flex items-center gap-1">
@@ -254,15 +254,15 @@ const Upgrade = () => {
             }`}
           >
             <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">Black Friday</div>
-            <div className="flex items-start gap-3 pr-24">
+            <div className="flex items-start gap-3 pr-2">
               <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${planoSelecionado === 'anual' ? 'border-[#4C1D95] bg-[#4C1D95]' : 'border-slate-300'}`}>
                 {planoSelecionado === 'anual' && <div className="w-2 h-2 bg-white rounded-full" />}
               </div>
               <div>
                 <p className="font-black text-slate-800">Plus Anual</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">12 meses de acesso completo ao Plus.</p>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-black text-[#4C1D95]">R$ 347</span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-4">
+                  <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-[#4C1D95]">R$ 347</span>
                   <span className="text-xs text-gray-400 font-bold">/ano</span>
                 </div>
                 <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mt-1">R$ 28,92 por mês · economia de R$ 217</p>
@@ -277,16 +277,16 @@ const Upgrade = () => {
             }`}
           >
             <div className="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">Pagamento único</div>
-            <div className="flex items-start gap-3 pr-24">
+            <div className="flex items-start gap-3 pr-2">
               <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${planoSelecionado === 'vitalicio' ? 'border-amber-500 bg-amber-500' : 'border-slate-300'}`}>
                 {planoSelecionado === 'vitalicio' && <div className="w-2 h-2 bg-white rounded-full" />}
               </div>
               <div>
                 <p className="font-black text-slate-800">Plus Vitalício</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">Acesso vitalício ao Plus, sem renovação anual.</p>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className="text-3xl font-black text-amber-700">R$ 497</span>
-                  <span className="text-xs text-gray-400 font-bold">pagamento único</span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-4">
+                  <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-amber-700">R$ 497</span>
+                  <span className="max-w-[112px] text-xs leading-tight text-gray-400 font-bold">pagamento único</span>
                 </div>
               </div>
             </div>
