@@ -656,6 +656,38 @@ Oração:`
     }
   }
 
+  // A importação é exclusiva do Plus. Consultamos o Supabase em cada tentativa,
+  // sem confiar no estado em cache do hook usePlano após alterações de plano.
+  async function verificarAcessoImportacao() {
+    const { data: { user }, error: erroUsuario } = await supabase.auth.getUser();
+    if (erroUsuario) throw erroUsuario;
+    if (!user) return false;
+
+    const { data: perfil, error } = await supabase
+      .from('profiles')
+      .select('plano, plano_expira_em')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (error) throw error;
+
+    const planoPlusAtivo = perfil?.plano === 'plus';
+    const assinaturaValida = !perfil?.plano_expira_em || new Date(perfil.plano_expira_em) > new Date();
+    return planoPlusAtivo && assinaturaValida;
+  }
+
+  async function abrirImportacao() {
+    try {
+      const permitido = await verificarAcessoImportacao();
+      if (!permitido) {
+        navigate('/upgrade?motivo=importacao');
+        return;
+      }
+      arquivoImportacaoRef.current?.click();
+    } catch (error) {
+      mostrarToast('Não foi possível validar seu plano. Conecte-se à internet e tente novamente.', 'erro', 6000);
+    }
+  }
+
   async function selecionarArquivoImportacao(event) {
     const arquivo = event.target.files?.[0];
     event.target.value = '';
@@ -663,6 +695,11 @@ Oração:`
 
     setImportando(true);
     try {
+      const permitido = await verificarAcessoImportacao();
+      if (!permitido) {
+        navigate('/upgrade?motivo=importacao');
+        return;
+      }
       const resultado = await importarArquivoSermao(arquivo);
       setPreviewImportacao(resultado);
     } catch (error) {
@@ -672,8 +709,19 @@ Oração:`
     }
   }
 
-  function confirmarImportacao() {
+  async function confirmarImportacao() {
     if (!previewImportacao) return;
+    try {
+      const permitido = await verificarAcessoImportacao();
+      if (!permitido) {
+        setPreviewImportacao(null);
+        navigate('/upgrade?motivo=importacao');
+        return;
+      }
+    } catch (error) {
+      mostrarToast('Não foi possível validar seu plano. Conecte-se à internet e tente novamente.', 'erro', 6000);
+      return;
+    }
     const jaExisteConteudo = Boolean(titulo.trim() || conteudo.trim() || referencia.trim());
     if (jaExisteConteudo && !window.confirm('A importação substituirá o título, a referência e o conteúdo atuais deste editor. Deseja continuar?')) return;
 
@@ -808,8 +856,8 @@ Oração:`
 
         <div className="flex items-center gap-1">
           <input ref={arquivoImportacaoRef} type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={selecionarArquivoImportacao} />
-          <button onClick={() => arquivoImportacaoRef.current?.click()} disabled={importando} title="Importar sermão (PDF ou Word)" aria-label="Importar sermão (PDF ou Word)" className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl text-[#4C1D95] hover:bg-purple-50 disabled:opacity-50 transition-all">
-            {importando ? <Loader2 className="animate-spin" size={19} /> : <FileUp size={19} />}
+          <button onClick={abrirImportacao} disabled={importando} title="Importar sermão (recurso exclusivo do Plus)" aria-label="Importar sermão (recurso exclusivo do Plus)" className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-2xl transition-all disabled:opacity-50 ${isPlus ? 'text-[#4C1D95] hover:bg-purple-50' : 'text-slate-300 hover:bg-slate-50'}`}>
+            {importando ? <Loader2 className="animate-spin" size={19} /> : isPlus ? <FileUp size={19} /> : <Lock size={18} />}
           </button>
           {historico.length > 0 && (
             <button onClick={() => setMostrarHistorico(true)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-300 hover:text-[#4C1D95] transition-colors">
