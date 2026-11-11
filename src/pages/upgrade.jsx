@@ -43,6 +43,7 @@ const BENEFICIOS_PLUS = [
 const MOTIVOS = {
   limite_sermoes: { emoji: '📝', texto: 'Você atingiu o limite de sermões do plano gratuito.' },
   academia:       { emoji: '🎓', texto: 'A Academia Verbo é exclusiva para assinantes.' },
+  importacao:     { emoji: '📄', texto: 'Importar sermões em PDF ou DOCX é um recurso exclusivo do plano Plus.' },
 };
 
 const Upgrade = () => {
