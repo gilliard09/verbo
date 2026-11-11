@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Zap, CheckCircle2, ArrowUpRight, ShieldCheck, GraduationCap } from 'lucide-react';
+import { X, Zap, CheckCircle2, ShieldCheck, GraduationCap } from 'lucide-react';
 import { usePlano } from '../hooks/usePlano';
 import { supabase } from '../supabaseClient';
 
@@ -107,6 +107,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     'Acesso offline aos sermões salvos',
     'Devocionais e recursos do plano Plus',
     'Acesso a todos os cursos disponíveis na Academia Verbo',
+    'Acesso aos recursos e atualizações futuras do Plus enquanto a plataforma estiver ativa',
   ];
 
   return (
@@ -137,7 +138,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
             BLACK FRIDAY · CONDIÇÃO ESPECIAL
           </p>
           <h2 id="plus-vitalicio-title" className="mt-1.5 text-xl font-black leading-tight tracking-tight sm:text-2xl">
-            Verbo PLUS<br />Vitalício
+            Verbo PLUS<br />Black Friday
           </h2>
           <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-violet-100 sm:text-sm">
             Escolha o acesso que faz mais sentido para sua jornada. Mais tempo para preparar sermões e crescer no conhecimento bíblico.
@@ -212,7 +213,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
           </button>
 
           <p className="mt-1 text-center text-[9px] leading-relaxed text-violet-200/45">
-            Você será direcionado ao checkout seguro da Cakto. Confira as condições completas antes de finalizar a compra. A disponibilidade das vagas ainda não é atualizada automaticamente por este pop-up.
+            Você será direcionado ao checkout seguro da Cakto. Confira as condições completas antes de finalizar a compra.
           </p>
         </div>
       </div>
