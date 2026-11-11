@@ -13,6 +13,9 @@ import {
 } from 'lucide-react';
 
 // ─── Benefícios por plano ─────────────────────────────────────────────────────
+const CHECKOUT_ANUAL = 'https://pay.cakto.com.br/s9tdarf_1199602';
+const CHECKOUT_VITALICIO = 'https://pay.cakto.com.br/zeegt89_920646';
+
 const BENEFICIOS_ESSENCIAL = [
   { icon: BookOpen,       texto: '10 sermões por mês' },
   { icon: Sparkles,       texto: 'Recursos intermediários' },
@@ -122,6 +125,10 @@ const Upgrade = () => {
           >
             <Sparkles size={18} /> FAZER UPGRADE — R$47/mês
           </button>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <button onClick={() => window.open(CHECKOUT_ANUAL, '_blank', 'noopener,noreferrer')} className="rounded-2xl border border-violet-200 bg-violet-50 px-3 py-3 text-xs font-black text-[#4C1D95]">PLUS ANUAL · R$ 347</button>
+            <button onClick={() => window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer')} className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs font-black text-amber-800">VITALÍCIO · R$ 497</button>
+          </div>
           <button onClick={() => navigate('/')} className="w-full text-center text-xs text-slate-400 font-bold py-3 hover:text-slate-600 transition-colors">
             Continuar com o plano Essencial
           </button>
@@ -134,9 +141,17 @@ const Upgrade = () => {
   const beneficiosAtivos = planoSelecionado === 'fundador' ? BENEFICIOS_ESSENCIAL : BENEFICIOS_PLUS;
 
   const irParaCheckout = () => {
+    if (planoSelecionado === 'anual') {
+      window.open(CHECKOUT_ANUAL, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (planoSelecionado === 'vitalicio') {
+      window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer');
+      return;
+    }
     const base = planoSelecionado === 'fundador' ? CHECKOUT_FUNDADOR : CHECKOUT_PLUS;
     const url = emailUsuario ? `${base}?email=${encodeURIComponent(emailUsuario)}` : base;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -231,6 +246,51 @@ const Upgrade = () => {
               </div>
             </div>
           </button>
+
+          <button
+            onClick={() => setPlanoSelecionado('anual')}
+            className={`w-full text-left p-5 rounded-[24px] border-2 transition-all relative overflow-hidden ${
+              planoSelecionado === 'anual' ? 'border-[#4C1D95] bg-purple-50' : 'border-slate-200 bg-white'
+            }`}
+          >
+            <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">Black Friday</div>
+            <div className="flex items-start gap-3 pr-24">
+              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${planoSelecionado === 'anual' ? 'border-[#4C1D95] bg-[#4C1D95]' : 'border-slate-300'}`}>
+                {planoSelecionado === 'anual' && <div className="w-2 h-2 bg-white rounded-full" />}
+              </div>
+              <div>
+                <p className="font-black text-slate-800">Plus Anual</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">12 meses de acesso completo ao Plus.</p>
+                <div className="flex items-baseline gap-1 mt-3">
+                  <span className="text-3xl font-black text-[#4C1D95]">R$ 347</span>
+                  <span className="text-xs text-gray-400 font-bold">/ano</span>
+                </div>
+                <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mt-1">R$ 28,92 por mês · economia de R$ 217</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setPlanoSelecionado('vitalicio')}
+            className={`w-full text-left p-5 rounded-[24px] border-2 transition-all relative overflow-hidden ${
+              planoSelecionado === 'vitalicio' ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white'
+            }`}
+          >
+            <div className="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">Pagamento único</div>
+            <div className="flex items-start gap-3 pr-24">
+              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${planoSelecionado === 'vitalicio' ? 'border-amber-500 bg-amber-500' : 'border-slate-300'}`}>
+                {planoSelecionado === 'vitalicio' && <div className="w-2 h-2 bg-white rounded-full" />}
+              </div>
+              <div>
+                <p className="font-black text-slate-800">Plus Vitalício</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Acesso vitalício ao Plus, sem renovação anual.</p>
+                <div className="flex items-baseline gap-1 mt-3">
+                  <span className="text-3xl font-black text-amber-700">R$ 497</span>
+                  <span className="text-xs text-gray-400 font-bold">pagamento único</span>
+                </div>
+              </div>
+            </div>
+          </button>
         </div>
 
         {/* Benefícios do plano selecionado */}
@@ -263,7 +323,7 @@ const Upgrade = () => {
           className="w-full bg-[#4C1D95] text-white py-5 rounded-[24px] font-black text-base shadow-xl shadow-purple-200 hover:bg-[#3a15b0] active:scale-95 transition-all flex items-center justify-center gap-2 mb-4"
         >
           <Sparkles size={18} />
-          {planoSelecionado === 'fundador' ? 'ASSINAR ESSENCIAL — R$9,90/mês' : 'ASSINAR AGORA — R$47/mês'}
+          {planoSelecionado === 'fundador' ? 'ASSINAR ESSENCIAL — R$9,90/mês' : planoSelecionado === 'anual' ? 'ASSINAR PLUS ANUAL — R$347/ano' : planoSelecionado === 'vitalicio' ? 'GARANTIR PLUS VITALÍCIO — R$497' : 'ASSINAR AGORA — R$47/mês'}
         </button>
 
         <div className="flex justify-center gap-5 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8">
