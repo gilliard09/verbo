@@ -5,11 +5,11 @@ import { supabase } from '../supabaseClient';
 
 // Controle manual da campanha: altere para false para interromper a exibição.
 const CAMPANHA_VITALICIO_ATIVA = true;
+const CHECKOUT_ANUAL = 'https://pay.cakto.com.br/s9tdarf_1199602';
 const CHECKOUT_VITALICIO = 'https://pay.cakto.com.br/zeegt89_920646';
-const STORAGE_KEY = 'verbo-plus-vitalicio-campanha';
+const STORAGE_KEY = 'verbo-black-friday-2026';
 const DURACAO_CAMPANHA_MS = 10 * 24 * 60 * 60 * 1000;
 const INTERVALO_DIARIO_MS = 24 * 60 * 60 * 1000;
-const VAGAS_ANUNCIADAS = 17;
 
 const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
   const { plano, loading } = usePlano();
@@ -20,7 +20,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     const userId = session?.user?.id;
     if (!userId) return;
     supabase.from('eventos_modal_upgrade')
-      .insert({ user_id: userId, acao, variante: 'vitalicio_147' })
+      .insert({ user_id: userId, acao, variante: 'black_friday_2026' })
       .then(({ error }) => {
         if (error) console.warn('Não foi possível registrar evento do Vitalício:', error.message);
       });
@@ -90,9 +90,10 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     setAberto(false);
   };
 
-  const abrirCheckout = () => {
-    registrarEvento('clicou');
-    window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer');
+  const abrirCheckout = (tipo) => {
+    registrarEvento(`clicou_${tipo}`);
+    const checkout = tipo === 'anual' ? CHECKOUT_ANUAL : CHECKOUT_VITALICIO;
+    window.open(checkout, '_blank', 'noopener,noreferrer');
   };
 
   if (!aberto || loading || !session?.user?.id || outroModalAberto) return null;
@@ -133,21 +134,32 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
             <Zap size={21} fill="currentColor" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-100">
-            Oferta especial · vagas limitadas
+            BLACK FRIDAY · CONDIÇÃO ESPECIAL
           </p>
           <h2 id="plus-vitalicio-title" className="mt-1.5 text-xl font-black leading-tight tracking-tight sm:text-2xl">
             Verbo PLUS<br />Vitalício
           </h2>
           <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-violet-100 sm:text-sm">
-            Prepare seus sermões com mais praticidade e continue crescendo no conhecimento bíblico. Um único investimento, sem mensalidade.
+            Escolha o acesso que faz mais sentido para sua jornada. Mais tempo para preparar sermões e crescer no conhecimento bíblico.
           </p>
         </div>
 
         <div className="px-4 pb-4 pt-3.5 sm:px-5 sm:pb-5">
-          <div className="text-center">
-            <span className="text-3xl font-black tracking-tight">R$ 147,00</span>
-            <p className="mt-1 text-xs text-violet-200/80">Pagamento único · acesso vitalício aos recursos incluídos nesta oferta</p>
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
+              <p className="text-[10px] font-black uppercase tracking-wider text-violet-200">Plus anual</p>
+              <p className="mt-1 text-2xl font-black">R$ 347</p>
+              <p className="mt-1 text-[10px] text-violet-200/80">12 meses · R$ 28,92/mês</p>
+              <button type="button" onClick={() => abrirCheckout('anual')} className="mt-3 w-full rounded-lg bg-violet-300 px-2 py-2 text-[10px] font-black text-[#24133F] transition hover:bg-white">ASSINAR ANUAL</button>
+            </div>
+            <div className="rounded-xl border border-amber-300/40 bg-amber-300/[0.10] p-3">
+              <p className="text-[10px] font-black uppercase tracking-wider text-amber-200">Plus vitalício</p>
+              <p className="mt-1 text-2xl font-black">R$ 497</p>
+              <p className="mt-1 text-[10px] text-violet-100/80">Pagamento único</p>
+              <button type="button" onClick={() => abrirCheckout('vitalicio')} className="mt-3 w-full rounded-lg bg-white px-2 py-2 text-[10px] font-black text-[#4C1D95] transition hover:bg-violet-50">QUERO VITALÍCIO</button>
+            </div>
           </div>
+          <p className="mt-2 text-center text-[10px] text-violet-200/80">No anual, você economiza R$ 217 em relação a 12 mensalidades de R$ 47.</p>
 
           <div className="my-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <div className="mb-2 flex items-center gap-2">
@@ -187,24 +199,8 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
             </p>
           </div>
 
-          <div className="mb-3 flex items-center justify-center gap-2 rounded-xl border border-violet-300/20 bg-violet-400/[0.08] px-3 py-3 text-center">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-violet-300" />
-            <p className="text-xs font-semibold text-violet-100">
-              Oferta anunciada para apenas {VAGAS_ANUNCIADAS} vagas
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={abrirCheckout}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-black text-[#4C1D95] shadow-lg shadow-black/10 transition hover:bg-violet-50 active:scale-[0.99] sm:text-sm"
-          >
-            QUERO MEU ACESSO VITALÍCIO
-            <ArrowUpRight size={18} />
-          </button>
-
           <p className="mt-2 text-center text-[10px] leading-relaxed text-violet-200/75">
-            Pagamento único de R$ 147,00. Sem mensalidade para o acesso vitalício desta oferta.
+            Anual: R$ 347 por 12 meses. Vitalício: R$ 497 em pagamento único, sem renovação.
           </p>
 
           <button
