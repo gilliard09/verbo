@@ -20,7 +20,8 @@ const BENEFICIOS_ESSENCIAL = [
   { icon: BookOpen,       texto: '10 sermões por mês' },
   { icon: Sparkles,       texto: 'Recursos intermediários' },
   { icon: Mic2,           texto: 'Modo Púlpito' },
-  { icon: GraduationCap,  texto: 'Acesso parcial à Academia' },
+  { icon: GraduationCap,  texto: 'Fundamentos da Pregação do Zero' },
+  { icon: GraduationCap,  texto: 'Líder 5.0 — um guia para ter uma voz relevante nas redes sociais' },
 ];
 
 const BENEFICIOS_PLUS = [
@@ -30,6 +31,9 @@ const BENEFICIOS_PLUS = [
   { icon: GraduationCap,  texto: '✓ Método Pregação Impactante' },
   { icon: GraduationCap,  texto: '✓ Novo Testamento Explicado' },
   { icon: GraduationCap,  texto: '✓ Discipulado Cristão' },
+  { icon: GraduationCap,  texto: '✓ Fundamentos da Pregação do Zero' },
+  { icon: GraduationCap,  texto: '✓ Líder 5.0 — um guia para ter uma voz relevante nas redes sociais' },
+  { icon: BookOpen,       texto: 'Importar sermão em PDF ou .docx' },
   { icon: Mic2,           texto: 'Modo púlpito sem restrições' },
   { icon: WifiOff,        texto: 'Acesso offline ilimitado' },
   { icon: Sparkles,       texto: 'Todas as atualizações futuras incluídas' },
@@ -101,6 +105,7 @@ const Upgrade = () => {
               '✓ Novo Testamento Explicado',
               '✓ Discipulado Cristão',
               '✓ Sermões ilimitados',
+              'Importar sermão em PDF ou .docx',
               'Acesso a todos os cursos da Academia',
               'Sermões ilimitados',
               'Acesso offline aos sermões',
@@ -214,7 +219,7 @@ const Upgrade = () => {
                   <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-[#4C1D95]">R$9,90</span>
                   <span className="text-xs text-gray-400 font-bold">/mês para sempre</span>
                 </div>
-                <p className="text-[10px] text-amber-600 font-black uppercase tracking-widest mt-1">Acesso parcial à Academia</p>
+                <p className="text-[10px] text-amber-600 font-black tracking-wide leading-relaxed mt-2">Acesso aos cursos Fundamentos da Pregação do Zero e Líder 5.0 — um guia para ter uma voz relevante nas redes sociais.</p>
               </div>
             </div>
           </button>
