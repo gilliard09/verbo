@@ -207,18 +207,18 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
           <div className="grid grid-cols-2 gap-2 text-center">
             <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
               <p className="text-[10px] font-black uppercase tracking-wider text-violet-200">Plus anual</p>
-              <p className="mt-1 text-2xl font-black">R$ 347</p>
+              <p className="mt-1 text-2xl font-black">R$ 197</p>
               <p className="mt-1 text-[10px] text-violet-200/80">12 meses · R$ 28,92/mês</p>
               <button type="button" onClick={() => abrirCheckout('anual')} className="mt-3 w-full rounded-lg bg-violet-300 px-2 py-2 text-[10px] font-black text-[#24133F] transition hover:bg-white">ASSINAR ANUAL</button>
             </div>
             <div className="rounded-xl border border-amber-300/40 bg-amber-300/[0.10] p-3">
               <p className="text-[10px] font-black uppercase tracking-wider text-amber-200">Plus vitalício</p>
-              <p className="mt-1 text-2xl font-black">R$ 497</p>
+              <p className="mt-1 text-2xl font-black">R$ 297</p>
               <p className="mt-1 text-[10px] text-violet-100/80">Pagamento único</p>
               <button type="button" onClick={() => abrirCheckout('vitalicio')} className="mt-3 w-full rounded-lg bg-white px-2 py-2 text-[10px] font-black text-[#4C1D95] transition hover:bg-violet-50">QUERO VITALÍCIO</button>
             </div>
           </div>
-          <p className="mt-2 text-center text-[10px] text-violet-200/80">No anual, você economiza R$ 217 em relação a 12 mensalidades de R$ 47.</p>
+          <p className="mt-2 text-center text-[10px] text-violet-200/80">No anual, você economiza R$ 367 em relação a 12 mensalidades de R$ 47.</p>
 
           <div className="my-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <div className="mb-2 flex items-center gap-2">
@@ -259,7 +259,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
           </div>
 
           <p className="mt-2 text-center text-[10px] leading-relaxed text-violet-200/75">
-            Anual: R$ 347 por 12 meses. Vitalício: R$ 497 em pagamento único, sem renovação.
+            Anual: R$ 197 por 12 meses. Vitalício: R$ 297 em pagamento único, sem renovação.
           </p>
 
           <button
