@@ -196,21 +196,64 @@ const Curso = () => {
             </div>
           </section>
           <section>
-            <div className="mb-5 flex items-end justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#A78BFA]">Sua jornada</p><h2 className="mt-1 text-2xl font-black">Aulas do curso</h2></div><span className="text-xs text-white/40">{aulasConcluidas.size} de {aulasCurso.length || totalAulas} concluídas</span></div>
-            <div className="space-y-3">
-              {aulasCurso.map((aula,index) => {
-                const concluida = aulasConcluidas.has(aula.id);
-                const materia = materias.find(m => m.id === aula.materia_id);
-                const thumb = aula.thumb_url || aula.thumbnail_url || curso.thumb_url || curso.capa_url;
-                return <button key={aula.id} onClick={() => aula.materia_id && navigate(`/cursos/${curso.id}/materia/${aula.materia_id}?aula=${aula.id}`)} disabled={!aula.materia_id} className="group flex w-full items-center gap-5 rounded-xl border border-white/[0.08] bg-white/[0.025] p-3 text-left transition hover:border-[#8B5CF6]/35 hover:bg-white/[0.05] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]">
-                  <span className="w-8 shrink-0 text-center text-sm font-black text-white/35">{String(index+1).padStart(2,'0')}</span>
-                  <div className="relative h-[82px] w-[146px] shrink-0 overflow-hidden rounded-lg bg-[#211638]">{thumb && <img loading="lazy" src={thumb} alt="" className="h-full w-full object-cover"/>}<div className="absolute inset-0 flex items-center justify-center bg-black/20"><PlayCircle size={25} className="text-white drop-shadow"/></div></div>
-                  <div className="min-w-0 flex-1"><p className="text-[9px] font-black uppercase tracking-widest text-[#A78BFA]">{materia?.titulo || 'Aula'}</p><h3 className="mt-1 truncate text-sm font-bold text-white group-hover:text-[#C4B5FD]">{aula.titulo}</h3><div className="mt-2 flex items-center gap-3 text-[10px] text-white/40">{(aula.duracao || aula.duracao_minutos) && <span>{aula.duracao || aula.duracao_minutos}</span>}<span>{concluida ? 'Concluída' : 'Disponível'}</span></div></div>
-                  {concluida ? <CheckCircle size={19} className="shrink-0 text-emerald-400"/> : <ChevronRight size={19} className="shrink-0 text-white/30 transition group-hover:translate-x-1 group-hover:text-[#C4B5FD]"/>}
-                </button>;
-              })}
-              {aulasCurso.length === 0 && materias.map((materia,index) => <button key={materia.id} onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}`)} className="flex w-full items-center gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 text-left"><span className="text-sm font-black text-white/40">{String(index+1).padStart(2,'0')}</span><BookOpen size={20} className="text-[#A78BFA]"/><span className="flex-1 text-sm font-bold">{materia.titulo}</span><span className="text-xs text-white/40">{materia.totalAulas} aulas</span><ChevronRight size={18} className="text-white/30"/></button>)}
+            <div className="mb-6 flex items-end justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#A78BFA]">Sua jornada</p>
+                <h2 className="mt-1 text-2xl font-black">Matérias do curso</h2>
+                <p className="mt-2 text-sm text-white/45">Estude cada matéria, conclua suas aulas e faça a avaliação correspondente.</p>
+              </div>
+              <span className="text-xs text-white/40">{materias.length} matéria{materias.length !== 1 ? 's' : ''} · {aulasConcluidas.size} de {totalAulas} aulas concluídas</span>
             </div>
+            {materias.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
+                <BookOpen size={30} className="mx-auto mb-3 text-white/20"/>
+                <p className="text-sm font-bold text-white/45">Este curso ainda não possui matérias cadastradas.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                {materias.map((materia, index) => (
+                  <article key={materia.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-colors hover:border-[#8B5CF6]/30 hover:bg-white/[0.05]">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}`)}
+                      className="w-full p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#A78BFA]"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6D28D9]/20 text-[#C4B5FD]"><BookOpen size={20}/></div>
+                        {materia.concluida ? (
+                          <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-400"><CheckCircle size={11}/> Concluída</span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-white/35">{materia.porcentagem}%</span>
+                        )}
+                      </div>
+                      <p className="mt-5 text-[9px] font-black uppercase tracking-[0.2em] text-[#A78BFA]">Matéria {String(index + 1).padStart(2, '0')}</p>
+                      <h3 className="mt-1 text-lg font-black text-white">{materia.titulo}</h3>
+                      {materia.descricao && <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/45">{materia.descricao}</p>}
+                      <div className="mt-6 flex items-center justify-between text-[10px] font-bold text-white/40">
+                        <span>{materia.totalAulas} aula{materia.totalAulas !== 1 ? 's' : ''} · {materia.aulasFeitas} concluída{materia.aulasFeitas !== 1 ? 's' : ''}</span>
+                        <span>{materia.concluida ? 'Conteúdo concluído' : materia.aulasFeitas > 0 ? 'Continuar matéria' : 'Começar matéria'}</span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                        <div className={`h-full rounded-full transition-all ${materia.concluida ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#6D28D9] to-[#A78BFA]'}`} style={{width:`${materia.porcentagem}%`}}/>
+                      </div>
+                    </button>
+                    {materia.concluida && materia.avaliacao && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}/avaliacao/${materia.avaliacao.id}`)}
+                        className="flex w-full items-center justify-between border-t border-[#8B5CF6]/20 bg-[#6D28D9]/10 px-6 py-4 text-left transition-colors hover:bg-[#6D28D9]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#A78BFA]"
+                      >
+                        <span>
+                          <span className="block text-[9px] font-black uppercase tracking-widest text-[#C4B5FD]">Avaliação da matéria</span>
+                          <span className="mt-1 block text-xs font-black text-white">{materia.ultimaTentativa?.aprovado ? `Aprovado · ${materia.ultimaTentativa.nota}%` : 'Prova disponível'}</span>
+                        </span>
+                        <ChevronRight size={17} className="text-[#C4B5FD]"/>
+                      </button>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         </main>
       </div>
