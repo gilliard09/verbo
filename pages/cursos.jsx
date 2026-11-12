@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlano } from '../hooks/usePlano';
 import { supabase } from '../supabaseClient';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   PlayCircle, ChevronRight, Loader2, CheckCircle, BookOpen,
   AlertTriangle, RefreshCw, Sparkles, X, ArrowLeft,
@@ -10,7 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 const DesktopAcademiaSidebar = () => {
-  const location = useLocation();
+  const [activeAnchor, setActiveAnchor] = useState(window.location.hash || '#inicio-academia');
   const itemClass = (active) => `group flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${active ? 'border border-[#8B5CF6]/25 bg-[#6D28D9]/20 text-white shadow-inner shadow-purple-950/20' : 'text-white/55 hover:bg-white/[0.06] hover:text-white'}`;
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-[264px] flex-col border-r border-white/[0.07] bg-[#0D0A13] px-5 py-7">
@@ -23,10 +23,10 @@ const DesktopAcademiaSidebar = () => {
       </Link>
       <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Sua Academia</p>
       <nav className="space-y-1.5" aria-label="Navegação da Academia">
-        <a href="#inicio-academia" className={itemClass(location.hash === '' || location.hash === '#inicio-academia')}><Home size={17} className="text-[#C4B5FD]" /> Início da Academia</a>
-        <a href="#continue-assistindo" className={itemClass(location.hash === '#continue-assistindo')}><PlayCircle size={17} /> Continuar assistindo</a>
-        <a href="#seus-cursos" className={itemClass(location.hash === '#seus-cursos')}><Library size={17} /> Meus cursos</a>
-        <a href="#catalogo" className={itemClass(location.hash === '#catalogo')}><Compass size={17} /> Explorar cursos</a>
+        <a href="#inicio-academia" onClick={() => setActiveAnchor("#inicio-academia")} className={itemClass(activeAnchor === '' || activeAnchor === '#inicio-academia')}><Home size={17} className="text-[#C4B5FD]" /> Início da Academia</a>
+        <a href="#continue-assistindo" onClick={() => setActiveAnchor("#continue-assistindo")} className={itemClass(activeAnchor === '#continue-assistindo')}><PlayCircle size={17} /> Continuar assistindo</a>
+        <a href="#seus-cursos" onClick={() => setActiveAnchor("#seus-cursos")} className={itemClass(activeAnchor === '#seus-cursos')}><Library size={17} /> Meus cursos</a>
+        <a href="#catalogo" onClick={() => setActiveAnchor("#catalogo")} className={itemClass(activeAnchor === '#catalogo')}><Compass size={17} /> Explorar cursos</a>
       </nav>
       <div className="mt-auto rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#211638] to-[#120D1D] p-4">
         <p className="text-xs font-bold text-white">Cresça no conhecimento.</p>
