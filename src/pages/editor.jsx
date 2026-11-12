@@ -675,17 +675,18 @@ Oração:`
     return planoPlusAtivo && assinaturaValida;
   }
 
-  async function abrirImportacao() {
-    try {
-      const permitido = await verificarAcessoImportacao();
-      if (!permitido) {
-        navigate('/upgrade?motivo=importacao');
-        return;
-      }
-      arquivoImportacaoRef.current?.click();
-    } catch (error) {
-      mostrarToast('Não foi possível validar seu plano. Conecte-se à internet e tente novamente.', 'erro', 6000);
+  function abrirImportacao() {
+    // O seletor de arquivos precisa ser aberto diretamente no clique do usuário.
+    // Se aguardarmos uma chamada assíncrona ao Supabase antes de chamar click(),
+    // alguns navegadores bloqueiam a janela por perderem a ativação do usuário.
+    // A validação atualizada do plano continua sendo feita em selecionarArquivoImportacao
+    // antes de qualquer leitura ou processamento do documento.
+    if (!isPlus) {
+      navigate('/upgrade?motivo=importacao');
+      return;
     }
+
+    arquivoImportacaoRef.current?.click();
   }
 
   async function selecionarArquivoImportacao(event) {
