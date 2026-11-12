@@ -54,9 +54,6 @@ const CursosNew = () => {
   const [ultimoVideo, setUltimoVideo] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [playerAberto, setPlayerAberto] = useState(false);
-  const [heroIndex, setHeroIndex] = useState(0);
-  const [heroPaused, setHeroPaused] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(false);
   const [statsProgresso, setStatsProgresso] = useState({
@@ -68,11 +65,8 @@ const CursosNew = () => {
   });
 
   const cursosComAcesso = cursos.filter(c => temAcessoCurso(c) || c.temMatricula);
-  const cursoEmProgresso = cursosComAcesso.find(c => c.aulasFeitas > 0 && !c.concluido);
   const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
   const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
-  const heroSlides = [cursoEmProgresso || cursosComAcesso[0] || cursos[0], ...cursos.filter(c => c.id !== (cursoEmProgresso || cursosComAcesso[0] || cursos[0])?.id).slice(0, 2)].filter(Boolean);
-  const cursoDestaque = heroSlides[heroIndex % Math.max(heroSlides.length, 1)];
 
   // ─── Conquistas ──────────────────────────────────────────────────────────
   const conquistas = [
@@ -168,18 +162,7 @@ const CursosNew = () => {
   useEffect(() => {
     carregarDados();
     buscarUltimoVideo();
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReducedMotion(media.matches);
-    const onChange = event => setReducedMotion(event.matches);
-    media.addEventListener?.('change', onChange);
-    return () => media.removeEventListener?.('change', onChange);
   }, []);
-
-  useEffect(() => {
-    if (heroSlides.length < 2 || heroPaused || reducedMotion) return undefined;
-    const timer = window.setInterval(() => setHeroIndex(index => (index + 1) % heroSlides.length), 7500);
-    return () => window.clearInterval(timer);
-  }, [heroSlides.length, heroPaused, reducedMotion]);
 
   const isShort = (titulo = '') => {
     const t = titulo.toLowerCase();
@@ -590,26 +573,14 @@ const CursosNew = () => {
       <div className="hidden md:block min-h-screen bg-[#0A0A0F] pl-[264px] text-white">
         <DesktopAcademiaSidebar />
         <main className="min-h-screen overflow-hidden">
-          <section id="inicio-academia" onMouseEnter={() => setHeroPaused(true)} onMouseLeave={() => setHeroPaused(false)} className="relative flex min-h-[62vh] items-end overflow-hidden bg-[#0A0A0F]">
-            {cursoDestaque?.thumb_url || cursoDestaque?.capa_url ? <img src={cursoDestaque.thumb_url || cursoDestaque.capa_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55" /> : <div className="absolute inset-0 bg-gradient-to-br from-[#24153D] via-[#100D19] to-[#0A0A0F]" />}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0F] via-[#0A0A0F]/70 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-transparent to-[#0A0A0F]/15" />
-            <div className="relative z-10 max-w-3xl px-12 pb-16 pt-20">
-              <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-[#C4B5FD]">{cursoEmProgresso ? 'Continue sua jornada' : 'Recomendado para você'}</p>
-              <h1 className="max-w-3xl text-5xl font-black leading-[1.04] tracking-tight">{cursoDestaque?.titulo || 'Academia Verbo'}</h1>
-              <p className="mt-5 line-clamp-2 max-w-2xl text-base leading-7 text-white/70">{cursoDestaque?.descricao || 'Formação bíblica e ministerial para viver e ensinar a Palavra.'}</p>
-              {cursoEmProgresso && <p className="mt-4 text-sm font-bold text-[#C4B5FD]">Aula {Math.min(cursoEmProgresso.aulasFeitas + 1, cursoEmProgresso.totalAulas)} de {cursoEmProgresso.totalAulas} · {cursoEmProgresso.porcentagem}% concluído</p>}
-              <div className="mt-7 flex items-center gap-3">
-                <button onClick={() => navigate(cursoDestaque ? `/cursos/${cursoDestaque.id}` : '/cursos')} className="flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-black text-[#17111F] transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><PlayCircle size={18} fill="currentColor" /> {cursoEmProgresso ? 'Continuar' : 'Começar'}</button>
-                <button onClick={() => navigate(cursoDestaque ? `/cursos/${cursoDestaque.id}` : '/cursos')} className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><Info size={17} /> Detalhes</button>
-              </div>
-              {heroSlides.length > 1 && <div className="mt-6 flex items-center gap-2" aria-label="Destaques da Academia">{heroSlides.map((slide,index) => <button key={slide.id} onClick={() => setHeroIndex(index)} aria-label={`Mostrar destaque ${index+1}`} aria-current={index === heroIndex ? 'true' : undefined} className={`h-1.5 rounded-full transition-all ${index === heroIndex ? 'w-8 bg-white' : 'w-3 bg-white/35 hover:bg-white/70'}`}/>)}</div>}
+          <section id="inicio-academia" className="relative overflow-hidden bg-[#0A0A0F] px-12 pb-8 pt-6">
+            <div className="mx-auto max-w-[1440px]">
+              <HeroVideoDestaque />
             </div>
           </section>
 
           <div className="space-y-10 px-12 pb-16 pt-5">
             <CourseRow id="continue-assistindo" title="Continue assistindo" items={continuarItens.map(continueCard)} />
-            {ultimoVideo && <section><h2 className="mb-4 text-lg font-black">Novidades do canal</h2><button onClick={() => setPlayerAberto(true)} className="group relative w-[360px] overflow-hidden rounded-xl border border-white/10 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><div className="relative aspect-video"><img loading="lazy" src={ultimoVideo.thumb} alt={ultimoVideo.titulo} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div className="absolute inset-0 flex items-center justify-center bg-black/20"><PlayCircle size={42} className="text-white" /></div><span className="absolute left-3 top-3 rounded-full bg-red-600 px-2 py-1 text-[9px] font-black uppercase">Novo no canal</span></div><p className="p-3 text-sm font-bold text-white">{ultimoVideo.titulo}</p></button></section>}
             <CourseRow title="Novidades" items={cursosNovos.slice(0, 6).map((c, index) => posterCard(c, index === 0))} />
             <CourseRow id="seus-cursos" title="Seus cursos" items={cursosComAcesso.map(c => posterCard(c))} />
             <CourseRow id="catalogo" title="Explorar cursos" items={cursos.map(c => posterCard(c, cursosNovos[0]?.id === c.id))} />
