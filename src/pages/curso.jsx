@@ -14,6 +14,8 @@ const Curso = () => {
 
   const [curso, setCurso] = useState(null);
   const [materias, setMaterias] = useState([]);
+  const [aulasCurso, setAulasCurso] = useState([]);
+  const [aulasConcluidas, setAulasConcluidas] = useState(new Set());
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [temMatricula, setTemMatricula] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,7 @@ const Curso = () => {
         { data: matricula },
         { data: materiasBD, error: erroMaterias },
         { data: progresso },
+        { data: aulasBD, error: erroAulas },
         { data: avaliacoesBD, error: erroAvaliacoes },
         { data: tentativasBD, error: erroTentativas }
       ] = await Promise.all([
@@ -47,16 +50,20 @@ const Curso = () => {
           .select('aula_id, aulas!inner(materia_id, curso_id)')
           .eq('user_id', user?.id)
           .eq('aulas.curso_id', cursoId),
+        supabase.from('aulas').select('*').eq('curso_id', cursoId).order('ordem', { ascending: true }),
         supabase.from('avaliacoes').select('id,materia_id,titulo,nota_minima,ativa').eq('ativa', true),
         supabase.from('tentativas_avaliacao').select('avaliacao_id,nota,aprovado,concluida_em').eq('user_id', user?.id).order('concluida_em', { ascending: false })
       ]);
 
       if (erroCurso) throw erroCurso;
       if (erroMaterias) throw erroMaterias;
+      if (erroAulas) throw erroAulas;
       if (erroAvaliacoes) throw erroAvaliacoes;
       if (erroTentativas) throw erroTentativas;
 
       setCurso(cursoBD);
+      setAulasCurso(aulasBD || []);
+      setAulasConcluidas(new Set((progresso || []).map(item => item.aula_id)));
       setTemMatricula(matricula?.status === 'ativo');
       setAvaliacoes(avaliacoesBD || []);
 
@@ -110,9 +117,14 @@ const Curso = () => {
 
   if (loading || loadingPlano) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#8B5CF6]" size={32} />
-      </div>
+      <>
+        <div className="hidden md:block min-h-screen bg-[#0A0A0F]">
+          <div className="h-16 border-b border-white/5 bg-black/40" />
+          <div className="h-[430px] animate-pulse bg-gradient-to-r from-[#17111F] via-[#24153D] to-[#0A0A0F]" />
+          <div className="mx-auto max-w-[1500px] space-y-3 px-10 py-10">{[1,2,3,4,5].map(n => <div key={n} className="flex items-center gap-5 rounded-xl border border-white/5 p-3"><div className="h-[82px] w-[146px] animate-pulse rounded-lg bg-white/10"/><div className="flex-1 space-y-2"><div className="h-3 w-1/3 animate-pulse rounded bg-white/10"/><div className="h-4 w-2/3 animate-pulse rounded bg-white/10"/></div></div>)}</div>
+        </div>
+        <div className="md:hidden min-h-screen bg-[#0A0A0F] flex items-center justify-center"><Loader2 className="animate-spin text-[#8B5CF6]" size={32}/></div>
+      </>
     );
   }
 
@@ -156,8 +168,54 @@ const Curso = () => {
   const aulasFeitas = materias.reduce((sum, materia) => sum + materia.aulasFeitas, 0);
   const porcentagem = totalAulas > 0 ? Math.round((aulasFeitas / totalAulas) * 100) : 0;
 
+
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white pb-12">
+    <>
+      <div className="hidden md:block min-h-screen bg-[#0A0A0F] text-white">
+        <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0A0A0F]/85 backdrop-blur-xl">
+          <div className="mx-auto flex h-16 max-w-[1500px] items-center gap-4 px-10">
+            <Link to="/cursos" className="rounded-lg p-2 text-white/65 transition hover:bg-white/10 hover:text-white" aria-label="Voltar à Academia"><ArrowLeft size={19}/></Link>
+            <img src="/logo.webp" alt="Verbo" className="h-7 w-auto object-contain"/>
+            <span className="rounded-md border border-[#8B5CF6]/25 bg-[#6D28D9]/15 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-[#C4B5FD]">Academia</span>
+          </div>
+        </header>
+        <main className="mx-auto max-w-[1500px] px-10 pb-20">
+          <section className="relative -mx-10 mb-12 min-h-[430px] overflow-hidden">
+            {curso.thumb_url || curso.capa_url ? <img src={curso.thumb_url || curso.capa_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-45"/> : <div className="absolute inset-0 bg-gradient-to-br from-[#24153D] to-[#0A0A0F]"/>}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0F] via-[#0A0A0F]/80 to-transparent"/>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-transparent to-transparent"/>
+            <div className="relative z-10 flex min-h-[430px] items-end px-14 pb-12">
+              <div className="max-w-3xl">
+                <p className="mb-3 text-[10px] font-black uppercase tracking-[0.28em] text-[#C4B5FD]">Academia Verbo · Curso</p>
+                <h1 className="text-5xl font-black leading-tight tracking-tight">{curso.titulo}</h1>
+                {curso.descricao && <p className="mt-4 max-w-2xl text-base leading-7 text-white/65">{curso.descricao}</p>}
+                <div className="mt-5 flex items-center gap-4 text-xs font-semibold text-white/55"><span>{aulasCurso.length || totalAulas} aulas</span><span>{materias.length} módulos</span><span>{porcentagem}% concluído</span></div>
+                <div className="mt-5 h-1.5 max-w-xl overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#8B5CF6]" style={{width:`${porcentagem}%`}}/></div>
+                <button onClick={() => { const proxima = aulasCurso.find(a => !aulasConcluidas.has(a.id)) || aulasCurso[0]; if (proxima?.materia_id) navigate(`/cursos/${curso.id}/materia/${proxima.materia_id}?aula=${proxima.id}`); else if (materias[0]) navigate(`/cursos/${curso.id}/materia/${materias[0].id}`); }} className="mt-7 inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-black text-[#17111F] transition hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><PlayCircle size={18} fill="currentColor"/>{aulasFeitas > 0 ? 'Continuar' : 'Começar'}</button>
+              </div>
+            </div>
+          </section>
+          <section>
+            <div className="mb-5 flex items-end justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#A78BFA]">Sua jornada</p><h2 className="mt-1 text-2xl font-black">Aulas do curso</h2></div><span className="text-xs text-white/40">{aulasConcluidas.size} de {aulasCurso.length || totalAulas} concluídas</span></div>
+            <div className="space-y-3">
+              {aulasCurso.map((aula,index) => {
+                const concluida = aulasConcluidas.has(aula.id);
+                const materia = materias.find(m => m.id === aula.materia_id);
+                const thumb = aula.thumb_url || aula.thumbnail_url || curso.thumb_url || curso.capa_url;
+                return <button key={aula.id} onClick={() => aula.materia_id && navigate(`/cursos/${curso.id}/materia/${aula.materia_id}?aula=${aula.id}`)} disabled={!aula.materia_id} className="group flex w-full items-center gap-5 rounded-xl border border-white/[0.08] bg-white/[0.025] p-3 text-left transition hover:border-[#8B5CF6]/35 hover:bg-white/[0.05] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]">
+                  <span className="w-8 shrink-0 text-center text-sm font-black text-white/35">{String(index+1).padStart(2,'0')}</span>
+                  <div className="relative h-[82px] w-[146px] shrink-0 overflow-hidden rounded-lg bg-[#211638]">{thumb && <img loading="lazy" src={thumb} alt="" className="h-full w-full object-cover"/>}<div className="absolute inset-0 flex items-center justify-center bg-black/20"><PlayCircle size={25} className="text-white drop-shadow"/></div></div>
+                  <div className="min-w-0 flex-1"><p className="text-[9px] font-black uppercase tracking-widest text-[#A78BFA]">{materia?.titulo || 'Aula'}</p><h3 className="mt-1 truncate text-sm font-bold text-white group-hover:text-[#C4B5FD]">{aula.titulo}</h3><div className="mt-2 flex items-center gap-3 text-[10px] text-white/40">{(aula.duracao || aula.duracao_minutos) && <span>{aula.duracao || aula.duracao_minutos}</span>}<span>{concluida ? 'Concluída' : 'Disponível'}</span></div></div>
+                  {concluida ? <CheckCircle size={19} className="shrink-0 text-emerald-400"/> : <ChevronRight size={19} className="shrink-0 text-white/30 transition group-hover:translate-x-1 group-hover:text-[#C4B5FD]"/>}
+                </button>;
+              })}
+              {aulasCurso.length === 0 && materias.map((materia,index) => <button key={materia.id} onClick={() => navigate(`/cursos/${curso.id}/materia/${materia.id}`)} className="flex w-full items-center gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 text-left"><span className="text-sm font-black text-white/40">{String(index+1).padStart(2,'0')}</span><BookOpen size={20} className="text-[#A78BFA]"/><span className="flex-1 text-sm font-bold">{materia.titulo}</span><span className="text-xs text-white/40">{materia.totalAulas} aulas</span><ChevronRight size={18} className="text-white/30"/></button>)}
+            </div>
+          </section>
+        </main>
+      </div>
+      <div className="md:hidden">
+            <div className="min-h-screen bg-[#0A0A0F] text-white pb-12">
       <header className="sticky top-0 z-[100] bg-black/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-[1400px] mx-auto px-5 h-16 flex items-center gap-3">
           <Link
@@ -328,6 +386,8 @@ const Curso = () => {
         )}
       </main>
     </div>
+      </div>
+    </>
   );
 };
 
