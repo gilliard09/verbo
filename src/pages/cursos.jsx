@@ -571,8 +571,6 @@ const CursosNew = () => {
 
   // ─── Academia liberada ────────────────────────────────────────────────────
 
-  const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-  const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
   const posterCard = (curso, badgeNovo = false) => (
     <Link key={curso.id} to={`/cursos/${curso.id}`} className="group relative block w-[190px] shrink-0 snap-start outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] rounded-xl">
       <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[#271c6b] to-[#4c36b6] shadow-lg transition-all duration-300 delay-200 ease-out group-hover:z-20 group-hover:scale-[1.08] group-hover:shadow-2xl group-hover:shadow-black/60 motion-reduce:transition-none">
