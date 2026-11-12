@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlano } from '../hooks/usePlano';
 import { supabase } from '../supabaseClient';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   PlayCircle, Lock, ChevronRight, Loader2, CheckCircle, BookOpen,
   AlertTriangle, RefreshCw, Sparkles, X, ArrowLeft,
@@ -10,7 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 const DesktopAcademiaSidebar = () => {
-  const location = window.location;
+  const location = useLocation();
   const itemClass = (active) => `group flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${active ? 'border border-[#8B5CF6]/25 bg-[#6D28D9]/20 text-white shadow-inner shadow-purple-950/20' : 'text-white/55 hover:bg-white/[0.06] hover:text-white'}`;
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-[264px] flex-col border-r border-white/[0.07] bg-[#0D0A13] px-5 py-7">
@@ -647,7 +647,7 @@ const CursosNew = () => {
           <div className="space-y-10 px-12 pb-16 pt-5">
             <CourseRow id="continue-assistindo" title="Continue assistindo" items={continuarItens.map(continueCard)} />
             {ultimoVideo && <section><h2 className="mb-4 text-lg font-black">Novidades do canal</h2><button onClick={() => setPlayerAberto(true)} className="group relative w-[360px] overflow-hidden rounded-xl border border-white/10 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><div className="relative aspect-video"><img loading="lazy" src={ultimoVideo.thumb} alt={ultimoVideo.titulo} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div className="absolute inset-0 flex items-center justify-center bg-black/20"><PlayCircle size={42} className="text-white" /></div><span className="absolute left-3 top-3 rounded-full bg-red-600 px-2 py-1 text-[9px] font-black uppercase">Novo no canal</span></div><p className="p-3 text-sm font-bold text-white">{ultimoVideo.titulo}</p></button></section>}
-            <CourseRow title="Novidades" items={cursosNovos.slice(0, 6).map(c => posterCard(c, true))} />
+            <CourseRow title="Novidades" items={cursosNovos.slice(0, 6).map((c, index) => posterCard(c, index === 0))} />
             <CourseRow id="seus-cursos" title="Seus cursos" items={cursosComAcesso.map(c => posterCard(c))} />
             <CourseRow id="catalogo" title="Explorar cursos" items={cursos.map(c => posterCard(c, cursosNovos[0]?.id === c.id))} />
             <section><h2 className="mb-4 text-lg font-black">Suas conquistas</h2><div className="flex gap-3 overflow-x-auto pb-2">{conquistas.map(c => <div key={c.id} className="w-40 shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-4"><p className="text-xl">{c.icon}</p><p className="mt-2 text-xs font-bold text-white">{c.nome}</p><p className="mt-1 text-[10px] text-white/40">{c.descricao}</p></div>)}</div></section>
