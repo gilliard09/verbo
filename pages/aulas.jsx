@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { usePlano } from '../hooks/usePlano';
 import { gerarCertificado } from '../utils/gerarCertificado';
 import { supabase } from '../supabaseClient';
