@@ -38,12 +38,11 @@ const DesktopAcademiaSidebar = () => {
 
 const CourseRow = ({ title, items, id }) => {
   const rowRef = useRef(null);
-  if (!items?.length) return null;
   const scroll = direction => rowRef.current?.scrollBy({ left: direction * 520, behavior: 'smooth' });
   return (
     <section id={id} className="group/course-row relative min-w-0">
       <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-black text-white">{title}</h2><div className="flex gap-2 opacity-0 transition-opacity group-hover/course-row:opacity-100"><button type="button" onClick={() => scroll(-1)} aria-label={`Rolar ${title} para a esquerda`} className="rounded-full border border-white/15 bg-black/70 p-2 text-white hover:bg-[#4C1D95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><ChevronLeft size={17}/></button><button type="button" onClick={() => scroll(1)} aria-label={`Rolar ${title} para a direita`} className="rounded-full border border-white/15 bg-black/70 p-2 text-white hover:bg-[#4C1D95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><ChevronRight size={17}/></button></div></div>
-      <div ref={rowRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto overflow-y-visible px-2 py-3 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{items}</div>
+      <div ref={rowRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto overflow-y-visible px-2 py-3 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{items?.length ? items : <p className="py-5 text-sm text-white/40">Ainda não há itens nesta fileira. Explore o catálogo para começar.</p>}</div>
     </section>
   );
 };
