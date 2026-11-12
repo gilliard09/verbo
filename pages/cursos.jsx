@@ -69,6 +69,13 @@ const CursosNew = () => {
     horasEstudadas: 12
   });
 
+  const cursosComAcesso = cursos.filter(c => temAcessoCurso(c) || c.temMatricula);
+  const cursoEmProgresso = cursosComAcesso.find(c => c.aulasFeitas > 0 && !c.concluido);
+  const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
+  const heroSlides = [cursoEmProgresso || cursosComAcesso[0] || cursos[0], ...cursos.filter(c => c.id !== (cursoEmProgresso || cursosComAcesso[0] || cursos[0])?.id).slice(0, 2)].filter(Boolean);
+  const cursoDestaque = heroSlides[heroIndex % Math.max(heroSlides.length, 1)];
+
   // ─── Conquistas ──────────────────────────────────────────────────────────
   const conquistas = [
     { id: 1, nome: 'Primeiro Passo', descricao: 'Iniciou seu primeiro curso', icon: '🎯', desbloqueada: statsProgresso.cursosIniciados > 0 },
@@ -573,12 +580,7 @@ const CursosNew = () => {
   }
 
   // ─── Academia liberada ────────────────────────────────────────────────────
-  const cursosComAcesso = cursos.filter(c => temAcessoCurso(c) || c.temMatricula);
-  const cursoEmProgresso = cursosComAcesso.find(c => c.aulasFeitas > 0 && !c.concluido);
-  const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-  const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
-  const heroSlides = [cursoEmProgresso || cursosComAcesso[0] || cursos[0], ...cursos.filter(c => c.id !== (cursoEmProgresso || cursosComAcesso[0] || cursos[0])?.id).slice(0, 2)].filter(Boolean);
-  const cursoDestaque = heroSlides[heroIndex % Math.max(heroSlides.length, 1)];
+
   const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
   const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
   const posterCard = (curso, badgeNovo = false) => (
