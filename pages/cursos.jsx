@@ -487,9 +487,17 @@ const CursosNew = () => {
   // ─── Loading ─────────────────────────────────────────────────────────────
   if (loading || loadingPlano) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#8B5CF6]" size={32} />
-      </div>
+      <>
+        <div className="hidden md:block min-h-screen bg-[#0A0A0F] pl-[264px] text-white">
+          <DesktopAcademiaSidebar />
+          <div className="h-[62vh] animate-pulse bg-gradient-to-r from-[#17111F] via-[#24153D] to-[#0A0A0F]" />
+          <div className="space-y-8 px-12 py-8">
+            <div className="h-6 w-56 animate-pulse rounded bg-white/10" />
+            <div className="flex gap-5">{[1,2,3,4,5].map(n => <div key={n} className="w-[190px] shrink-0"><div className="aspect-[2/3] animate-pulse rounded-xl bg-white/[0.07]" /><div className="mt-3 h-3 w-3/4 animate-pulse rounded bg-white/10" /></div>)}</div>
+          </div>
+        </div>
+        <div className="md:hidden min-h-screen bg-[#0A0A0F] flex items-center justify-center"><Loader2 className="animate-spin text-[#8B5CF6]" size={32} /></div>
+      </>
     );
   }
 
