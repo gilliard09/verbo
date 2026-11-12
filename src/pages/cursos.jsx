@@ -1,55 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePlano } from '../hooks/usePlano';
 import { supabase } from '../supabaseClient';
 import { Link } from 'react-router-dom';
 import {
-  PlayCircle, Lock, ChevronRight, Loader2,
-  ShoppingCart, CheckCircle, BookOpen,
+  PlayCircle, ChevronRight, Loader2, CheckCircle, BookOpen,
   AlertTriangle, RefreshCw, Sparkles, X, ArrowLeft,
-  Home, PenTool, User, Users, GraduationCap
+  Home, Library, Compass, ChevronLeft, Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const DesktopAcademiaSidebar = () => (
-  <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-[264px] flex-col border-r border-white/[0.07] bg-[#0D0A13] px-5 py-7">
-    <Link to="/" className="mb-12 flex items-center gap-3 px-2">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#4C1D95] shadow-lg shadow-purple-950/40">
-        <span className="text-xl font-black text-white">V</span>
+const DesktopAcademiaSidebar = () => {
+  const [activeAnchor, setActiveAnchor] = useState(window.location.hash || '#inicio-academia');
+  const itemClass = (active) => `group flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${active ? 'border border-[#8B5CF6]/25 bg-[#6D28D9]/20 text-white shadow-inner shadow-purple-950/20' : 'text-white/55 hover:bg-white/[0.06] hover:text-white'}`;
+  return (
+    <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-[264px] flex-col border-r border-white/[0.07] bg-[#0D0A13] px-5 py-7">
+      <div className="mb-8 flex flex-col items-start px-2">
+        <img src="/logo.webp" alt="Verbo" className="h-10 w-auto max-w-[168px] object-contain object-left" />
+        <span className="mt-2 rounded-md border border-[#8B5CF6]/30 bg-[#6D28D9]/15 px-2 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-[#C4B5FD]">Academia</span>
       </div>
-      <div>
-        <p className="text-lg font-black tracking-tight text-white">verbo</p>
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#A78BFA]">Academia</p>
+      <Link to="/" className="mb-8 flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-3 py-3 text-xs font-bold text-white/80 transition-all hover:border-[#A78BFA]/50 hover:bg-[#6D28D9]/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]">
+        <ArrowLeft size={15} /> Voltar ao Verbo
+      </Link>
+      <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Sua Academia</p>
+      <nav className="space-y-1.5" aria-label="Navegação da Academia">
+        <a href="#inicio-academia" onClick={() => setActiveAnchor("#inicio-academia")} className={itemClass(activeAnchor === '' || activeAnchor === '#inicio-academia')}><Home size={17} className="text-[#C4B5FD]" /> Início da Academia</a>
+        <a href="#continue-assistindo" onClick={() => setActiveAnchor("#continue-assistindo")} className={itemClass(activeAnchor === '#continue-assistindo')}><PlayCircle size={17} /> Continuar assistindo</a>
+        <a href="#seus-cursos" onClick={() => setActiveAnchor("#seus-cursos")} className={itemClass(activeAnchor === '#seus-cursos')}><Library size={17} /> Meus cursos</a>
+        <a href="#catalogo" onClick={() => setActiveAnchor("#catalogo")} className={itemClass(activeAnchor === '#catalogo')}><Compass size={17} /> Explorar cursos</a>
+      </nav>
+      <div className="mt-auto rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#211638] to-[#120D1D] p-4">
+        <p className="text-xs font-bold text-white">Cresça no conhecimento.</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-white/45">Formando cristãos para viver e ensinar a Palavra.</p>
       </div>
-    </Link>
+    </aside>
+  );
+};
 
-    <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Menu principal</p>
-    <nav className="space-y-1.5">
-      <Link to="/" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white">
-        <Home size={18} /> Início
-      </Link>
-      <Link to="/cursos" className="flex items-center gap-3 rounded-xl border border-[#8B5CF6]/20 bg-[#6D28D9]/15 px-3 py-3 text-sm font-bold text-white shadow-inner shadow-purple-950/20">
-        <GraduationCap size={18} className="text-[#C4B5FD]" /> Academia
-      </Link>
-      <Link to="/editor" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white">
-        <PenTool size={18} /> Novo sermão
-      </Link>
-      <Link to="/devocionais" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white">
-        <Users size={18} /> Devocionais
-      </Link>
-      <Link to="/perfil" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white">
-        <User size={18} /> Meu perfil
-      </Link>
-    </nav>
-
-    <div className="mt-auto rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#211638] to-[#120D1D] p-4">
-      <p className="text-xs font-bold text-white">Cresça no conhecimento.</p>
-      <p className="mt-1 text-[11px] leading-relaxed text-white/45">Formando cristãos para viver e ensinar a Palavra.</p>
-    </div>
-  </aside>
-);
+const CourseRow = ({ title, items, id }) => {
+  const rowRef = useRef(null);
+  const scroll = direction => rowRef.current?.scrollBy({ left: direction * 520, behavior: 'smooth' });
+  return (
+    <section id={id} className="group/course-row relative min-w-0">
+      <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-black text-white">{title}</h2><div className="flex gap-2 opacity-0 transition-opacity group-hover/course-row:opacity-100 group-focus-within/course-row:opacity-100"><button type="button" onClick={() => scroll(-1)} aria-label={`Rolar ${title} para a esquerda`} className="rounded-full border border-white/15 bg-black/70 p-2 text-white hover:bg-[#4C1D95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><ChevronLeft size={17}/></button><button type="button" onClick={() => scroll(1)} aria-label={`Rolar ${title} para a direita`} className="rounded-full border border-white/15 bg-black/70 p-2 text-white hover:bg-[#4C1D95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><ChevronRight size={17}/></button></div></div>
+      <div ref={rowRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto overflow-y-visible px-2 py-3 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{items?.length ? items : <p className="py-5 text-sm text-white/40">Ainda não há itens nesta fileira. Explore o catálogo para começar.</p>}</div>
+    </section>
+  );
+};
 
 const CursosNew = () => {
-  const { isAssinante, isPlus, isFundador, temAcessoCurso, loading: loadingPlano } = usePlano();
+  const { isAssinante, temAcessoCurso, loading: loadingPlano } = usePlano();
   const navigate = useNavigate();
   const [cursos, setCursos] = useState([]);
   const [ultimoVideo, setUltimoVideo] = useState(null);
@@ -57,7 +56,6 @@ const CursosNew = () => {
   const [playerAberto, setPlayerAberto] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(false);
-  const [descricaoExpandida, setDescricaoExpandida] = useState(new Set());
   const [statsProgresso, setStatsProgresso] = useState({
     cursosIniciados: 0,
     certificados: 0,
@@ -66,20 +64,16 @@ const CursosNew = () => {
     horasEstudadas: 12
   });
 
+  const cursosComAcesso = cursos.filter(c => temAcessoCurso(c) || c.temMatricula);
+  const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
+
   // ─── Conquistas ──────────────────────────────────────────────────────────
   const conquistas = [
     { id: 1, nome: 'Primeiro Passo', descricao: 'Iniciou seu primeiro curso', icon: '🎯', desbloqueada: statsProgresso.cursosIniciados > 0 },
     { id: 2, nome: 'Sequência Sagrada', descricao: '7 dias consecutivos', icon: '🔥', desbloqueada: statsProgresso.diasConsecutivos >= 7 },
     { id: 3, nome: 'Mestre em Formação', descricao: '50 aulas assistidas', icon: '📚', desbloqueada: statsProgresso.aulasConcluidas >= 50 },
     { id: 4, nome: 'Certificado Premium', descricao: 'Primeiro certificado obtido', icon: '🏅', desbloqueada: statsProgresso.certificados > 0 }
-  ];
-
-  // ─── Novidades da Academia ───
-  const novidades = [
-    { id: 1, tipo: '📖', titulo: 'Novo Devocional', descricao: 'Reflexão diária sobre Fé', data: 'Hoje' },
-    { id: 2, tipo: '🎥', titulo: 'Novo Vídeo', descricao: 'Pregação sobre Oração', data: 'Ontem' },
-    { id: 3, tipo: '🎓', titulo: 'Novo Curso', descricao: 'Teologia Prática', data: '2 dias atrás' },
-    { id: 4, tipo: '🔥', titulo: 'Série Especial', descricao: 'Livro de Romanos', data: '3 dias atrás' }
   ];
 
   const carregarDados = async () => {
@@ -92,21 +86,21 @@ const CursosNew = () => {
         { data: todosCursos, error: errCursos },
         { data: minhasMatriculas },
         { data: progresso },
-        { data: contagemAulas }
+        { data: aulasDetalhadas }
       ] = await Promise.all([
         supabase.from('cursos').select('*').order('created_at', { ascending: true }),
         supabase.from('matriculas').select('curso_id').eq('user_id', user?.id),
         supabase.from('progresso_aulas')
           .select('aula_id, aulas!inner(curso_id)')
           .eq('user_id', user?.id),
-        supabase.from('aulas').select('curso_id')
+        supabase.from('aulas').select('*').order('ordem', { ascending: true })
       ]);
 
       if (errCursos) throw errCursos;
 
       const idsComMatricula = new Set(minhasMatriculas?.map(m => m.curso_id));
 
-      const aulasPorCurso = (contagemAulas || []).reduce((acc, a) => {
+      const aulasPorCurso = (aulasDetalhadas || []).reduce((acc, a) => {
         acc[a.curso_id] = (acc[a.curso_id] || 0) + 1;
         return acc;
       }, {});
@@ -117,15 +111,19 @@ const CursosNew = () => {
         return acc;
       }, {});
 
+      const idsAulasConcluidas = new Set((progresso || []).map(p => p.aula_id));
       const cursosFormatados = (todosCursos || []).map(c => {
+        const aulasDoCurso = (aulasDetalhadas || []).filter(a => a.curso_id === c.id);
         const totalAulas = aulasPorCurso[c.id] || 0;
         const aulasFeitas = progressoPorCurso[c.id] || 0;
+        const proximaAula = aulasDoCurso.find(a => !idsAulasConcluidas.has(a.id)) || aulasDoCurso[0] || null;
         const porcentagem = totalAulas > 0 ? Math.round((aulasFeitas / totalAulas) * 100) : 0;
         return {
           ...c,
           temMatricula: idsComMatricula.has(c.id),
           totalAulas,
           aulasFeitas,
+          proximaAula,
           porcentagem,
           concluido: totalAulas > 0 && aulasFeitas >= totalAulas
         };
@@ -223,14 +221,6 @@ const CursosNew = () => {
     setLoadingVideo(false);
   };
 
-  const toggleDescricao = (id) => {
-    setDescricaoExpandida(prev => {
-      const novo = new Set(prev);
-      novo.has(id) ? novo.delete(id) : novo.add(id);
-      return novo;
-    });
-  };
-
   // ─── Componente: Hero — Vídeo Destaque estilo capa Netflix ────────────────
   const HeroVideoDestaque = () => {
     if (loadingVideo) {
@@ -244,7 +234,7 @@ const CursosNew = () => {
 
     return (
       <div className="relative mx-6 md:mx-0 rounded-[28px] overflow-hidden border border-white/10 shadow-2xl shadow-black/60">
-        {!playerAberto ? (
+        {(
           <button onClick={() => setPlayerAberto(true)} className="w-full block relative aspect-[3/4] md:aspect-[21/8] max-h-[440px] md:max-h-[480px] group">
             <img
               src={ultimoVideo.thumb}
@@ -274,23 +264,6 @@ const CursosNew = () => {
               <p className="text-[10px] text-white/50 font-bold uppercase mt-1.5">{ultimoVideo.publicado}</p>
             </div>
           </button>
-        ) : (
-          <div className="relative aspect-video bg-black">
-            <iframe
-              className="w-full h-full"
-              src={`https://www.youtube.com/embed/${ultimoVideo.id}?autoplay=1`}
-              title={ultimoVideo.titulo}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-            <button
-              onClick={() => setPlayerAberto(false)}
-              className="absolute top-3 right-3 p-2 bg-black/70 rounded-full text-white hover:bg-black/90 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
         )}
       </div>
     );
@@ -462,9 +435,17 @@ const CursosNew = () => {
   // ─── Loading ─────────────────────────────────────────────────────────────
   if (loading || loadingPlano) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#8B5CF6]" size={32} />
-      </div>
+      <>
+        <div className="hidden md:block min-h-screen bg-[#0A0A0F] pl-[264px] text-white">
+          <DesktopAcademiaSidebar />
+          <div className="h-[62vh] animate-pulse bg-gradient-to-r from-[#17111F] via-[#24153D] to-[#0A0A0F]" />
+          <div className="space-y-8 px-12 py-8">
+            <div className="h-6 w-56 animate-pulse rounded bg-white/10" />
+            <div className="flex gap-5">{[1,2,3,4,5].map(n => <div key={n} className="w-[190px] shrink-0"><div className="aspect-[2/3] animate-pulse rounded-xl bg-white/[0.07]" /><div className="mt-3 h-3 w-3/4 animate-pulse rounded bg-white/10" /></div>)}</div>
+          </div>
+        </div>
+        <div className="md:hidden min-h-screen bg-[#0A0A0F] flex items-center justify-center"><Loader2 className="animate-spin text-[#8B5CF6]" size={32} /></div>
+      </>
     );
   }
 
@@ -555,8 +536,64 @@ const CursosNew = () => {
   }
 
   // ─── Academia liberada ────────────────────────────────────────────────────
+
+  const posterCard = (curso, badgeNovo = false) => (
+    <Link key={curso.id} to={`/cursos/${curso.id}`} className="group relative block w-[190px] shrink-0 snap-start outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] rounded-xl">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[#271c6b] to-[#4c36b6] shadow-lg transition-all duration-300 delay-200 ease-out group-hover:z-20 group-hover:scale-[1.08] group-hover:shadow-2xl group-hover:shadow-black/60 motion-reduce:transition-none">
+        {curso.thumb_url || curso.capa_url ? <img loading="lazy" src={curso.thumb_url || curso.capa_url} alt={curso.titulo} className="h-full w-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-70" onLoad={e => e.currentTarget.classList.remove("opacity-0")} /> : <div className="flex h-full items-center justify-center"><span className="text-4xl font-black text-white/50">{curso.titulo?.charAt(0) || 'V'}</span></div>}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent opacity-80" />
+        {curso.concluido && <span className="absolute left-2 top-2 rounded-full bg-emerald-500 px-2 py-1 text-[8px] font-black text-white">Concluído</span>}
+        {!curso.concluido && curso.porcentagem > 0 && <span className="absolute left-2 top-2 rounded-full bg-[#6D28D9] px-2 py-1 text-[8px] font-black text-white">Em andamento</span>}
+        {badgeNovo && <span className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-[8px] font-black text-[#4C1D95]">Novo</span>}
+        <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#4C1D95] shadow-lg"><PlayCircle size={22} fill="currentColor" /></div>
+          <p className="line-clamp-2 text-sm font-black text-white">{curso.titulo}</p>
+          <p className="mt-1 text-[10px] font-semibold text-white/65">{curso.totalAulas || 0} aulas · {curso.porcentagem || 0}% concluído</p>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/15"><div className={`h-full ${curso.concluido ? 'bg-emerald-400' : 'bg-[#A78BFA]'}`} style={{width:`${curso.porcentagem || 0}%`}} /></div>
+      </div>
+      <p className="mt-3 line-clamp-2 text-[13px] font-bold text-white">{curso.titulo}</p>
+      <p className="mt-1 text-[10px] text-white/40">{curso.totalAulas || 0} aulas</p>
+    </Link>
+  );
+  const continueCard = (curso) => (
+    <Link key={curso.id} to={`/cursos/${curso.id}`} className="group w-[300px] shrink-0 snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] rounded-xl">
+      <div className="relative aspect-video overflow-hidden rounded-xl border border-white/10 bg-[#17131F]">
+        {curso.proximaAula?.thumb_url || curso.proximaAula?.thumbnail_url || curso.thumb_url || curso.capa_url ? <img loading="lazy" src={curso.proximaAula?.thumb_url || curso.proximaAula?.thumbnail_url || curso.thumb_url || curso.capa_url} alt={curso.proximaAula?.titulo || curso.titulo} className="h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:scale-105" onLoad={e => e.currentTarget.classList.remove("opacity-0")} /> : <div className="flex h-full items-center justify-center"><BookOpen size={30} className="text-white/25" /></div>}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20"><span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/60 bg-black/45 text-white backdrop-blur"><PlayCircle size={26} /></span></div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20"><div className="h-full bg-[#A78BFA]" style={{width:`${curso.porcentagem}%`}} /></div>
+      </div>
+      <p className="mt-2 truncate text-sm font-bold text-white">{curso.titulo}</p>
+      <p className="mt-1 text-[11px] text-[#C4B5FD]">Aula {Math.min(curso.aulasFeitas + 1, curso.totalAulas)} de {curso.totalAulas}</p>
+    </Link>
+  );
+
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-28 pt-2 md:pb-12 md:pt-0 md:pl-[264px]">
+    <>
+      <div className="hidden md:block min-h-screen bg-[#0A0A0F] pl-[264px] text-white">
+        <DesktopAcademiaSidebar />
+        <main className="min-h-screen overflow-hidden">
+          <section id="inicio-academia" className="relative overflow-hidden bg-[#0A0A0F] px-12 pb-8 pt-6">
+            <div className="mx-auto max-w-[1440px]">
+              <HeroVideoDestaque />
+            </div>
+          </section>
+
+          <div className="space-y-10 px-12 pb-16 pt-5">
+            <CourseRow id="continue-assistindo" title="Continue assistindo" items={continuarItens.map(continueCard)} />
+            <CourseRow title="Novidades" items={cursosNovos.slice(0, 6).map((c, index) => posterCard(c, index === 0))} />
+            <CourseRow id="seus-cursos" title="Seus cursos" items={cursosComAcesso.map(c => posterCard(c))} />
+            <CourseRow id="catalogo" title="Explorar cursos" items={cursos.map(c => posterCard(c, cursosNovos[0]?.id === c.id))} />
+            <section><h2 className="mb-4 text-lg font-black">Suas conquistas</h2><div className="flex gap-3 overflow-x-auto pb-2">{conquistas.map(c => <div key={c.id} className="w-40 shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-4"><p className="text-xl">{c.icon}</p><p className="mt-2 text-xs font-bold text-white">{c.nome}</p><p className="mt-1 text-[10px] text-white/40">{c.descricao}</p></div>)}</div></section>
+          </div>
+        </main>
+        <style>{`
+          @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+          #continue-assistindo, #seus-cursos, #catalogo { scroll-margin-top: 28px; }
+        `}</style>
+      </div>
+      <div className="md:hidden">
+            <div className="min-h-screen bg-[#0A0A0F] pb-28 pt-2 md:pb-12 md:pt-0 md:pl-[264px]">
       <DesktopAcademiaSidebar />
       {/* Cabeçalho */}
       <header className="mb-6 mt-2 px-6 flex items-center gap-3 md:mx-auto md:mb-8 md:max-w-[1440px] md:px-10 md:pt-10">
@@ -592,6 +629,40 @@ const CursosNew = () => {
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </div>
+      </div>
+      {playerAberto && ultimoVideo && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Reproduzindo: ${ultimoVideo.titulo}`}
+          onClick={() => setPlayerAberto(false)}
+        >
+          <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="relative aspect-video">
+              <iframe
+                key={ultimoVideo.id}
+                className="absolute inset-0 h-full w-full"
+                src={`https://www.youtube-nocookie.com/embed/${ultimoVideo.id}?autoplay=1&playsinline=1&rel=0`}
+                title={ultimoVideo.titulo}
+                frameBorder="0"
+                loading="eager"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setPlayerAberto(false)}
+              aria-label="Fechar vídeo"
+              className="absolute right-3 top-3 rounded-full bg-black/75 p-2 text-white transition hover:bg-black"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
