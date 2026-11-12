@@ -3,9 +3,9 @@ import { usePlano } from '../hooks/usePlano';
 import { supabase } from '../supabaseClient';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  PlayCircle, Lock, ChevronRight, Loader2, CheckCircle, BookOpen,
+  PlayCircle, ChevronRight, Loader2, CheckCircle, BookOpen,
   AlertTriangle, RefreshCw, Sparkles, X, ArrowLeft,
-  Home, GraduationCap, Library, Compass, ChevronLeft, Info
+  Home, Library, Compass, ChevronLeft, Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -49,7 +49,7 @@ const CourseRow = ({ title, items, id }) => {
 };
 
 const CursosNew = () => {
-  const { isAssinante, isPlus, isFundador, temAcessoCurso, loading: loadingPlano } = usePlano();
+  const { isAssinante, temAcessoCurso, loading: loadingPlano } = usePlano();
   const navigate = useNavigate();
   const [cursos, setCursos] = useState([]);
   const [ultimoVideo, setUltimoVideo] = useState(null);
@@ -60,7 +60,6 @@ const CursosNew = () => {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(false);
-  const [descricaoExpandida, setDescricaoExpandida] = useState(new Set());
   const [statsProgresso, setStatsProgresso] = useState({
     cursosIniciados: 0,
     certificados: 0,
@@ -82,14 +81,6 @@ const CursosNew = () => {
     { id: 2, nome: 'Sequência Sagrada', descricao: '7 dias consecutivos', icon: '🔥', desbloqueada: statsProgresso.diasConsecutivos >= 7 },
     { id: 3, nome: 'Mestre em Formação', descricao: '50 aulas assistidas', icon: '📚', desbloqueada: statsProgresso.aulasConcluidas >= 50 },
     { id: 4, nome: 'Certificado Premium', descricao: 'Primeiro certificado obtido', icon: '🏅', desbloqueada: statsProgresso.certificados > 0 }
-  ];
-
-  // ─── Novidades da Academia ───
-  const novidades = [
-    { id: 1, tipo: '📖', titulo: 'Novo Devocional', descricao: 'Reflexão diária sobre Fé', data: 'Hoje' },
-    { id: 2, tipo: '🎥', titulo: 'Novo Vídeo', descricao: 'Pregação sobre Oração', data: 'Ontem' },
-    { id: 3, tipo: '🎓', titulo: 'Novo Curso', descricao: 'Teologia Prática', data: '2 dias atrás' },
-    { id: 4, tipo: '🔥', titulo: 'Série Especial', descricao: 'Livro de Romanos', data: '3 dias atrás' }
   ];
 
   const carregarDados = async () => {
@@ -246,14 +237,6 @@ const CursosNew = () => {
     }
 
     setLoadingVideo(false);
-  };
-
-  const toggleDescricao = (id) => {
-    setDescricaoExpandida(prev => {
-      const novo = new Set(prev);
-      novo.has(id) ? novo.delete(id) : novo.add(id);
-      return novo;
-    });
   };
 
   // ─── Componente: Hero — Vídeo Destaque estilo capa Netflix ────────────────
