@@ -117,9 +117,14 @@ const Curso = () => {
 
   if (loading || loadingPlano) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#8B5CF6]" size={32} />
-      </div>
+      <>
+        <div className="hidden md:block min-h-screen bg-[#0A0A0F]">
+          <div className="h-16 border-b border-white/5 bg-black/40" />
+          <div className="h-[430px] animate-pulse bg-gradient-to-r from-[#17111F] via-[#24153D] to-[#0A0A0F]" />
+          <div className="mx-auto max-w-[1500px] space-y-3 px-10 py-10">{[1,2,3,4,5].map(n => <div key={n} className="flex items-center gap-5 rounded-xl border border-white/5 p-3"><div className="h-[82px] w-[146px] animate-pulse rounded-lg bg-white/10"/><div className="flex-1 space-y-2"><div className="h-3 w-1/3 animate-pulse rounded bg-white/10"/><div className="h-4 w-2/3 animate-pulse rounded bg-white/10"/></div></div>)}</div>
+        </div>
+        <div className="md:hidden min-h-screen bg-[#0A0A0F] flex items-center justify-center"><Loader2 className="animate-spin text-[#8B5CF6]" size={32}/></div>
+      </>
     );
   }
 
