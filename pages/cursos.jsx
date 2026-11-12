@@ -178,6 +178,12 @@ const CursosNew = () => {
     return () => media.removeEventListener?.('change', onChange);
   }, []);
 
+  useEffect(() => {
+    if (heroSlides.length < 2 || heroPaused || reducedMotion) return undefined;
+    const timer = window.setInterval(() => setHeroIndex(index => (index + 1) % heroSlides.length), 7500);
+    return () => window.clearInterval(timer);
+  }, [heroSlides.length, heroPaused, reducedMotion]);
+
   const isShort = (titulo = '') => {
     const t = titulo.toLowerCase();
     return t.includes('#shorts') || t.includes('#short');
@@ -569,13 +575,10 @@ const CursosNew = () => {
   // ─── Academia liberada ────────────────────────────────────────────────────
   const cursosComAcesso = cursos.filter(c => temAcessoCurso(c) || c.temMatricula);
   const cursoEmProgresso = cursosComAcesso.find(c => c.aulasFeitas > 0 && !c.concluido);
+  const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
   const heroSlides = [cursoEmProgresso || cursosComAcesso[0] || cursos[0], ...cursos.filter(c => c.id !== (cursoEmProgresso || cursosComAcesso[0] || cursos[0])?.id).slice(0, 2)].filter(Boolean);
   const cursoDestaque = heroSlides[heroIndex % Math.max(heroSlides.length, 1)];
-  useEffect(() => {
-    if (heroSlides.length < 2 || heroPaused || reducedMotion) return undefined;
-    const timer = window.setInterval(() => setHeroIndex(index => (index + 1) % heroSlides.length), 7500);
-    return () => window.clearInterval(timer);
-  }, [heroSlides.length, heroPaused, reducedMotion]);
   const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
   const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
   const posterCard = (curso, badgeNovo = false) => (
