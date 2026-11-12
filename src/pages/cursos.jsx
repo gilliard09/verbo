@@ -251,7 +251,7 @@ const CursosNew = () => {
 
     return (
       <div className="relative mx-6 md:mx-0 rounded-[28px] overflow-hidden border border-white/10 shadow-2xl shadow-black/60">
-        {!playerAberto ? (
+        {(
           <button onClick={() => setPlayerAberto(true)} className="w-full block relative aspect-[3/4] md:aspect-[21/8] max-h-[440px] md:max-h-[480px] group">
             <img
               src={ultimoVideo.thumb}
