@@ -281,23 +281,6 @@ const CursosNew = () => {
               <p className="text-[10px] text-white/50 font-bold uppercase mt-1.5">{ultimoVideo.publicado}</p>
             </div>
           </button>
-        ) : (
-          <div className="relative aspect-video bg-black">
-            <iframe
-              className="w-full h-full"
-              src={`https://www.youtube.com/embed/${ultimoVideo.id}?autoplay=1`}
-              title={ultimoVideo.titulo}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-            <button
-              onClick={() => setPlayerAberto(false)}
-              className="absolute top-3 right-3 p-2 bg-black/70 rounded-full text-white hover:bg-black/90 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
         )}
       </div>
     );
@@ -676,6 +659,38 @@ const CursosNew = () => {
       `}</style>
     </div>
       </div>
+      {playerAberto && ultimoVideo && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Reproduzindo: ${ultimoVideo.titulo}`}
+          onClick={() => setPlayerAberto(false)}
+        >
+          <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="relative aspect-video">
+              <iframe
+                key={ultimoVideo.id}
+                className="absolute inset-0 h-full w-full"
+                src={`https://www.youtube-nocookie.com/embed/${ultimoVideo.id}?autoplay=1&playsinline=1&rel=0`}
+                title={ultimoVideo.titulo}
+                frameBorder="0"
+                loading="eager"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setPlayerAberto(false)}
+              aria-label="Fechar vídeo"
+              className="absolute right-3 top-3 rounded-full bg-black/75 p-2 text-white transition hover:bg-black"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
