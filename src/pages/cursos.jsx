@@ -5,9 +5,48 @@ import { Link } from 'react-router-dom';
 import {
   PlayCircle, Lock, ChevronRight, Loader2,
   ShoppingCart, CheckCircle, BookOpen,
-  AlertTriangle, RefreshCw, Sparkles, X, ArrowLeft
+  AlertTriangle, RefreshCw, Sparkles, X, ArrowLeft,
+  Home, PenTool, User, Users, GraduationCap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+const DesktopAcademiaSidebar = () => (
+  <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-[264px] flex-col border-r border-white/[0.07] bg-[#0D0A13] px-5 py-7">
+    <Link to="/" className="mb-12 flex items-center gap-3 px-2">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#4C1D95] shadow-lg shadow-purple-950/40">
+        <span className="text-xl font-black text-white">V</span>
+      </div>
+      <div>
+        <p className="text-lg font-black tracking-tight text-white">verbo</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#A78BFA]">Academia</p>
+      </div>
+    </Link>
+
+    <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Menu principal</p>
+    <nav className="space-y-1.5">
+      <Link to="/" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white">
+        <Home size={18} /> Início
+      </Link>
+      <Link to="/cursos" className="flex items-center gap-3 rounded-xl border border-[#8B5CF6]/20 bg-[#6D28D9]/15 px-3 py-3 text-sm font-bold text-white shadow-inner shadow-purple-950/20">
+        <GraduationCap size={18} className="text-[#C4B5FD]" /> Academia
+      </Link>
+      <Link to="/editor" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white">
+        <PenTool size={18} /> Novo sermão
+      </Link>
+      <Link to="/devocionais" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white">
+        <Users size={18} /> Devocionais
+      </Link>
+      <Link to="/perfil" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white">
+        <User size={18} /> Meu perfil
+      </Link>
+    </nav>
+
+    <div className="mt-auto rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#211638] to-[#120D1D] p-4">
+      <p className="text-xs font-bold text-white">Cresça no conhecimento.</p>
+      <p className="mt-1 text-[11px] leading-relaxed text-white/45">Formando cristãos para viver e ensinar a Palavra.</p>
+    </div>
+  </aside>
+);
 
 const CursosNew = () => {
   const { isAssinante, isPlus, isFundador, temAcessoCurso, loading: loadingPlano } = usePlano();
@@ -196,7 +235,7 @@ const CursosNew = () => {
   const HeroVideoDestaque = () => {
     if (loadingVideo) {
       return (
-        <div className="mx-6 aspect-[3/4] max-h-[440px] bg-white/5 rounded-[28px] flex items-center justify-center border border-white/10">
+        <div className="mx-6 md:mx-0 aspect-[3/4] md:aspect-[21/8] max-h-[440px] md:max-h-[480px] bg-white/5 rounded-[28px] flex items-center justify-center border border-white/10">
           <Loader2 className="animate-spin text-white/30" size={28} />
         </div>
       );
@@ -204,13 +243,13 @@ const CursosNew = () => {
     if (!ultimoVideo) return null;
 
     return (
-      <div className="relative mx-6 rounded-[28px] overflow-hidden border border-white/10 shadow-2xl shadow-black/60">
+      <div className="relative mx-6 md:mx-0 rounded-[28px] overflow-hidden border border-white/10 shadow-2xl shadow-black/60">
         {!playerAberto ? (
-          <button onClick={() => setPlayerAberto(true)} className="w-full block relative aspect-[3/4] max-h-[440px] group">
+          <button onClick={() => setPlayerAberto(true)} className="w-full block relative aspect-[3/4] md:aspect-[21/8] max-h-[440px] md:max-h-[480px] group">
             <img
               src={ultimoVideo.thumb}
               alt={ultimoVideo.titulo}
-              className="w-full h-full object-cover group-active:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover md:object-[center_38%] group-active:scale-105 transition-transform duration-500"
             />
             {/* Gradiente estilo capa de streaming */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/10" />
@@ -268,15 +307,15 @@ const CursosNew = () => {
     const proximaAula = cursoEmProgresso.aulasFeitas + 1;
 
     return (
-      <div className="mb-8">
-        <p className="text-xs font-black uppercase tracking-widest text-white/40 mb-3 px-6">Continue de onde parou</p>
-        <div className="px-6">
+      <div className="mb-10 md:mb-12">
+        <p className="text-xs md:text-sm font-black uppercase tracking-widest text-white/40 mb-3 px-6 md:px-0">Continue de onde parou</p>
+        <div className="px-6 md:px-0">
           <Link
             to={`/cursos/${cursoEmProgresso.id}`}
             className="block relative rounded-[24px] overflow-hidden border border-white/10 active:scale-[0.98] transition-transform"
           >
-            <div className="flex bg-gradient-to-br from-[#1A1625] to-[#0F0D16]">
-              <div className="w-28 h-28 flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-[#6D28D9] to-[#3B1E82] flex items-center justify-center p-2.5">
+            <div className="flex bg-gradient-to-br from-[#1A1625] to-[#0F0D16] md:min-h-[150px]">
+              <div className="w-28 h-28 md:w-44 md:min-h-[150px] md:h-auto flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-[#6D28D9] to-[#3B1E82] flex items-center justify-center p-2.5">
                 {cursoEmProgresso.thumb_url || cursoEmProgresso.capa_url ? (
                   <img
                     src={cursoEmProgresso.thumb_url || cursoEmProgresso.capa_url}
@@ -293,7 +332,7 @@ const CursosNew = () => {
                 </div>
               </div>
 
-              <div className="flex-1 min-w-0 p-4 flex flex-col justify-between">
+              <div className="flex-1 min-w-0 p-4 md:p-6 flex flex-col justify-between">
                 <div>
                   <h3 className="font-black text-white text-sm leading-tight line-clamp-1">
                     {cursoEmProgresso.titulo}
@@ -338,15 +377,15 @@ const CursosNew = () => {
 
     return (
       <div className="mb-8">
-        <p className="text-xs font-black uppercase tracking-widest text-white/40 mb-3 px-6">Seus cursos</p>
-        <div className="flex gap-3.5 overflow-x-auto px-6 pb-2 -mx-0 scrollbar-hide snap-x snap-mandatory">
+        <p className="text-xs md:text-sm font-black uppercase tracking-widest text-white/40 mb-4 px-6 md:px-0">Seus cursos</p>
+        <div className="flex gap-4 md:gap-5 overflow-x-auto px-6 md:px-0 pb-3 scrollbar-hide snap-x snap-mandatory">
           {cursosAcessiveis.map(curso => (
             <Link
               key={curso.id}
               to={`/cursos/${curso.id}`}
-              className="snap-start shrink-0 w-[132px] active:scale-95 transition-transform group"
+              className="snap-start shrink-0 w-[132px] md:w-[190px] active:scale-95 transition-transform group"
             >
-              <div className="relative w-[132px] aspect-[2/3] rounded-2xl overflow-hidden bg-gradient-to-br from-[#271c6b] to-[#4c36b6] border border-white/10 p-2">
+              <div className="relative w-[132px] md:w-[190px] aspect-[2/3] rounded-2xl overflow-hidden bg-gradient-to-br from-[#271c6b] to-[#4c36b6] border border-white/10 p-2">
                 {curso.thumb_url || curso.capa_url ? (
                   <img
                     src={curso.thumb_url || curso.capa_url}
@@ -397,8 +436,8 @@ const CursosNew = () => {
   // ─── Componente: Conquistas — fileira horizontal de badges ────────────────
   const SecaoConquistas = () => (
     <div className="mb-8">
-      <p className="text-xs font-black uppercase tracking-widest text-white/40 mb-3 px-6">Suas conquistas</p>
-      <div className="flex gap-3 overflow-x-auto px-6 pb-2 scrollbar-hide snap-x snap-mandatory">
+      <p className="text-xs md:text-sm font-black uppercase tracking-widest text-white/40 mb-4 px-6 md:px-0">Suas conquistas</p>
+      <div className="flex gap-3 md:gap-4 overflow-x-auto px-6 md:px-0 pb-3 scrollbar-hide snap-x snap-mandatory">
         {conquistas.map(c => (
           <div
             key={c.id}
@@ -453,9 +492,10 @@ const CursosNew = () => {
   // ─── Acesso restrito ─────────────────────────────────────────────────────
   if (!isAssinante) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] pb-24 pt-2">
-        <div className="p-6 pb-0 max-w-2xl mx-auto">
-          <header className="mb-6 mt-2 flex items-center gap-3">
+      <div className="min-h-screen bg-[#0A0A0F] pb-24 pt-2 md:pb-10 md:pt-0 md:pl-[264px]">
+        <DesktopAcademiaSidebar />
+        <div className="p-6 pb-0 max-w-2xl mx-auto md:max-w-[1440px] md:px-10 md:pt-10">
+          <header className="mb-6 mt-2 flex items-center gap-3 md:mb-8">
             <Link to="/" className="p-2 -ml-2 rounded-xl hover:bg-white/10 active:bg-white/10 transition-colors shrink-0">
               <ArrowLeft size={20} className="text-white" />
             </Link>
@@ -468,11 +508,11 @@ const CursosNew = () => {
           </header>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 md:mb-10 md:mx-auto md:max-w-[1440px] md:px-10">
           <HeroVideoDestaque />
         </div>
 
-        <div className="px-6 max-w-2xl mx-auto flex flex-col items-center gap-5 text-center">
+        <div className="px-6 max-w-2xl mx-auto flex flex-col items-center gap-5 text-center md:max-w-3xl md:pt-4">
           <div>
             <span className="text-[10px] font-black uppercase tracking-widest text-[#A78BFA] mb-2 block">
               Quer crescer ainda mais?
@@ -516,9 +556,10 @@ const CursosNew = () => {
 
   // ─── Academia liberada ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0A0A0F] pb-28 pt-2">
+    <div className="min-h-screen bg-[#0A0A0F] pb-28 pt-2 md:pb-12 md:pt-0 md:pl-[264px]">
+      <DesktopAcademiaSidebar />
       {/* Cabeçalho */}
-      <header className="mb-6 mt-2 px-6 flex items-center gap-3">
+      <header className="mb-6 mt-2 px-6 flex items-center gap-3 md:mx-auto md:mb-8 md:max-w-[1440px] md:px-10 md:pt-10">
         <Link to="/" className="p-2 -ml-2 rounded-xl hover:bg-white/10 active:bg-white/10 transition-colors shrink-0">
           <ArrowLeft size={20} className="text-white" />
         </Link>
@@ -531,18 +572,20 @@ const CursosNew = () => {
       </header>
 
       {/* Vídeo Destaque — hero estilo capa */}
-      <div className="mb-8">
+      <div className="mb-10 md:mx-auto md:mb-12 md:max-w-[1440px] md:px-10">
         <HeroVideoDestaque />
       </div>
 
       {/* Continue de Onde Parou */}
-      <ContinueDeOndeParou />
+      <div className="md:mx-auto md:max-w-[1440px] md:px-10">
+        <ContinueDeOndeParou />
 
-      {/* Fileira de Cursos */}
-      <FileiraCursos />
+        {/* Fileira de Cursos */}
+        <FileiraCursos />
 
-      {/* Conquistas */}
-      <SecaoConquistas />
+        {/* Conquistas */}
+        <SecaoConquistas />
+      </div>
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
