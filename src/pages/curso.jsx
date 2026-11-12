@@ -189,7 +189,7 @@ const Curso = () => {
                 <p className="mb-3 text-[10px] font-black uppercase tracking-[0.28em] text-[#C4B5FD]">Academia Verbo · Curso</p>
                 <h1 className="text-5xl font-black leading-tight tracking-tight">{curso.titulo}</h1>
                 {curso.descricao && <p className="mt-4 max-w-2xl text-base leading-7 text-white/65">{curso.descricao}</p>}
-                <div className="mt-5 flex items-center gap-4 text-xs font-semibold text-white/55"><span>{aulasCurso.length || totalAulas} aulas</span><span>{materias.length} módulos</span><span>{porcentagem}% concluído</span></div>
+                <div className="mt-5 flex items-center gap-4 text-xs font-semibold text-white/55"><span>{aulasCurso.length || totalAulas} aulas</span><span>{materias.length} matérias</span><span>{porcentagem}% concluído</span></div>
                 <div className="mt-5 h-1.5 max-w-xl overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#8B5CF6]" style={{width:`${porcentagem}%`}}/></div>
                 <button onClick={() => { const proxima = aulasCurso.find(a => !aulasConcluidas.has(a.id)) || aulasCurso[0]; if (proxima?.materia_id) navigate(`/cursos/${curso.id}/materia/${proxima.materia_id}?aula=${proxima.id}`); else if (materias[0]) navigate(`/cursos/${curso.id}/materia/${materias[0].id}`); }} className="mt-7 inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-black text-[#17111F] transition hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><PlayCircle size={18} fill="currentColor"/>{aulasFeitas > 0 ? 'Continuar' : 'Começar'}</button>
               </div>
