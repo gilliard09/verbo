@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { usePlano } from '../hooks/usePlano';
 import { gerarCertificado } from '../utils/gerarCertificado';
 import { supabase } from '../supabaseClient';
@@ -250,6 +250,8 @@ const LeitorPDF = ({ url, titulo }) => {
 const Aulas = () => {
   const { cursoId, materiaId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const aulaSelecionadaId = searchParams.get('aula');
   const { isAssinante, temAcessoCurso, loading: loadingPlano } = usePlano();
   const [aulas, setAulas] = useState([]);
   const [aulaAtiva, setAulaAtiva] = useState(null);
@@ -272,7 +274,7 @@ const Aulas = () => {
   const aulaAtivaRef = useRef(null);
   const sidebarRef = useRef(null);
 
-  useEffect(() => { carregarConteudo(); }, [cursoId, materiaId]);
+  useEffect(() => { carregarConteudo(); }, [cursoId, materiaId, aulaSelecionadaId]);
   useEffect(() => { setVisualizarPDF(false); }, [aulaAtiva]);
   useEffect(() => {
     if (aulaAtivaRef.current && sidebarRef.current) {
@@ -354,7 +356,7 @@ const Aulas = () => {
 
       if (listaAulas?.length > 0) {
         setAulas(listaAulas);
-        setAulaAtiva(listaAulas[0]);
+        setAulaAtiva(listaAulas.find(aula => String(aula.id) === String(aulaSelecionadaId)) || listaAulas[0]);
         setConcluidas(new Set(progressoFiltrado.map(p => p.aula_id)));
       } else {
         setAulas([]);
