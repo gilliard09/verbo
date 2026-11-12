@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   PlayCircle, Lock, ChevronRight, Loader2, CheckCircle, BookOpen,
   AlertTriangle, RefreshCw, Sparkles, X, ArrowLeft,
-  Home, GraduationCap, Library, Compass, Clapperboard, ChevronLeft, Info
+  Home, GraduationCap, Library, Compass, ChevronLeft, Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,6 +36,18 @@ const DesktopAcademiaSidebar = () => {
   );
 };
 
+const CourseRow = ({ title, items, id }) => {
+  const rowRef = useRef(null);
+  if (!items?.length) return null;
+  const scroll = direction => rowRef.current?.scrollBy({ left: direction * 520, behavior: 'smooth' });
+  return (
+    <section id={id} className="group/course-row relative min-w-0">
+      <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-black text-white">{title}</h2><div className="flex gap-2 opacity-0 transition-opacity group-hover/course-row:opacity-100"><button type="button" onClick={() => scroll(-1)} aria-label={`Rolar ${title} para a esquerda`} className="rounded-full border border-white/15 bg-black/70 p-2 text-white hover:bg-[#4C1D95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><ChevronLeft size={17}/></button><button type="button" onClick={() => scroll(1)} aria-label={`Rolar ${title} para a direita`} className="rounded-full border border-white/15 bg-black/70 p-2 text-white hover:bg-[#4C1D95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><ChevronRight size={17}/></button></div></div>
+      <div ref={rowRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto overflow-y-visible px-2 py-3 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{items}</div>
+    </section>
+  );
+};
+
 const CursosNew = () => {
   const { isAssinante, isPlus, isFundador, temAcessoCurso, loading: loadingPlano } = usePlano();
   const navigate = useNavigate();
@@ -43,6 +55,9 @@ const CursosNew = () => {
   const [ultimoVideo, setUltimoVideo] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [playerAberto, setPlayerAberto] = useState(false);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(false);
   const [descricaoExpandida, setDescricaoExpandida] = useState(new Set());
@@ -80,21 +95,21 @@ const CursosNew = () => {
         { data: todosCursos, error: errCursos },
         { data: minhasMatriculas },
         { data: progresso },
-        { data: contagemAulas }
+        { data: aulasDetalhadas }
       ] = await Promise.all([
         supabase.from('cursos').select('*').order('created_at', { ascending: true }),
         supabase.from('matriculas').select('curso_id').eq('user_id', user?.id),
         supabase.from('progresso_aulas')
           .select('aula_id, aulas!inner(curso_id)')
           .eq('user_id', user?.id),
-        supabase.from('aulas').select('curso_id')
+        supabase.from('aulas').select('*').order('ordem', { ascending: true })
       ]);
 
       if (errCursos) throw errCursos;
 
       const idsComMatricula = new Set(minhasMatriculas?.map(m => m.curso_id));
 
-      const aulasPorCurso = (contagemAulas || []).reduce((acc, a) => {
+      const aulasPorCurso = (aulasDetalhadas || []).reduce((acc, a) => {
         acc[a.curso_id] = (acc[a.curso_id] || 0) + 1;
         return acc;
       }, {});
@@ -105,15 +120,19 @@ const CursosNew = () => {
         return acc;
       }, {});
 
+      const idsAulasConcluidas = new Set((progresso || []).map(p => p.aula_id));
       const cursosFormatados = (todosCursos || []).map(c => {
+        const aulasDoCurso = (aulasDetalhadas || []).filter(a => a.curso_id === c.id);
         const totalAulas = aulasPorCurso[c.id] || 0;
         const aulasFeitas = progressoPorCurso[c.id] || 0;
+        const proximaAula = aulasDoCurso.find(a => !idsAulasConcluidas.has(a.id)) || aulasDoCurso[0] || null;
         const porcentagem = totalAulas > 0 ? Math.round((aulasFeitas / totalAulas) * 100) : 0;
         return {
           ...c,
           temMatricula: idsComMatricula.has(c.id),
           totalAulas,
           aulasFeitas,
+          proximaAula,
           porcentagem,
           concluido: totalAulas > 0 && aulasFeitas >= totalAulas
         };
@@ -152,6 +171,11 @@ const CursosNew = () => {
   useEffect(() => {
     carregarDados();
     buscarUltimoVideo();
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(media.matches);
+    const onChange = event => setReducedMotion(event.matches);
+    media.addEventListener?.('change', onChange);
+    return () => media.removeEventListener?.('change', onChange);
   }, []);
 
   const isShort = (titulo = '') => {
@@ -545,7 +569,13 @@ const CursosNew = () => {
   // ─── Academia liberada ────────────────────────────────────────────────────
   const cursosComAcesso = cursos.filter(c => temAcessoCurso(c) || c.temMatricula);
   const cursoEmProgresso = cursosComAcesso.find(c => c.aulasFeitas > 0 && !c.concluido);
-  const cursoDestaque = cursoEmProgresso || cursosComAcesso[0] || cursos[0];
+  const heroSlides = [cursoEmProgresso || cursosComAcesso[0] || cursos[0], ...cursos.filter(c => c.id !== (cursoEmProgresso || cursosComAcesso[0] || cursos[0])?.id).slice(0, 2)].filter(Boolean);
+  const cursoDestaque = heroSlides[heroIndex % Math.max(heroSlides.length, 1)];
+  useEffect(() => {
+    if (heroSlides.length < 2 || heroPaused || reducedMotion) return undefined;
+    const timer = window.setInterval(() => setHeroIndex(index => (index + 1) % heroSlides.length), 7500);
+    return () => window.clearInterval(timer);
+  }, [heroSlides.length, heroPaused, reducedMotion]);
   const cursosNovos = [...cursos].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
   const continuarItens = cursosComAcesso.filter(c => c.aulasFeitas > 0 && !c.concluido);
   const posterCard = (curso, badgeNovo = false) => (
@@ -584,7 +614,7 @@ const CursosNew = () => {
       <div className="hidden md:block min-h-screen bg-[#0A0A0F] pl-[264px] text-white">
         <DesktopAcademiaSidebar />
         <main className="min-h-screen overflow-hidden">
-          <section id="inicio-academia" className="relative flex min-h-[62vh] items-end overflow-hidden bg-[#0A0A0F]">
+          <section id="inicio-academia" onMouseEnter={() => setHeroPaused(true)} onMouseLeave={() => setHeroPaused(false)} className="relative flex min-h-[62vh] items-end overflow-hidden bg-[#0A0A0F]">
             {cursoDestaque?.thumb_url || cursoDestaque?.capa_url ? <img src={cursoDestaque.thumb_url || cursoDestaque.capa_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55" /> : <div className="absolute inset-0 bg-gradient-to-br from-[#24153D] via-[#100D19] to-[#0A0A0F]" />}
             <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0F] via-[#0A0A0F]/70 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-transparent to-[#0A0A0F]/15" />
@@ -597,14 +627,16 @@ const CursosNew = () => {
                 <button onClick={() => navigate(cursoDestaque ? `/cursos/${cursoDestaque.id}` : '/cursos')} className="flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-black text-[#17111F] transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><PlayCircle size={18} fill="currentColor" /> {cursoEmProgresso ? 'Continuar' : 'Começar'}</button>
                 <button onClick={() => navigate(cursoDestaque ? `/cursos/${cursoDestaque.id}` : '/cursos')} className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><Info size={17} /> Detalhes</button>
               </div>
+              {heroSlides.length > 1 && <div className="mt-6 flex items-center gap-2" aria-label="Destaques da Academia">{heroSlides.map((slide,index) => <button key={slide.id} onClick={() => setHeroIndex(index)} aria-label={`Mostrar destaque ${index+1}`} aria-current={index === heroIndex ? 'true' : undefined} className={`h-1.5 rounded-full transition-all ${index === heroIndex ? 'w-8 bg-white' : 'w-3 bg-white/35 hover:bg-white/70'}`}/>)}</div>}
             </div>
           </section>
 
           <div className="space-y-10 px-12 pb-16 pt-5">
-            {continuarItens.length > 0 && <section id="continue-assistindo"><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-black">Continue assistindo</h2><span className="text-xs text-white/35">Sua próxima aula</span></div><div className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4">{continuarItens.map(continueCard)}</div></section>}
+            <CourseRow id="continue-assistindo" title="Continue assistindo" items={continuarItens.map(continueCard)} />
             {ultimoVideo && <section><h2 className="mb-4 text-lg font-black">Novidades do canal</h2><button onClick={() => setPlayerAberto(true)} className="group relative w-[360px] overflow-hidden rounded-xl border border-white/10 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"><div className="relative aspect-video"><img loading="lazy" src={ultimoVideo.thumb} alt={ultimoVideo.titulo} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div className="absolute inset-0 flex items-center justify-center bg-black/20"><PlayCircle size={42} className="text-white" /></div><span className="absolute left-3 top-3 rounded-full bg-red-600 px-2 py-1 text-[9px] font-black uppercase">Novo no canal</span></div><p className="p-3 text-sm font-bold text-white">{ultimoVideo.titulo}</p></button></section>}
-            <section id="seus-cursos"><h2 className="mb-4 text-lg font-black">Seus cursos</h2><div className="flex snap-x snap-mandatory gap-5 overflow-x-auto overflow-y-visible px-2 py-3">{cursosComAcesso.length ? cursosComAcesso.map(c => posterCard(c)) : <p className="text-sm text-white/40">Você ainda não tem cursos disponíveis.</p>}</div></section>
-            <section id="catalogo"><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-black">Explorar cursos</h2><span className="text-xs text-white/35">{cursos.length} cursos</span></div><div className="flex snap-x snap-mandatory gap-5 overflow-x-auto overflow-y-visible px-2 py-3">{cursos.length ? cursos.map(c => posterCard(c, cursosNovos[0]?.id === c.id)) : <p className="text-sm text-white/40">Nenhum curso no catálogo.</p>}</div></section>
+            <CourseRow title="Novidades" items={cursosNovos.slice(0, 6).map(c => posterCard(c, true))} />
+            <CourseRow id="seus-cursos" title="Seus cursos" items={cursosComAcesso.map(c => posterCard(c))} />
+            <CourseRow id="catalogo" title="Explorar cursos" items={cursos.map(c => posterCard(c, cursosNovos[0]?.id === c.id))} />
             <section><h2 className="mb-4 text-lg font-black">Suas conquistas</h2><div className="flex gap-3 overflow-x-auto pb-2">{conquistas.map(c => <div key={c.id} className="w-40 shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-4"><p className="text-xl">{c.icon}</p><p className="mt-2 text-xs font-bold text-white">{c.nome}</p><p className="mt-1 text-[10px] text-white/40">{c.descricao}</p></div>)}</div></section>
           </div>
         </main>
