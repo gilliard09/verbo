@@ -37,8 +37,8 @@ const FAQS = [
   ['Posso usar no celular e no computador?', 'O Verbo foi pensado para acompanhar sua rotina de preparação. Acesse pelo navegador nos dispositivos compatíveis e entre com sua conta.'],
   ['O que está incluído em cada plano?', 'Os limites e recursos variam conforme o plano. Confira as condições apresentadas no checkout antes de concluir a compra.'],
   ['Como funciona o plano Fundador?', 'O Fundador custa R$ 9,90 por mês. A cobrança é recorrente conforme as condições informadas no checkout da Cakto.'],
-  ['Como funciona o plano anual?', 'O Plus Anual custa R$ 347 por 12 meses durante a Black Friday. O pagamento e as condições de parcelamento são apresentados no checkout da Cakto.'],
-  ['Como funciona o Vitalício?', 'O Vitalício custa R$ 497 em pagamento único durante a Black Friday e dá acesso ao plano Plus por toda a vida útil da plataforma.'],
+  ['Como funciona o plano anual?', 'O Plus Anual custa R$ 197 por 12 meses durante a Black Friday. O pagamento e as condições de parcelamento são apresentados no checkout da Cakto.'],
+  ['Como funciona o Vitalício?', 'O Vitalício custa R$ 297 em pagamento único durante a Black Friday e dá acesso ao plano Plus por toda a vida útil da plataforma.'],
   ['Posso cancelar uma assinatura?', 'Para as condições de cancelamento, reembolso e cobrança, consulte os termos apresentados no checkout e as políticas aplicáveis à sua compra.'],
 ];
 
@@ -245,8 +245,8 @@ export default function LpExclusivo() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#6D28D9] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white">Black Friday</div>
                 <p className="mt-2 text-xs font-extrabold uppercase tracking-[.15em] text-[#6D28D9]">12 meses de acesso</p>
                 <h3 className="mt-3 text-2xl font-black">Plus Anual</h3>
-                <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 347</span><span className="text-sm text-slate-500">/ano</span></p>
-                <p className="mt-1 text-xs font-semibold text-emerald-700">Equivale a R$ 28,92 por mês</p>
+                <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 197</span><span className="text-sm text-slate-500">/ano</span></p>
+                <p className="mt-1 text-xs font-semibold text-emerald-700">Equivale a R$ 16,42 por mês</p>
                 <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Doze meses de acesso ao Plus por um valor especial de Black Friday.</p>
                 <ul className="my-7 space-y-3 text-sm text-slate-700">{['Todos os recursos do Plus', 'Academia Verbo completa', 'Sermões ilimitados', 'Pagamento anual, sem cobrança mensal'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
                 <CheckoutButton href={CHECKOUTS.anual} className="mt-auto">Assinar Plus Anual</CheckoutButton>
@@ -255,14 +255,14 @@ export default function LpExclusivo() {
               <article className="flex flex-col rounded-3xl border border-orange-200 bg-[#241435] p-7 text-white shadow-sm sm:p-8">
                 <div className="mb-4 inline-flex items-center gap-2 self-start rounded-full bg-orange-400/15 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-orange-200"><Clock3 size={13} /> Oferta promocional</div>
                 <h3 className="text-2xl font-black">Vitalício</h3>
-                <div className="mt-4"><p className="text-4xl font-black tracking-tight">R$ 497</p><p className="mt-1 text-sm text-white/60">pagamento único</p></div>
+                <div className="mt-4"><p className="text-4xl font-black tracking-tight">R$ 297</p><p className="mt-1 text-sm text-white/60">pagamento único</p></div>
                 <p className="mt-4 min-h-12 text-sm leading-6 text-white/70">Pague uma única vez e tenha acesso ao plano Plus para sempre, sem mensalidade.</p>
                 <ul className="my-7 space-y-3 text-sm text-white/85">{['Acesso ao Plus para sempre', 'Pagamento à vista ou parcelado', 'Sem mensalidade recorrente'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-orange-300" />{t}</li>)}</ul>
                 <CheckoutButton href={CHECKOUTS.vitalicio} className="mt-auto">Ver oferta Vitalícia</CheckoutButton>
                 <p className="mt-3 text-center text-[11px] leading-5 text-white/45">Acesso Plus vitalício mediante pagamento único.</p>
               </article>
             </div>
-            <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-slate-500">O Fundador e o Plus são assinaturas mensais. Na Black Friday, o Plus Anual custa R$ 347 por 12 meses e o Vitalício custa R$ 497 em pagamento único.</p>
+            <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-slate-500">O Fundador e o Plus são assinaturas mensais. Na Black Friday, o Plus Anual custa R$ 197 por 12 meses e o Vitalício custa R$ 297 em pagamento único.</p>
           </div>
         </section>
 
