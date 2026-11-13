@@ -132,8 +132,8 @@ const Upgrade = () => {
             <Sparkles size={18} /> FAZER UPGRADE — R$47/mês
           </button>
           <div className="grid grid-cols-2 gap-2 mb-4">
-            <button onClick={() => window.open(CHECKOUT_ANUAL, '_blank', 'noopener,noreferrer')} className="rounded-2xl border border-violet-200 bg-violet-50 px-3 py-3 text-xs font-black text-[#4C1D95]">PLUS ANUAL · R$ 347</button>
-            <button onClick={() => window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer')} className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs font-black text-amber-800">VITALÍCIO · R$ 497</button>
+            <button onClick={() => window.open(CHECKOUT_ANUAL, '_blank', 'noopener,noreferrer')} className="rounded-2xl border border-violet-200 bg-violet-50 px-3 py-3 text-xs font-black text-[#4C1D95]">PLUS ANUAL · R$ 197</button>
+            <button onClick={() => window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer')} className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs font-black text-amber-800">VITALÍCIO · R$ 297</button>
           </div>
           <button onClick={() => navigate('/')} className="w-full text-center text-xs text-slate-400 font-bold py-3 hover:text-slate-600 transition-colors">
             Continuar com o plano Essencial
@@ -268,10 +268,10 @@ const Upgrade = () => {
                 <p className="font-black text-slate-800">Plus Anual</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">12 meses de acesso completo ao Plus.</p>
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-4">
-                  <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-[#4C1D95]">R$ 347</span>
+                  <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-[#4C1D95]">R$ 197</span>
                   <span className="text-xs text-gray-400 font-bold">/ano</span>
                 </div>
-                <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mt-1">R$ 28,92 por mês · economia de R$ 217</p>
+                <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mt-1">R$ 16,42 por mês · economia de R$ 367</p>
               </div>
             </div>
           </button>
@@ -291,7 +291,7 @@ const Upgrade = () => {
                 <p className="font-black text-slate-800">Plus Vitalício</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">Acesso vitalício ao Plus, sem renovação anual.</p>
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-4">
-                  <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-amber-700">R$ 497</span>
+                  <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-amber-700">R$ 297</span>
                   <span className="max-w-[112px] text-xs leading-tight text-gray-400 font-bold">pagamento único</span>
                 </div>
               </div>
@@ -329,7 +329,7 @@ const Upgrade = () => {
           className="w-full bg-[#4C1D95] text-white py-5 rounded-[24px] font-black text-base shadow-xl shadow-purple-200 hover:bg-[#3a15b0] active:scale-95 transition-all flex items-center justify-center gap-2 mb-4"
         >
           <Sparkles size={18} />
-          {planoSelecionado === 'fundador' ? 'ASSINAR ESSENCIAL — R$9,90/mês' : planoSelecionado === 'anual' ? 'ASSINAR PLUS ANUAL — R$347/ano' : planoSelecionado === 'vitalicio' ? 'GARANTIR PLUS VITALÍCIO — R$497' : 'ASSINAR AGORA — R$47/mês'}
+          {planoSelecionado === 'fundador' ? 'ASSINAR ESSENCIAL — R$9,90/mês' : planoSelecionado === 'anual' ? 'ASSINAR PLUS ANUAL — R$197/ano' : planoSelecionado === 'vitalicio' ? 'GARANTIR PLUS VITALÍCIO — R$297' : 'ASSINAR AGORA — R$47/mês'}
         </button>
 
         <div className="flex justify-center gap-5 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8">
