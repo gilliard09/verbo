@@ -258,20 +258,14 @@ const Editor = () => {
       htmlOverflow: html.style.overflow,
       bodyOverflow: body.style.overflow,
       bodyOverscroll: body.style.overscrollBehavior,
-      bodyPosition: body.style.position,
-      bodyWidth: body.style.width,
     };
     html.style.overflow = 'hidden';
     body.style.overflow = 'hidden';
     body.style.overscrollBehavior = 'none';
-    body.style.position = 'fixed';
-    body.style.width = '100%';
     return () => {
       html.style.overflow = anterior.htmlOverflow;
       body.style.overflow = anterior.bodyOverflow;
       body.style.overscrollBehavior = anterior.bodyOverscroll;
-      body.style.position = anterior.bodyPosition;
-      body.style.width = anterior.bodyWidth;
     };
   }, []);
 
@@ -903,8 +897,8 @@ Oração:`
 
       {/* Cabeçalho do documento: título e referência, como em um caderno de escrita */}
       <div className="px-6 pt-4 pb-2 shrink-0">
-        <input type="text" placeholder="Título da pregação..."
-          className="w-full text-[26px] leading-tight font-bold tracking-tight border-none outline-none mb-2 placeholder:text-slate-200 focus:ring-0 text-slate-900"
+        <textarea rows={2} placeholder="Título da pregação..."
+          className="w-full min-h-[2.2em] max-h-[3.2em] resize-none overflow-hidden text-[26px] leading-tight font-bold tracking-tight border-none outline-none mb-2 placeholder:text-slate-200 focus:ring-0 text-slate-900"
           value={titulo} onChange={e => setTitulo(e.target.value)} />
 
         {tipo && !id && (
