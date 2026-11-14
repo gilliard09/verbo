@@ -249,6 +249,32 @@ const Editor = () => {
   // CORRIGIDO: agora também extraímos offsetTop, usado no translateY do container
   const { altura: alturaVisivel, offsetTop } = useAlturaVisivel();
 
+  // O editor é uma superfície de escrita em tela cheia: impede que a página
+  // por trás role no iOS e restaura exatamente o estado anterior ao sair.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const anterior = {
+      htmlOverflow: html.style.overflow,
+      bodyOverflow: body.style.overflow,
+      bodyOverscroll: body.style.overscrollBehavior,
+      bodyPosition: body.style.position,
+      bodyWidth: body.style.width,
+    };
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    body.style.position = 'fixed';
+    body.style.width = '100%';
+    return () => {
+      html.style.overflow = anterior.htmlOverflow;
+      body.style.overflow = anterior.bodyOverflow;
+      body.style.overscrollBehavior = anterior.bodyOverscroll;
+      body.style.position = anterior.bodyPosition;
+      body.style.width = anterior.bodyWidth;
+    };
+  }, []);
+
   // ── Tipo via URL ─────────────────────────────────────────────────────────
   const params = new URLSearchParams(location.search);
   const tipo   = params.get('tipo');
@@ -772,7 +798,7 @@ Oração:`
 
   return (
     <div
-      className={`bg-white flex flex-col transition-all duration-300 ${telaCheia ? 'fixed inset-x-0 top-0 z-[150]' : 'min-h-screen'}`}
+      className={`bg-white flex flex-col overflow-hidden overscroll-none w-full max-w-full ${telaCheia ? 'fixed inset-x-0 top-0 z-[150]' : 'min-h-screen'}`}
       style={telaCheia ? {
         height: alturaVisivel ? `${alturaVisivel}px` : '100dvh',
         // CORRIGIDO: compensa o deslocamento do viewport visual no iOS Safari
@@ -780,6 +806,9 @@ Oração:`
         // container tinha a altura certa mas ficava na posição errada,
         // deixando espaço em branco entre o conteúdo e o teclado.
         transform: `translateY(${offsetTop}px)`,
+        overflow: 'hidden',
+        overscrollBehavior: 'none',
+        WebkitOverflowScrolling: 'touch',
       } : undefined}
     >
 
@@ -911,21 +940,23 @@ Oração:`
           value={conteudo} onChange={e => setConteudo(e.target.value)} />
       </div>
 
-      {/* Formatação compacta junto à base da área de escrita */}
-      <div className="shrink-0 px-5 py-1.5 border-t border-slate-100/80 bg-white/95">
-        <div className="flex items-center gap-1 p-1 rounded-xl w-fit">
-          <BotaoToolbar onClick={() => aplicarFormatacao('**', '**')} title="Negrito"><Bold size={18} /></BotaoToolbar>
-          <BotaoToolbar onClick={() => aplicarFormatacao('*', '*')} title="Itálico"><Italic size={18} /></BotaoToolbar>
-          <BotaoToolbar onClick={() => aplicarFormatacao('> ', '')} title="Citação"><Quote size={18} /></BotaoToolbar>
-          <BotaoToolbar onClick={() => aplicarFormatacao('==', '==')} title="Destaque" active><Highlighter size={18} /></BotaoToolbar>
-        </div>
-      </div>
-
-      {/* Rodapé */}
+      {/* Dock inferior nativo: formatação e métricas agrupadas, sem faixa vazia */}
       <div
-        className="px-6 py-3 border-t border-slate-50 flex items-center justify-between shrink-0 gap-2"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+        className="shrink-0 border-t border-slate-100 bg-white/98 px-5 pt-2"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.55rem)' }}
       >
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <div className="flex items-center gap-1">
+            <BotaoToolbar onClick={() => aplicarFormatacao('**', '**')} title="Negrito"><Bold size={18} /></BotaoToolbar>
+            <BotaoToolbar onClick={() => aplicarFormatacao('*', '*')} title="Itálico"><Italic size={18} /></BotaoToolbar>
+            <BotaoToolbar onClick={() => aplicarFormatacao('> ', '')} title="Citação"><Quote size={18} /></BotaoToolbar>
+            <BotaoToolbar onClick={() => aplicarFormatacao('==', '==')} title="Destaque" active><Highlighter size={18} /></BotaoToolbar>
+          </div>
+          <div className={`flex items-center gap-1.5 transition-opacity duration-300 ${autoSaveAtivo ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+            <span className="text-[9px] font-semibold text-green-500">Salvo</span>
+          </div>
+        </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 text-slate-300">
             <AlignLeft size={12} />
@@ -947,10 +978,6 @@ Oração:`
           </button>
         )}
 
-        <div className={`flex items-center gap-1.5 shrink-0 transition-opacity duration-500 ${autoSaveAtivo ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest whitespace-nowrap">Rascunho salvo</span>
-        </div>
       </div>
 
       {/* Modal histórico */}
