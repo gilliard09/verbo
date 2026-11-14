@@ -872,15 +872,14 @@ Oração:`
         </div>
       </div>
 
-      {/* Título e referência */}
-      <div className="px-6 pt-5 shrink-0">
+      {/* Cabeçalho do documento: título e referência, como em um caderno de escrita */}
+      <div className="px-6 pt-4 pb-2 shrink-0">
         <input type="text" placeholder="Título da pregação..."
-          className="w-full text-2xl font-black border-none outline-none mb-3 placeholder:text-gray-200 focus:ring-0 text-slate-800"
+          className="w-full text-[26px] leading-tight font-bold tracking-tight border-none outline-none mb-2 placeholder:text-slate-200 focus:ring-0 text-slate-900"
           value={titulo} onChange={e => setTitulo(e.target.value)} />
 
-        {/* ── Indicador de tipo guiado ── */}
         {tipo && !id && (
-          <p className="text-[11px] text-[#4C1D95] font-bold mb-2">
+          <p className="text-[11px] text-[#4C1D95] font-semibold mb-2">
             Estrutura pronta para{' '}
             {tipo === 'expositivo' ? 'sermão expositivo'
               : tipo === 'tematico' ? 'sermão temático'
@@ -888,22 +887,16 @@ Oração:`
           </p>
         )}
 
-        <div className="flex items-center gap-2 mb-4 text-[#4C1D95] bg-purple-50 p-3 rounded-2xl">
+        <div className="flex items-center gap-2 text-[#4C1D95] bg-purple-50/80 px-3 py-2.5 rounded-xl">
           <Book size={16} className="shrink-0" />
-          <input type="text" placeholder="Referência Bíblica (ex: João 3:16)"
-            className="text-sm font-bold border-none outline-none w-full bg-transparent focus:ring-0"
+          <input type="text" placeholder="Referência bíblica (ex.: João 3:16)"
+            className="text-sm font-semibold border-none outline-none w-full bg-transparent focus:ring-0 placeholder:text-purple-300"
             value={referencia} onChange={e => setReferencia(e.target.value)} />
-        </div>
-        <div className="flex items-center gap-1 mb-3 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit">
-          <BotaoToolbar onClick={() => aplicarFormatacao('**', '**')} title="Negrito"><Bold size={16} /></BotaoToolbar>
-          <BotaoToolbar onClick={() => aplicarFormatacao('*', '*')} title="Itálico"><Italic size={16} /></BotaoToolbar>
-          <BotaoToolbar onClick={() => aplicarFormatacao('> ', '')} title="Citação"><Quote size={16} /></BotaoToolbar>
-          <BotaoToolbar onClick={() => aplicarFormatacao('==', '==')} title="Destaque" active><Highlighter size={16} /></BotaoToolbar>
         </div>
       </div>
 
-      {/* Textarea */}
-      <div className="flex-1 px-6 overflow-hidden min-h-0">
+      {/* Área contínua de escrita: ocupa todo o espaço restante da tela */}
+      <div className="flex-1 px-6 pt-2 overflow-hidden min-h-0">
         <textarea ref={textAreaRef}
           placeholder={
             tipo === 'expositivo'
@@ -912,10 +905,20 @@ Oração:`
               ? 'Desenvolva o tema aqui...'
               : tipo === 'devocional'
               ? 'Escreva sua reflexão...'
-              : 'Escreva a mensagem aqui...'
+              : 'Escreva sua mensagem...'
           }
-          className="w-full h-full border-none outline-none resize-none text-slate-700 leading-relaxed text-base focus:ring-0 pb-4"
+          className="w-full h-full border-none outline-none resize-none text-[18px] leading-[1.75] text-slate-700 placeholder:text-slate-300 focus:ring-0 pb-6"
           value={conteudo} onChange={e => setConteudo(e.target.value)} />
+      </div>
+
+      {/* Formatação compacta junto à base da área de escrita */}
+      <div className="shrink-0 px-5 py-1.5 border-t border-slate-100/80 bg-white/95">
+        <div className="flex items-center gap-1 p-1 rounded-xl w-fit">
+          <BotaoToolbar onClick={() => aplicarFormatacao('**', '**')} title="Negrito"><Bold size={18} /></BotaoToolbar>
+          <BotaoToolbar onClick={() => aplicarFormatacao('*', '*')} title="Itálico"><Italic size={18} /></BotaoToolbar>
+          <BotaoToolbar onClick={() => aplicarFormatacao('> ', '')} title="Citação"><Quote size={18} /></BotaoToolbar>
+          <BotaoToolbar onClick={() => aplicarFormatacao('==', '==')} title="Destaque" active><Highlighter size={18} /></BotaoToolbar>
+        </div>
       </div>
 
       {/* Rodapé */}
