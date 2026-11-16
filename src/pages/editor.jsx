@@ -294,6 +294,19 @@ const Editor = () => {
   const isApplyingEditorContentRef = useRef(false);
   const keyboardOpen = useKeyboardInset();
 
+  // Mantém o scroll nativo do documento no iOS sem bloquear html/body.
+  useEffect(() => {
+    const body = document.body;
+    const previousOverscroll = body.style.overscrollBehaviorY;
+    const previousMomentum = body.style.webkitOverflowScrolling;
+    body.style.overscrollBehaviorY = 'contain';
+    body.style.webkitOverflowScrolling = 'touch';
+    return () => {
+      body.style.overscrollBehaviorY = previousOverscroll;
+      body.style.webkitOverflowScrolling = previousMomentum;
+    };
+  }, []);
+
   // ── Tipo via URL ─────────────────────────────────────────────────────────
   const params = new URLSearchParams(location.search);
   const tipo   = params.get('tipo');
@@ -363,9 +376,13 @@ const Editor = () => {
         const selection = window.getSelection();
         if (!selection?.rangeCount) return;
         const rect = selection.getRangeAt(0).getBoundingClientRect();
-        const visibleBottom = window.innerHeight - (Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb')) || 0) - 84;
-        if (rect.bottom > visibleBottom || rect.top < 12) {
-          const delta = rect.bottom > visibleBottom ? rect.bottom - visibleBottom + 18 : rect.top - 18;
+        const viewport = window.visualViewport;
+        const visibleTop = viewport?.offsetTop || 0;
+        const visibleBottom = (viewport ? viewport.offsetTop + viewport.height : window.innerHeight) - 84;
+        if (rect.bottom > visibleBottom || rect.top < visibleTop + 12) {
+          const delta = rect.bottom > visibleBottom
+            ? rect.bottom - visibleBottom + 18
+            : rect.top - visibleTop - 18;
           window.scrollBy({ top: delta, behavior: 'auto' });
         }
       });
