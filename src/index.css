@@ -36,7 +36,6 @@
 }
 
 .verbo-tiptap {
-  min-height: 42vh;
   width: 100%;
   padding-bottom: calc(var(--kb, 0px) + 72px);
   scroll-padding-bottom: calc(var(--kb, 0px) + 88px);
@@ -98,7 +97,6 @@
   }
 
   .verbo-tiptap {
-    min-height: 52vh;
     font-size: 17px;
   }
 }
