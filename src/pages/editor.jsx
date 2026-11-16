@@ -109,7 +109,7 @@ const editorHtmlToMarkdown = (html = '') => {
     if (tag === 'strong' || tag === 'b') return '**' + inner + '**';
     if (tag === 'em' || tag === 'i') return '*' + inner + '*';
     if (tag === 'mark') return '==' + inner + '==';
-    if (tag === 'blockquote') return inner.split('\n').map(line => line ? '> ' + line : '>').join('\n') + '\n\n';
+    if (tag === 'blockquote') return inner.replace(/\n+$/, '').split('\n').map(line => line ? '> ' + line : '>').join('\n') + '\n\n';
     if (tag === 'li') return inner.trim() + '\n';
     if (tag === 'ul') return Array.from(node.children).map(child => '- ' + render(child).trim()).join('\n') + '\n\n';
     if (tag === 'ol') return Array.from(node.children).map((child, index) => (index + 1) + '. ' + render(child).trim()).join('\n') + '\n\n';
