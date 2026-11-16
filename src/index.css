@@ -21,3 +21,84 @@
   color: #1A1A1B;
   font-family: "Inter", sans-serif;
 }
+
+
+/* Editor de sermões: documento contínuo, sem scroll interno. */
+.sermon-editor-page {
+  overscroll-behavior-y: contain;
+  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 76px);
+  -webkit-overflow-scrolling: touch;
+}
+
+.sermon-editor-content {
+  min-width: 0;
+  overflow: visible;
+}
+
+.verbo-tiptap {
+  min-height: 42vh;
+  width: 100%;
+  padding-bottom: calc(var(--kb, 0px) + 72px);
+  scroll-padding-bottom: calc(var(--kb, 0px) + 88px);
+  color: #334155;
+  font-size: 18px;
+  line-height: 1.75;
+  outline: none;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+.verbo-tiptap p {
+  margin: 0 0 1em;
+}
+
+.verbo-tiptap p:last-child {
+  margin-bottom: 0;
+}
+
+.verbo-tiptap blockquote {
+  margin: 1rem 0;
+  padding: 0.15rem 0 0.15rem 1rem;
+  border-left: 3px solid #a78bfa;
+  color: #64748b;
+}
+
+.verbo-tiptap ul,
+.verbo-tiptap ol {
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.verbo-tiptap li {
+  padding-left: 0.2rem;
+}
+
+.verbo-tiptap mark,
+.verbo-highlight {
+  background: #fef08a;
+  color: inherit;
+  border-radius: 0.2em;
+  padding: 0 0.08em;
+}
+
+.sermon-editor-toolbar {
+  touch-action: manipulation;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
+}
+
+@media (min-width: 768px) {
+  .sermon-editor-page {
+    max-width: 900px;
+    margin-inline: auto;
+    min-height: 100dvh;
+    border-inline: 1px solid #f1f5f9;
+  }
+
+  .verbo-tiptap {
+    min-height: 52vh;
+    font-size: 17px;
+  }
+}
