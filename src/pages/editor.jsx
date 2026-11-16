@@ -358,7 +358,7 @@ const Editor = () => {
         setConteudo(editorHtmlToMarkdown(activeEditor.getHTML()));
       }
     },
-    onSelectionUpdate: ({ editor: activeEditor }) => {
+    onSelectionUpdate: () => {
       requestAnimationFrame(() => {
         const selection = window.getSelection();
         if (!selection?.rangeCount) return;
