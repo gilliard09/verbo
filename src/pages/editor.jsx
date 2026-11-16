@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import { Mark, mergeAttributes } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { track } from '../lib/analytics';
 import { supabase } from '../supabaseClient';
@@ -6,7 +9,7 @@ import {
   Save, ArrowLeft, Book, Loader2,
   Bold, Italic, Quote, Highlighter, CheckCircle2,
   Clock, AlignLeft, RotateCcw, FileUp,
-  AlertTriangle, X, Lock, WifiOff, Sparkles, ArrowRight,
+  AlertTriangle, X, Lock, WifiOff, Sparkles, ArrowRight, Undo2, Redo2,
 } from 'lucide-react';
 
 // ── Offline layer ──────────────────────────────────────────────────────────────
@@ -59,49 +62,89 @@ const RECURSOS_ACADEMIA = [
   'Sermões ilimitados',
 ];
 
-// ─── Hook: altura + offset real da viewport visível (contorna o bug do teclado no iOS) ──
-// No iOS Safari, elementos `fixed` não recalculam quando o teclado abre — a
-// viewport "visual" encolhe mas o layout `fixed inset-0` continua medindo a
-// altura antiga, empurrando header/rodapé para trás do teclado.
-//
-// CORRIGIDO: só ajustar a altura não bastava. Quando o teclado abre, o Safari
-// pode deslocar o viewport visual para cima dentro do viewport de layout
-// (`visualViewport.offsetTop` deixa de ser 0). Elementos `position: fixed`
-// ficam ancorados ao viewport de LAYOUT, não ao visual — então mesmo com a
-// altura certa, o container ficava desalinhado verticalmente, sobrando um
-// espaço em branco entre o conteúdo e o teclado. Agora rastreamos também o
-// `offsetTop` e compensamos com `translateY` no container.
-const useAlturaVisivel = () => {
-  const [viewport, setViewport] = useState({
-    altura: typeof window !== 'undefined' ? window.innerHeight : 0,
-    offsetTop: 0,
-  });
+// ─── Tiptap: marca de destaque compatível com o formato Markdown legado ────
+const HighlightMark = Mark.create({
+  name: 'highlight',
+  parseHTML() { return [{ tag: 'mark' }]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['mark', mergeAttributes(HTMLAttributes, { class: 'verbo-highlight' }), 0];
+  },
+});
 
-  useEffect(() => {
-    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-    const atualizar = () => {
-      if (vv) setViewport({ altura: vv.height, offsetTop: vv.offsetTop });
-      else setViewport({ altura: window.innerHeight, offsetTop: 0 });
-    };
-
-    atualizar();
-
-    if (vv) {
-      // O scroll da visualViewport pode acontecer durante a rolagem do
-      // textarea no iOS. Atualizar estado + transform do container nesse
-      // momento causa o efeito de "tremor". Para o editor, reagimos à
-      // mudança de tamanho (teclado), não ao scroll.
-      vv.addEventListener('resize', atualizar);
-      return () => {
-        vv.removeEventListener('resize', atualizar);
-      };
+const markdownToEditorHtml = (markdown = '') => {
+  const source = String(markdown).replace(/\r\n?/g, '\n');
+  if (!source.trim()) return '<p></p>';
+  const inline = (value) => escapeHtml(value)
+    .replace(/==(.+?)==/g, '<mark>$1</mark>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  return source.split(/\n{2,}/).map((block) => {
+    const lines = block.split('\n');
+    if (lines.every(line => /^>\s?/.test(line))) {
+      return '<blockquote><p>' + lines.map(line => inline(line.replace(/^>\s?/, ''))).join('<br>') + '</p></blockquote>';
     }
-    window.addEventListener('resize', atualizar);
-    return () => window.removeEventListener('resize', atualizar);
-  }, []);
+    if (lines.every(line => /^[-*+]\s/.test(line))) {
+      return '<ul>' + lines.map(line => '<li><p>' + inline(line.replace(/^[-*+]\s/, '')) + '</p></li>').join('') + '</ul>';
+    }
+    if (lines.every(line => /^\d+\.\s/.test(line))) {
+      return '<ol>' + lines.map(line => '<li><p>' + inline(line.replace(/^\d+\.\s/, '')) + '</p></li>').join('') + '</ol>';
+    }
+    return '<p>' + lines.map(inline).join('<br>') + '</p>';
+  }).join('');
+};
 
-  return viewport;
+const editorHtmlToMarkdown = (html = '') => {
+  if (typeof DOMParser === 'undefined') return html;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const render = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    const tag = node.tagName.toLowerCase();
+    const inner = Array.from(node.childNodes).map(render).join('');
+    if (tag === 'br') return '\n';
+    if (tag === 'strong' || tag === 'b') return '**' + inner + '**';
+    if (tag === 'em' || tag === 'i') return '*' + inner + '*';
+    if (tag === 'mark') return '==' + inner + '==';
+    if (tag === 'blockquote') return inner.split('\n').map(line => line ? '> ' + line : '>').join('\n') + '\n\n';
+    if (tag === 'li') return inner.trim() + '\n';
+    if (tag === 'ul') return Array.from(node.children).map(child => '- ' + render(child).trim()).join('\n') + '\n\n';
+    if (tag === 'ol') return Array.from(node.children).map((child, index) => (index + 1) + '. ' + render(child).trim()).join('\n') + '\n\n';
+    if (tag === 'p' || /^h[1-6]$/.test(tag)) return inner + '\n\n';
+    return inner;
+  };
+  return Array.from(doc.body.childNodes).map(render).join('')
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+};
+
+// ─── Teclado iOS: altura real da viewport visual ──────────────────────────────
+const useKeyboardInset = () => {
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const viewport = window.visualViewport;
+    const update = () => {
+      const inset = viewport
+        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+        : 0;
+      document.documentElement.style.setProperty('--kb', inset + 'px');
+      setKeyboardOpen(current => current === (inset > 120) ? current : inset > 120);
+    };
+    update();
+    viewport?.addEventListener('resize', update);
+    viewport?.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      viewport?.removeEventListener('resize', update);
+      viewport?.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      document.documentElement.style.setProperty('--kb', '0px');
+    };
+  }, []);
+  return keyboardOpen;
 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -229,11 +272,13 @@ const ModalUpgrade = ({ estado, onFechar, onVerPlanos }) => {
 // ─── Botão de toolbar com alvo de toque de 44px ────────────────────────────────
 const BotaoToolbar = ({ onClick, title, active, children }) => (
   <button
+    type="button"
+    onPointerDown={(event) => event.preventDefault()}
     onClick={onClick}
     title={title}
     aria-label={title}
-    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-all active:scale-90 ${
-      active ? 'bg-purple-100 text-purple-500' : 'hover:bg-white text-slate-500'
+    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-all active:scale-95 touch-manipulation ${
+      active ? 'bg-purple-100 text-purple-600' : 'text-slate-500 hover:bg-purple-50'
     }`}
   >
     {children}
@@ -245,29 +290,9 @@ const Editor = () => {
   const { id }      = useParams();
   const navigate    = useNavigate();
   const location    = useLocation();
-  const textAreaRef = useRef(null);
-  // CORRIGIDO: agora também extraímos offsetTop, usado no translateY do container
-  const { altura: alturaVisivel, offsetTop } = useAlturaVisivel();
-
-  // O editor é uma superfície de escrita em tela cheia: impede que a página
-  // por trás role no iOS e restaura exatamente o estado anterior ao sair.
-  useEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-    const anterior = {
-      htmlOverflow: html.style.overflow,
-      bodyOverflow: body.style.overflow,
-      bodyOverscroll: body.style.overscrollBehavior,
-    };
-    html.style.overflow = 'hidden';
-    body.style.overflow = 'hidden';
-    body.style.overscrollBehavior = 'none';
-    return () => {
-      html.style.overflow = anterior.htmlOverflow;
-      body.style.overflow = anterior.bodyOverflow;
-      body.style.overscrollBehavior = anterior.bodyOverscroll;
-    };
-  }, []);
+  const editorScrollRef = useRef(null);
+  const isApplyingEditorContentRef = useRef(false);
+  const keyboardOpen = useKeyboardInset();
 
   // ── Tipo via URL ─────────────────────────────────────────────────────────
   const params = new URLSearchParams(location.search);
@@ -293,7 +318,6 @@ const Editor = () => {
   const [conteudo,   setConteudo]   = useState('');
   const [referencia, setReferencia] = useState('');
   const [loading,    setLoading]    = useState(false);
-  const telaCheia = true;
   const arquivoImportacaoRef = useRef(null);
   const [importando, setImportando] = useState(false);
   const [previewImportacao, setPreviewImportacao] = useState(null);
@@ -312,6 +336,52 @@ const Editor = () => {
     const palavras = conteudo.trim() ? conteudo.trim().split(/\s+/).length : 0;
     return { palavras, minutos: Math.ceil(palavras / PALAVRAS_POR_MINUTO) };
   }, [conteudo]);
+
+  const editor = useEditor({
+    extensions: [StarterKit, HighlightMark],
+    content: '<p></p>',
+    editorProps: {
+      attributes: {
+        class: 'verbo-tiptap prose prose-slate max-w-none outline-none',
+        spellcheck: 'true',
+        autocapitalize: 'sentences',
+        autocomplete: 'off',
+      },
+      transformPastedHTML: (html) => {
+        if (typeof DOMParser === 'undefined') return html;
+        const pasted = new DOMParser().parseFromString(html, 'text/html');
+        return '<p>' + escapeHtml(pasted.body.textContent || '').replace(/\n/g, '<br>') + '</p>';
+      },
+    },
+    onUpdate: ({ editor: activeEditor }) => {
+      if (!isApplyingEditorContentRef.current) {
+        setConteudo(editorHtmlToMarkdown(activeEditor.getHTML()));
+      }
+    },
+    onSelectionUpdate: ({ editor: activeEditor }) => {
+      requestAnimationFrame(() => {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return;
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        const visibleBottom = window.innerHeight - (Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb')) || 0) - 84;
+        if (rect.bottom > visibleBottom || rect.top < 12) {
+          const delta = rect.bottom > visibleBottom ? rect.bottom - visibleBottom + 18 : rect.top - 18;
+          window.scrollBy({ top: delta, behavior: 'auto' });
+        }
+      });
+    },
+  });
+
+  // Sincroniza carregamento, importação e restauração de histórico sem mudar
+  // o formato persistido: o Supabase continua recebendo Markdown como antes.
+  useEffect(() => {
+    if (!editor) return;
+    const atual = editorHtmlToMarkdown(editor.getHTML());
+    if (atual === conteudo) return;
+    isApplyingEditorContentRef.current = true;
+    editor.commands.setContent(markdownToEditorHtml(conteudo), { emitUpdate: false });
+    isApplyingEditorContentRef.current = false;
+  }, [editor, conteudo]);
 
   const mostrarToast = useCallback((mensagem, tipo = 'info', duracao = 3500) => {
     setToast({ visivel: true, tipo, mensagem });
@@ -458,14 +528,7 @@ Oração:`
     }
   }, [tipo, id]);
 
-  // ── Foco automático no mobile ────────────────────────────────────────────
-  useEffect(() => {
-    setTimeout(() => {
-      textAreaRef.current?.focus();
-    }, 300);
-  }, []);
-
-  // ── Analytics: registro de abertura do editor ─────────────────────────────
+  // O foco é iniciado pelo usuário: evita abrir o teclado sem solicitação.\n\n  // ── Analytics: registro de abertura do editor ─────────────────────────────
   useEffect(() => {
     track('editor_opened', { sermon_id: id || null, tipo: tipo || null });
   }, [id, tipo]);
@@ -541,19 +604,17 @@ Oração:`
     return () => clearTimeout(autoSaveRef.current);
   }, [titulo, conteudo, referencia, id]);
 
-  // ── Formatação de texto ────────────────────────────────────────────────────
-  const aplicarFormatacao = useCallback((prefixo, sufixo) => {
-    const el = textAreaRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end   = el.selectionEnd;
-    const novo  = conteudo.substring(0, start) + prefixo + conteudo.substring(start, end) + sufixo + conteudo.substring(end);
-    setConteudo(novo);
-    setTimeout(() => {
-      el.focus();
-      el.setSelectionRange(start + prefixo.length, end + prefixo.length);
-    }, 10);
-  }, [conteudo]);
+  // ── Formatação Tiptap: preserva seleção e histórico de desfazer/refazer ────
+  const aplicarFormatacao = useCallback((tipo) => {
+    if (!editor) return;
+    const chain = editor.chain().focus();
+    if (tipo === 'bold') chain.toggleBold().run();
+    if (tipo === 'italic') chain.toggleItalic().run();
+    if (tipo === 'quote') chain.toggleBlockquote().run();
+    if (tipo === 'highlight') chain.toggleMark('highlight').run();
+    if (tipo === 'undo') chain.undo().run();
+    if (tipo === 'redo') chain.redo().run();
+  }, [editor]);
 
   // ── Salvar ─────────────────────────────────────────────────────────────────
   async function salvar() {
@@ -751,7 +812,7 @@ Oração:`
     setConteudo(previewImportacao.conteudo);
     setPreviewImportacao(null);
     mostrarToast('Documento importado. Revise e salve seu sermão.', 'sucesso', 4500);
-    requestAnimationFrame(() => textAreaRef.current?.focus());
+    requestAnimationFrame(() => editor?.commands.focus('end'));
   }
 
   const restaurarVersao = (versao) => {
@@ -791,20 +852,9 @@ Oração:`
   }
 
   return (
-    <div
-      className={`bg-white flex flex-col overflow-hidden overscroll-none w-full max-w-full ${telaCheia ? 'fixed inset-x-0 top-0 z-[150]' : 'min-h-screen'}`}
-      style={telaCheia ? {
-        height: alturaVisivel ? `${alturaVisivel}px` : '100dvh',
-        // CORRIGIDO: compensa o deslocamento do viewport visual no iOS Safari
-        // quando o teclado abre (visualViewport.offsetTop > 0). Sem isso, o
-        // container tinha a altura certa mas ficava na posição errada,
-        // deixando espaço em branco entre o conteúdo e o teclado.
-        transform: `translateY(${offsetTop}px)`,
-        overflow: 'hidden',
-        overscrollBehavior: 'none',
-        WebkitOverflowScrolling: 'touch',
-      } : undefined}
-    >
+    <div className="sermon-editor-page bg-white min-h-[100dvh] w-full max-w-full text-slate-800"
+      ref={editorScrollRef}
+      style={{ paddingBottom: 'calc(var(--kb, 0px) + 88px + env(safe-area-inset-bottom, 0px))', scrollPaddingBottom: 'calc(var(--kb, 0px) + 88px)' }}>
 
       <Toast visivel={toast.visivel} tipo={toast.tipo} mensagem={toast.mensagem}
         onFechar={() => setToast(t => ({ ...t, visivel: false }))} />
@@ -859,7 +909,7 @@ Oração:`
 
       {/* Header */}
       <div
-        className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0"
+        className="sticky top-0 z-[160] flex items-center justify-between p-4 border-b border-slate-100 bg-white/95 backdrop-blur-md"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
       >
         <button onClick={() => navigate(-1)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-slate-700 transition-colors -ml-2">
@@ -895,10 +945,10 @@ Oração:`
         </div>
       </div>
 
-      {/* Cabeçalho do documento: título e referência, como em um caderno de escrita */}
-      <div className="px-6 pt-4 pb-2 shrink-0">
-        <textarea rows={2} placeholder="Título da pregação..."
-          className="w-full min-h-[2.2em] max-h-[3.2em] resize-none overflow-hidden text-[26px] leading-tight font-bold tracking-tight border-none outline-none mb-2 placeholder:text-slate-200 focus:ring-0 text-slate-900"
+      {/* Documento único: título, referência e texto compartilham o scroll da página */}
+      <main className="px-6 pt-5 pb-6 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <input type="text" placeholder="Título da pregação..."
+          className="w-full text-[26px] leading-tight font-bold tracking-tight border-none outline-none mb-3 placeholder:text-slate-200 focus:ring-0 text-slate-900"
           value={titulo} onChange={e => setTitulo(e.target.value)} />
 
         {tipo && !id && (
@@ -910,68 +960,56 @@ Oração:`
           </p>
         )}
 
-        <div className="flex items-center gap-2 text-[#4C1D95] bg-purple-50/80 px-3 py-2.5 rounded-xl">
+        <div className="flex items-center gap-2 mb-5 text-[#4C1D95] bg-purple-50/80 px-3 py-2.5 rounded-xl">
           <Book size={16} className="shrink-0" />
           <input type="text" placeholder="Referência bíblica (ex.: João 3:16)"
             className="text-sm font-semibold border-none outline-none w-full bg-transparent focus:ring-0 placeholder:text-purple-300"
             value={referencia} onChange={e => setReferencia(e.target.value)} />
         </div>
-      </div>
 
-      {/* Área contínua de escrita: ocupa todo o espaço restante da tela */}
-      <div className="flex-1 px-6 pt-2 overflow-hidden min-h-0">
-        <textarea ref={textAreaRef}
-          placeholder={
-            tipo === 'expositivo'
-              ? 'Desenvolva o texto bíblico aqui...'
-              : tipo === 'tematico'
-              ? 'Desenvolva o tema aqui...'
-              : tipo === 'devocional'
-              ? 'Escreva sua reflexão...'
-              : 'Escreva sua mensagem...'
-          }
-          className="w-full h-full border-none outline-none resize-none text-[18px] leading-[1.75] text-slate-700 placeholder:text-slate-300 focus:ring-0 pb-6"
-          value={conteudo} onChange={e => setConteudo(e.target.value)} />
-      </div>
-
-      {/* Dock inferior nativo: formatação e métricas agrupadas, sem faixa vazia */}
-      <div
-        className="shrink-0 border-t border-slate-100 bg-white/98 px-5 pt-2"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.55rem)' }}
-      >
-        <div className="flex items-center justify-between gap-3 mb-1">
-          <div className="flex items-center gap-1">
-            <BotaoToolbar onClick={() => aplicarFormatacao('**', '**')} title="Negrito"><Bold size={18} /></BotaoToolbar>
-            <BotaoToolbar onClick={() => aplicarFormatacao('*', '*')} title="Itálico"><Italic size={18} /></BotaoToolbar>
-            <BotaoToolbar onClick={() => aplicarFormatacao('> ', '')} title="Citação"><Quote size={18} /></BotaoToolbar>
-            <BotaoToolbar onClick={() => aplicarFormatacao('==', '==')} title="Destaque" active><Highlighter size={18} /></BotaoToolbar>
-          </div>
-          <div className={`flex items-center gap-1.5 transition-opacity duration-300 ${autoSaveAtivo ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-[9px] font-semibold text-green-500">Salvo</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <AlignLeft size={12} />
-            <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">{metricas.palavras} palavras</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <Clock size={12} />
-            <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">~{metricas.minutos} min</span>
-          </div>
+        <div className="sermon-editor-content text-[18px] leading-[1.75] text-slate-700">
+          <EditorContent editor={editor} />
         </div>
 
-        {/* CORRIGIDO: !isPlus → !isAssinante, pelo mesmo motivo do gatilho acima */}
-        {!isAssinante && sermoesRestantes !== null && sermoesRestantes <= 10 && (
-          <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')} className="flex items-center gap-1.5 text-amber-500 shrink-0">
-            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-amber-400 rounded-full" style={{ width: `${percentualUso}%` }} />
+        {!keyboardOpen && (
+          <div className="mt-8 pt-3 border-t border-slate-100 flex items-center gap-5 text-slate-300">
+            <div className="flex items-center gap-1.5">
+              <AlignLeft size={13} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">{metricas.palavras} palavras</span>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-widest whitespace-nowrap">{sermoesRestantes} restantes</span>
-          </button>
+            <div className="flex items-center gap-1.5">
+              <Clock size={13} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">~{metricas.minutos} min</span>
+            </div>
+            {!isAssinante && sermoesRestantes !== null && sermoesRestantes <= 10 && (
+              <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')} className="ml-auto flex items-center gap-1.5 text-amber-500 shrink-0">
+                <span className="text-[9px] font-bold uppercase tracking-widest">{sermoesRestantes} restantes</span>
+              </button>
+            )}
+          </div>
         )}
+      </main>
 
+      {/* Toolbar fixa acima do teclado; pointerdown preserva seleção e foco */}
+      <div className="sermon-editor-toolbar fixed left-0 right-0 z-[180] border-t border-slate-100 bg-white/95 backdrop-blur-xl px-4 pt-1.5"
+        style={{ bottom: 'var(--kb, 0px)', paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 6px)' }}>
+        <div className="mx-auto flex max-w-3xl items-center justify-between">
+          <div className="flex items-center gap-0.5">
+            <BotaoToolbar onClick={() => aplicarFormatacao('bold')} title="Negrito" active={editor?.isActive('bold')}><Bold size={18} /></BotaoToolbar>
+            <BotaoToolbar onClick={() => aplicarFormatacao('italic')} title="Itálico" active={editor?.isActive('italic')}><Italic size={18} /></BotaoToolbar>
+            <BotaoToolbar onClick={() => aplicarFormatacao('quote')} title="Citação" active={editor?.isActive('blockquote')}><Quote size={18} /></BotaoToolbar>
+            <BotaoToolbar onClick={() => aplicarFormatacao('highlight')} title="Destaque" active={editor?.isActive('highlight')}><Highlighter size={18} /></BotaoToolbar>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <BotaoToolbar onClick={() => aplicarFormatacao('undo')} title="Desfazer"><Undo2 size={18} /></BotaoToolbar>
+            <BotaoToolbar onClick={() => aplicarFormatacao('redo')} title="Refazer"><Redo2 size={18} /></BotaoToolbar>
+          </div>
+          <div className="absolute right-5 top-[-22px] h-4 min-w-12 text-right">
+            <span className={`inline-flex items-center gap-1.5 text-[9px] font-semibold text-green-500 transition-opacity ${autoSaveAtivo ? 'opacity-100' : 'opacity-0'}`}>
+              <span className="h-1.5 w-1.5 rounded-full bg-green-400" />Salvo
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Modal histórico */}
