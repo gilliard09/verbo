@@ -3,13 +3,11 @@ import { X, Zap, CheckCircle2, ShieldCheck, GraduationCap, CalendarCheck } from 
 import { usePlano } from '../hooks/usePlano';
 import { supabase } from '../supabaseClient';
 
-// Controle manual da campanha: altere para false para interromper a exibição.
+// Campanha temporária: BLACK DAS BLACKS, válida até 30/11/2026.
 const CAMPANHA_VITALICIO_ATIVA = true;
-const CHECKOUT_ANUAL = 'https://pay.cakto.com.br/s9tdarf_1199602';
-const CHECKOUT_VITALICIO = 'https://pay.cakto.com.br/zeegt89_920646';
-const CHECKOUT_MENSAL = 'https://pay.cakto.com.br/ykwdiud_920168';
-const STORAGE_KEY = 'verbo-black-friday-2026';
-const DURACAO_CAMPANHA_MS = 10 * 24 * 60 * 60 * 1000;
+const CHECKOUT_VITALICIO = 'https://pay.cakto.com.br/mf6mvvs';
+const STORAGE_KEY = 'verbo-black-das-blacks-2026';
+const FIM_CAMPANHA = new Date('2026-12-01T00:00:00-03:00').getTime();
 const INTERVALO_DIARIO_MS = 24 * 60 * 60 * 1000;
 
 const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
@@ -22,7 +20,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     const userId = session?.user?.id;
     if (!userId) return;
     supabase.from('eventos_modal_upgrade')
-      .insert({ user_id: userId, acao, variante: 'black_friday_2026' })
+      .insert({ user_id: userId, acao, variante: 'black_das_blacks_2026' })
       .then(({ error }) => {
         if (error) console.warn('Não foi possível registrar evento do Vitalício:', error.message);
       });
@@ -47,8 +45,8 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
         const chaveUsuario = `${STORAGE_KEY}-${session.user.id}`;
         const estadoSalvo = JSON.parse(localStorage.getItem(chaveUsuario) || 'null');
 
-        // A campanha de cada usuário dura 10 dias desde a primeira exibição.
-        if (estadoSalvo?.inicio && agora - estadoSalvo.inicio >= DURACAO_CAMPANHA_MS) {
+        // A campanha termina para todos em 30/11/2026, independentemente da primeira exibição.
+        if (agora >= FIM_CAMPANHA) {
           setAberto(false);
           return;
         }
@@ -92,21 +90,10 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     setAberto(false);
   };
 
-  // A oferta mensal só aparece após a recusa explícita da Black Friday e
-  // apenas uma vez por usuário. Fechar no X ou clicar fora não a dispara.
+  // Recusar fecha somente o pop-up; a campanha volta a aparecer no próximo dia.
   const recusarBlackFriday = () => {
-    registrarEvento('recusou_black_abriu_mensal');
+    registrarEvento('recusou_black_das_blacks');
     setAberto(false);
-    try {
-      const chaveUsuario = `${STORAGE_KEY}-${session.user.id}`;
-      const estadoSalvo = JSON.parse(localStorage.getItem(chaveUsuario) || 'null') || {};
-      if (estadoSalvo.ofertaMensalExibida) return;
-      localStorage.setItem(chaveUsuario, JSON.stringify({ ...estadoSalvo, ofertaMensalExibida: true }));
-    } catch (error) {
-      console.warn('Não foi possível salvar a exibição da oferta mensal:', error);
-    }
-    setOfertaMensalAberta(true);
-    registrarEvento('oferta_mensal_exibida');
   };
 
   const fecharOfertaMensal = () => {
@@ -114,16 +101,9 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     setOfertaMensalAberta(false);
   };
 
-  const abrirCheckoutMensal = () => {
-    registrarEvento('clicou_mensal');
-    window.open(CHECKOUT_MENSAL, '_blank', 'noopener,noreferrer');
-    setOfertaMensalAberta(false);
-  };
-
-  const abrirCheckout = (tipo) => {
-    registrarEvento(`clicou_${tipo}`);
-    const checkout = tipo === 'anual' ? CHECKOUT_ANUAL : CHECKOUT_VITALICIO;
-    window.open(checkout, '_blank', 'noopener,noreferrer');
+  const abrirCheckout = () => {
+    registrarEvento('clicou_vitalicio_97');
+    window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer');
   };
 
   if (loading || !session?.user?.id || outroModalAberto) return null;
@@ -192,33 +172,29 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
           <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-2xl border border-white/20 bg-white/15 shadow-lg">
             <Zap size={21} fill="currentColor" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-100">
-            BLACK FRIDAY · CONDIÇÃO ESPECIAL
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">
+            ATÉ 30 DE NOVEMBRO · OFERTA ÚNICA
           </p>
           <h2 id="plus-vitalicio-title" className="mt-1.5 text-xl font-black leading-tight tracking-tight sm:text-2xl">
-            Verbo PLUS<br />Black Friday
+            BLACK DAS BLACKS<br />DO VERBO
           </h2>
           <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-violet-100 sm:text-sm">
-            Escolha o acesso que faz mais sentido para sua jornada. Mais tempo para preparar sermões e crescer no conhecimento bíblico.
+            Acesso vitalício completo ao Verbo. Pague uma vez e tenha o Plus para sempre.
           </p>
         </div>
 
         <div className="px-4 pb-4 pt-3.5 sm:px-5 sm:pb-5">
-          <div className="grid grid-cols-2 gap-2 text-center">
-            <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
-              <p className="text-[10px] font-black uppercase tracking-wider text-violet-200">Plus anual</p>
-              <p className="mt-1 text-2xl font-black">R$ 197</p>
-              <p className="mt-1 text-[10px] text-violet-200/80">12 meses · R$ 16,42/mês</p>
-              <button type="button" onClick={() => abrirCheckout('anual')} className="mt-3 w-full rounded-lg bg-violet-300 px-2 py-2 text-[10px] font-black text-[#24133F] transition hover:bg-white">ASSINAR ANUAL</button>
+          <div className="rounded-2xl border border-amber-300/50 bg-gradient-to-br from-amber-300/15 to-orange-500/10 p-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">VITALÍCIO COMPLETO</p>
+            <div className="mt-1 flex items-center justify-center gap-2">
+              <span className="text-sm font-bold text-violet-200 line-through">R$ 297</span>
+              <span className="rounded-full bg-amber-300 px-2 py-0.5 text-[9px] font-black uppercase text-[#27143d]">Black das Blacks</span>
             </div>
-            <div className="rounded-xl border border-amber-300/40 bg-amber-300/[0.10] p-3">
-              <p className="text-[10px] font-black uppercase tracking-wider text-amber-200">Plus vitalício</p>
-              <p className="mt-1 text-2xl font-black">R$ 297</p>
-              <p className="mt-1 text-[10px] text-violet-100/80">Pagamento único</p>
-              <button type="button" onClick={() => abrirCheckout('vitalicio')} className="mt-3 w-full rounded-lg bg-white px-2 py-2 text-[10px] font-black text-[#4C1D95] transition hover:bg-violet-50">QUERO VITALÍCIO</button>
-            </div>
+            <p className="mt-1 text-5xl font-black tracking-tight text-white">R$ 97</p>
+            <p className="mt-1 text-xs font-semibold text-amber-100">Pagamento único · Sem mensalidade</p>
+            <button type="button" onClick={abrirCheckout} className="mt-3 w-full rounded-xl bg-amber-300 px-3 py-3 text-xs font-black text-[#27143d] transition hover:bg-amber-200">QUERO MEU ACESSO VITALÍCIO</button>
+            <p className="mt-2 text-[10px] font-semibold text-violet-100/80">Condição especial válida somente até 30/11/2026.</p>
           </div>
-          <p className="mt-2 text-center text-[10px] text-violet-200/80">No anual, você economiza R$ 367 em relação a 12 mensalidades de R$ 47.</p>
 
           <div className="my-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <div className="mb-2 flex items-center gap-2">
@@ -259,7 +235,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
           </div>
 
           <p className="mt-2 text-center text-[10px] leading-relaxed text-violet-200/75">
-            Anual: R$ 197 por 12 meses. Vitalício: R$ 297 em pagamento único, sem renovação.
+            Acesso vitalício por R$ 97 em pagamento único. Oferta válida até 30/11/2026.
           </p>
 
           <button
