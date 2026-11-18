@@ -1,8 +1,9 @@
 /**
  * db.js — Camada de persistência offline do Verbo
  *
- * Dois object stores:
+ * Três object stores:
  *   sermoes_local  → cópia local dos sermões (espelho do Supabase)
+ *   sermoes_drafts → rascunhos em edição, ainda não confirmados para sincronização
  *   sync_queue     → operações pendentes enquanto offline (create/update/delete)
  *
  * Usa a lib `idb` (já incluída pelo Workbox / VitePWA).
