@@ -372,10 +372,10 @@ const Editor = () => {
 
         const plain = toPlainText(pasted.body)
           .replace(/[ \t]+\n/g, '\n')
-          .replace(/\\n{3,}/g, '\\n\\n')
+          .replace(/\n{3,}/g, '\n\n')
           .trim();
         if (!plain) return '<p></p>';
-        return plain.split('\\n').map((line) =>
+        return plain.split('\n').map((line) =>
           line ? '<p>' + escapeHtml(line) + '</p>' : '<p></p>'
         ).join('');
       },
