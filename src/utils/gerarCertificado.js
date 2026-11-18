@@ -5,9 +5,11 @@ import { PDFDocument } from 'pdf-lib';
 
 const MODELO_URL = 'https://auuancsrpqaununsuigy.supabase.co/storage/v1/object/public/materiais/modelo%20certificado.pdf';
 const MODELO_WIDTH = 2339;
+const MODELO_HEIGHT = 1754;
 const A4_WIDTH = 841.89;
 const A4_HEIGHT = 595.28;
-const SCALE = A4_WIDTH / MODELO_WIDTH;
+const SCALE_X = A4_WIDTH / MODELO_WIDTH;
+const SCALE_Y = A4_HEIGHT / MODELO_HEIGHT;
 const ROXO = '#2c126a';
 let fontesPromise;
 
@@ -53,7 +55,7 @@ function quebrarTexto(ctx, texto, largura) {
   return linhas;
 }
 
-async function textoImagem(pdf, texto, { tamanho, peso = 500, largura, alturaLinha = 1.25 }) {
+async function textoImagem(pdf, texto, { tamanho, peso = 500, largura, alturaLinha = 1.25, alinhamento = 'center' }) {
   const fator = 3;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -67,13 +69,13 @@ async function textoImagem(pdf, texto, { tamanho, peso = 500, largura, alturaLin
   c.scale(fator, fator);
   c.font = `${peso} ${tamanho}px Poppins`;
   c.fillStyle = ROXO;
-  c.textAlign = 'center';
+  c.textAlign = alinhamento;
   c.textBaseline = 'middle';
-  linhas.forEach((linha, i) => c.fillText(linha, largura / 2, tamanho * alturaLinha * i + tamanho * 0.62));
+  linhas.forEach((linha, i) => c.fillText(linha, alinhamento === 'left' ? 0 : alinhamento === 'right' ? largura : largura / 2, tamanho * alturaLinha * i + tamanho * 0.62));
   return { imagem: await pdf.embedPng(canvas.toDataURL('image/png')), largura, altura };
 }
 
-async function textoRicoImagem(pdf, linhas, { tamanho, largura, alturaLinha = 1.28 }) {
+async function textoRicoImagem(pdf, linhas, { tamanho, largura, alturaLinha = 1.28, alinhamento = 'center' }) {
   const fator = 3;
   const canvas = document.createElement('canvas');
   const medir = canvas.getContext('2d');
@@ -102,7 +104,7 @@ async function textoRicoImagem(pdf, linhas, { tamanho, largura, alturaLinha = 1.
       ctx.font = `${trecho.peso || 500} ${fonte}px Poppins`;
       return soma + ctx.measureText(trecho.texto).width;
     }, 0);
-    let x = (largura - larguraLinha) / 2;
+    let x = alinhamento === 'right' ? largura - larguraLinha : alinhamento === 'left' ? 0 : (largura - larguraLinha) / 2;
     const y = tamanho * alturaLinha * i + tamanho * 0.62;
     trechos.forEach((trecho) => {
       ctx.font = `${trecho.peso || 500} ${fonte}px Poppins`;
@@ -155,10 +157,10 @@ async function gerarImagemQr(pdf, valor) {
 }
 function desenharImagem(page, item, x, topo) {
   page.drawImage(item.imagem, {
-    x: x * SCALE,
-    y: A4_HEIGHT - ((topo + item.altura) * SCALE),
-    width: item.largura * SCALE,
-    height: item.altura * SCALE,
+    x: x * SCALE_X,
+    y: A4_HEIGHT - ((topo + item.altura) * SCALE_Y),
+    width: item.largura * SCALE_X,
+    height: item.altura * SCALE_Y,
   });
 }
 
@@ -182,7 +184,7 @@ export async function gerarCertificado({
   const urlValidacao = `https://appverbo.com.br/verificar?codigo=${encodeURIComponent(codigoValidacao)}`;
 
   const titulo = await textoImagem(pdf, curso, {
-    tamanho: 68, peso: 500, largura: 1750, alturaLinha: 1.18,
+    tamanho: 68, peso: 500, largura: 1300, alturaLinha: 1.18, alinhamento: 'left',
   });
   const certificacao = await textoRicoImagem(pdf, [
     [
@@ -196,24 +198,26 @@ export async function gerarCertificado({
       { texto: curso, peso: 700 },
       { texto: ' com sucesso.', peso: 500 },
     ],
-  ], { tamanho: 49, largura: 1650, alturaLinha: 1.28 });
+  ], { tamanho: 49, largura: 1050, alturaLinha: 1.28, alinhamento: 'right' });
 
   const data = await textoRicoImagem(pdf, [[
     { texto: 'ACADEMIA VERBO, ', peso: 500 },
     { texto: dataFormatada, peso: 700 },
-  ]], { tamanho: 49, largura: 1450, alturaLinha: 1.2 });
+  ]], { tamanho: 49, largura: 1050, alturaLinha: 1.2, alinhamento: 'right' });
 
   const qr = await gerarImagemQr(pdf, urlValidacao);
 
-  // Posições medidas sobre o modelo original; todas são reduzidas na mesma proporção do fundo.
-  desenharImagem(page, titulo, 294, 970);
-  desenharImagem(page, certificacao, 344, 1080);
-  desenharImagem(page, data, 420, 1280);
+  // Coordenadas no arquivo-base: texto organizado no eixo esquerdo/direito
+  // e QR dimensionado para caber dentro do retângulo de validação.
+  const eixoDireitoTexto = 1235;
+  desenharImagem(page, titulo, 270, 680);
+  desenharImagem(page, certificacao, eixoDireitoTexto - certificacao.largura, 755);
+  desenharImagem(page, data, eixoDireitoTexto - data.largura, 895);
   page.drawImage(qr, {
-    x: 1890 * SCALE,
-    y: A4_HEIGHT - ((1268 + 285) * SCALE),
-    width: 285 * SCALE,
-    height: 285 * SCALE,
+    x: 1878 * SCALE_X,
+    y: A4_HEIGHT - ((1250 + 300) * SCALE_Y),
+    width: 300 * SCALE_X,
+    height: 300 * SCALE_Y,
   });
 
   const bytes = await pdf.save();
