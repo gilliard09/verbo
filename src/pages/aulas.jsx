@@ -263,6 +263,7 @@ const Aulas = () => {
   const [visualizarPDF, setVisualizarPDF] = useState(false);
   const [baixandoPDF, setBaixandoPDF] = useState(false);
   const [cursoConcluido, setCursoConcluido] = useState(false);
+  const [emitindoCertificado, setEmitindoCertificado] = useState(false);
 
   const [celebrando, setCelebrando] = useState(false);
   const [toastVisivel, setToastVisivel] = useState(false);
@@ -368,9 +369,35 @@ const Aulas = () => {
     }
   };
 
-  const handleGerarCertificado = () => {
-    if (!dadosCertificadoRef.current) return;
-    gerarCertificado(dadosCertificadoRef.current);
+  const handleGerarCertificado = async () => {
+    if (emitindoCertificado || !cursoId) return;
+    setEmitindoCertificado(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('emitir-certificado', {
+        body: { cursoId },
+      });
+
+      if (error) throw error;
+      if (!data?.certificate) {
+        throw new Error(data?.error || 'Não foi possível registrar o certificado.');
+      }
+
+      const certificado = data.certificate;
+      const dataFormatada = new Date(`${certificado.completion_date}T12:00:00`)
+        .toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      gerarCertificado({
+        nomeAluno: certificado.student_name,
+        nomeCurso: certificado.course_name,
+        dataFormatada,
+        codigoValidacao: certificado.verification_code,
+      });
+    } catch (error) {
+      console.error('Erro ao emitir certificado:', error);
+      alert(error?.message || 'Não foi possível emitir o certificado. Tente novamente.');
+    } finally {
+      setEmitindoCertificado(false);
+    }
   };
 
   const baixarPDFComBranding = async () => {
@@ -730,8 +757,9 @@ const Aulas = () => {
                 <h5 className="font-black text-xs uppercase italic tracking-tighter">Parabéns! Curso Concluído!</h5>
                 <button
                   onClick={handleGerarCertificado}
-                  className="mt-3 w-full py-3 bg-white text-orange-500 rounded-2xl font-black text-[10px] uppercase hover:bg-orange-50 transition-colors active:scale-95">
-                  Emitir Certificado
+                  disabled={emitindoCertificado}
+                  className="mt-3 w-full py-3 bg-white text-orange-500 rounded-2xl font-black text-[10px] uppercase hover:bg-orange-50 transition-colors active:scale-95 disabled:opacity-60">
+                  {emitindoCertificado ? 'Registrando certificado...' : 'Emitir Certificado'}
                 </button>
               </div>
             )}
