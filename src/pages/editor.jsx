@@ -371,7 +371,7 @@ const Editor = () => {
         };
 
         const plain = toPlainText(pasted.body)
-          .replace(/[ \\t]+\\n/g, '\\n')
+          .replace(/[ \t]+\n/g, '\n')
           .replace(/\\n{3,}/g, '\\n\\n')
           .trim();
         if (!plain) return '<p></p>';
@@ -379,7 +379,7 @@ const Editor = () => {
           line ? '<p>' + escapeHtml(line) + '</p>' : '<p></p>'
         ).join('');
       },
-      transformPastedText: (text) => text.replace(/\\r\\n?/g, '\\n'),
+      transformPastedText: (text) => text.replace(/\r\n?/g, '\n'),
     },
     onUpdate: ({ editor: activeEditor }) => {
       if (!isApplyingEditorContentRef.current) {
