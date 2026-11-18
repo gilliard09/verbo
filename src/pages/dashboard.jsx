@@ -44,12 +44,19 @@ import {
 // ✅ Lazy load offline sync APENAS quando necessário
 let useOfflineSync = null;
 let getSermoesLocais = null;
+let enqueueOp = null;
+let deleteSermaoLocal = null;
+let processarFila = null;
 const initOfflineModule = async () => {
   if (!useOfflineSync) {
     const mod = await import('../hooks/useOfflineSync');
     useOfflineSync = mod.useOfflineSync;
     const dbMod = await import('../lib/db');
     getSermoesLocais = dbMod.getSermoesLocais;
+    enqueueOp = dbMod.enqueueOp;
+    deleteSermaoLocal = dbMod.deleteSermaoLocal;
+    const syncMod = await import('../lib/sync');
+    processarFila = syncMod.processarFila;
   }
 };
 
@@ -595,18 +602,22 @@ const Dashboard = () => {
 
     setSermoes(prev => prev.filter(s => s.id !== id));
 
-    if (navigator.onLine) {
-      try {
-        await supabase.from('sermoes').delete().eq('id', id);
+    try {
+      // Toda exclusão passa pela mesma fila, mesmo online. Assim uma edição
+      // pendente nunca pode ser enviada depois de uma exclusão mais recente.
+      await initOfflineModule();
+      await enqueueOp('delete', id);
+      await deleteSermaoLocal(id);
+
+      if (navigator.onLine && processarFila) {
+        await processarFila();
         track('sermon_deleted', { sermon_id: id });
-      } catch (err) {
-        console.error('Erro ao excluir:', err);
-        carregarDados(abortControllerRef.current?.signal);
+      } else {
+        track('sermon_deleted', { sermon_id: id, offline: true });
       }
-    } else {
-      // Exclusão feita offline — ainda vale registrar a intenção do usuário;
-      // o item some da UI imediatamente mesmo sem confirmação do servidor.
-      track('sermon_deleted', { sermon_id: id, offline: true });
+    } catch (err) {
+      console.error('Erro ao registrar exclusão:', err);
+      carregarDados(abortControllerRef.current?.signal);
     }
   }
 
