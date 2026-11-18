@@ -186,13 +186,15 @@ function App() {
   const [authReady, setAuthReady] = useState(false);
   const [acquisitionModalOpen, setAcquisitionModalOpen] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
+  const [splashKey, setSplashKey] = useState(0);
 
   // Reproduz a abertura em cada nova entrada/retomada do PWA, sem atrasar o app.
   useEffect(() => {
     let timeoutId;
-    const duration = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 350 : 950;
+    const duration = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 250 : 800;
 
     const showSplash = () => {
+      setSplashKey(current => current + 1);
       setSplashVisible(true);
       window.clearTimeout(timeoutId);
       timeoutId = window.setTimeout(() => setSplashVisible(false), duration);
@@ -296,7 +298,7 @@ function App() {
           outroModalAberto={acquisitionModalOpen}
         />
       )}
-      <SplashScreen visible={splashVisible} />
+      <SplashScreen key={splashKey} visible={splashVisible} />
     </Router>
   );
 }
