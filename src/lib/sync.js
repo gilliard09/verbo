@@ -133,8 +133,26 @@ async function executarFila() {
           item = atualizado;
         }
 
-        await processarItem(item, session.user.id);
+        const resultado = await processarItem(item, session.user.id);
         const removida = await dequeueOp(item.queue_id, item._queue_token);
+
+        // Só confirma o cache local se a mesma versão da operação saiu da fila.
+        // Se houve uma edição durante a requisição, a nova versão permanece
+        // pendente e o cache local não pode ser marcado como sincronizado.
+        if (removida && resultado?.tipo === 'create') {
+          await deleteSermaoLocal(item.local_id);
+          await upsertSermaoLocal({ ...resultado.data, _synced: true });
+        } else if (removida && resultado?.tipo === 'update') {
+          const local = await getSermaoLocal(item.local_id);
+          if (local) {
+            await upsertSermaoLocal({
+              ...local,
+              updated_at: resultado.updated_at || new Date().toISOString(),
+              _synced: true,
+            });
+          }
+        }
+
         if (removida) sincronizados++;
       } catch (err) {
         console.warn(`[Verbo Sync] Falha ao processar op ${item.operacao}:`, err.message);
@@ -168,10 +186,7 @@ async function processarItem(item, userId) {
     } = payload;
     const remoteId = remote_id || gerarUuidRemoto();
     const data = await criarSermaoIdempotente(dadosLimpos, userId, remoteId);
-
-    await deleteSermaoLocal(local_id);
-    await upsertSermaoLocal({ ...data, _synced: true });
-    return;
+    return { tipo: 'create', data };
   }
 
   if (operacao === 'update') {
@@ -190,14 +205,7 @@ async function processarItem(item, userId) {
     if (error) throw error;
     if (!data) throw new Error('Sermão não encontrado para atualização. A operação foi mantida na fila.');
 
-    const local = await getSermaoLocal(local_id);
-    if (local) {
-      await upsertSermaoLocal({
-        ...local,
-        updated_at: data.updated_at || new Date().toISOString(),
-        _synced: true,
-      });
-    }
+    return { tipo: 'update', updated_at: data.updated_at };
   }
 }
 
