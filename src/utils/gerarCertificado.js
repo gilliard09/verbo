@@ -115,30 +115,44 @@ async function textoRicoImagem(pdf, linhas, { tamanho, largura, alturaLinha = 1.
 }
 
 async function gerarImagemQr(pdf, valor) {
-  const svg = renderToStaticMarkup(React.createElement(QRCodeSVG, {
-    value: valor, size: 480, level: 'H', marginSize: 0,
-    bgColor: 'transparent', fgColor: ROXO,
+  const svgOriginal = renderToStaticMarkup(React.createElement(QRCodeSVG, {
+    value: valor,
+    size: 480,
+    level: 'H',
+    marginSize: 0,
+    bgColor: 'transparent',
+    fgColor: ROXO,
   }));
-  const objectUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
-  try {
-    const img = new Image();
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = () => reject(new Error('Não foi possível gerar o QR Code.'));
-      img.src = objectUrl;
-    });
-    const canvas = document.createElement('canvas');
-    canvas.width = 480;
-    canvas.height = 480;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Não foi possível preparar o QR Code.');
-    ctx.drawImage(img, 0, 0, 480, 480);
-    return pdf.embedPng(canvas.toDataURL('image/png'));
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
 
+  // Safari pode falhar ao decodificar SVG carregado por Blob URL.
+  // Data URI com namespace explícito é mais compatível com Image() nesses navegadores.
+  const svg = svgOriginal.includes('xmlns=')
+    ? svgOriginal
+    : svgOriginal.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+  const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
+  const img = new Image();
+  img.decoding = 'sync';
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error('O navegador não conseguiu converter o QR Code em imagem.'));
+    img.src = dataUrl;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 960;
+  canvas.height = 960;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Não foi possível preparar a imagem do QR Code.');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const png = canvas.toDataURL('image/png');
+  if (!png.startsWith('data:image/png;base64,')) {
+    throw new Error('Não foi possível converter o QR Code para PNG.');
+  }
+  return pdf.embedPng(png);
+}
 function desenharImagem(page, item, x, topo) {
   page.drawImage(item.imagem, {
     x: x * SCALE,
