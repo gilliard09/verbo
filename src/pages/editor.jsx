@@ -375,9 +375,7 @@ const Editor = () => {
           .replace(/\n{3,}/g, '\n\n')
           .trim();
         if (!plain) return '<p></p>';
-        return plain.split('\n').map((line) =>
-          line ? '<p>' + escapeHtml(line) + '</p>' : '<p></p>'
-        ).join('');
+        return '<p>' + escapeHtml(plain).replace(/\n/g, '<br>') + '</p>';
       },
       transformPastedText: (text) => text.replace(/\r\n?/g, '\n'),
     },
