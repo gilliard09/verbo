@@ -20,6 +20,78 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
     headers: { ...headers, "Content-Type": "application/json" },
   });
 
+
+async function buildAcademicHistory(admin: ReturnType<typeof createClient>, userId: string, cursoId: string, subjectIds: string[]) {
+  const { data: subjects, error: subjectsError } = await admin
+    .from("materias")
+    .select("id, titulo, ordem")
+    .eq("curso_id", cursoId)
+    .order("ordem", { ascending: true });
+  if (subjectsError) throw subjectsError;
+  if (!subjects?.length) return [];
+
+  const ids = subjects.map((subject) => subject.id);
+  const { data: lessons, error: lessonsError } = await admin
+    .from("aulas")
+    .select("id, materia_id")
+    .in("materia_id", ids);
+  if (lessonsError) throw lessonsError;
+
+  const lessonIds = (lessons || []).map((lesson) => lesson.id);
+  const { data: progress, error: progressError } = lessonIds.length
+    ? await admin.from("progresso_aulas").select("aula_id, concluida_em")
+        .eq("user_id", userId).in("aula_id", lessonIds)
+    : { data: [], error: null };
+  if (progressError) throw progressError;
+
+  const completed = new Set((progress || []).filter((item) => item.concluida_em).map((item) => item.aula_id));
+  const { data: evaluations, error: evaluationsError } = await admin
+    .from("avaliacoes")
+    .select("id, materia_id, titulo, nota_minima")
+    .in("materia_id", ids)
+    .order("created_at", { ascending: true });
+  if (evaluationsError) throw evaluationsError;
+
+  const evaluationIds = (evaluations || []).map((item) => item.id);
+  const { data: attempts, error: attemptsError } = evaluationIds.length
+    ? await admin.from("tentativas_avaliacao")
+        .select("avaliacao_id, nota, acertos, total_questoes, aprovado, concluida_em")
+        .eq("user_id", userId)
+        .in("avaliacao_id", evaluationIds)
+        .not("concluida_em", "is", null)
+        .order("concluida_em", { ascending: false })
+    : { data: [], error: null };
+  if (attemptsError) throw attemptsError;
+
+  const latestAttempt = new Map<string, typeof attempts[number]>();
+  for (const attempt of attempts || []) {
+    if (!latestAttempt.has(attempt.avaliacao_id)) latestAttempt.set(attempt.avaliacao_id, attempt);
+  }
+
+  return subjects.map((subject) => {
+    const subjectLessons = (lessons || []).filter((lesson) => lesson.materia_id === subject.id);
+    const subjectEvaluations = (evaluations || []).filter((evaluation) => evaluation.materia_id === subject.id);
+    return {
+      title: subject.titulo,
+      lessons_completed: subjectLessons.filter((lesson) => completed.has(lesson.id)).length,
+      lessons_total: subjectLessons.length,
+      assessments: subjectEvaluations.map((evaluation) => {
+        const attempt = latestAttempt.get(evaluation.id);
+        return {
+          title: evaluation.titulo,
+          minimum_grade: evaluation.nota_minima,
+          status: attempt ? "completed" : "not_taken",
+          grade: attempt?.nota ?? null,
+          passed: attempt?.aprovado ?? null,
+          correct_answers: attempt?.acertos ?? null,
+          total_questions: attempt?.total_questoes ?? null,
+          completed_at: attempt?.concluida_em ?? null,
+        };
+      }),
+    };
+  }).filter((subject) => subject.lessons_total > 0);
+}
+
 Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req.headers.get("Origin"));
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -63,7 +135,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existing, error: existingError } = await admin
       .from("certificates")
-      .select("id, verification_code, student_name, course_name, completion_date, issued_at, status")
+      .select("id, verification_code, student_name, course_name, completion_date, issued_at, status, academic_history")
       .eq("user_id", userId).eq("curso_id", cursoId).eq("status", "valid")
       .maybeSingle();
     if (existingError) throw existingError;
@@ -128,7 +200,11 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Não foi possível identificar o nome do aluno no perfil." }, 422, corsHeaders);
     }
 
+    // Congela o histórico acadêmico no momento da emissão.
+    const academicHistory = await buildAcademicHistory(admin, userId, cursoId, subjectIds);
+
     const payload = {
+      academic_history: academicHistory,
       user_id: userId,
       curso_id: cursoId,
       student_name: studentName,
@@ -139,13 +215,13 @@ Deno.serve(async (req: Request) => {
     const { data: inserted, error: insertError } = await admin
       .from("certificates")
       .insert(payload)
-      .select("id, verification_code, student_name, course_name, completion_date, issued_at, status")
+      .select("id, verification_code, student_name, course_name, completion_date, issued_at, status, academic_history")
       .single();
 
     if (insertError?.code === "23505") {
       const { data: raced, error: racedError } = await admin
         .from("certificates")
-        .select("id, verification_code, student_name, course_name, completion_date, issued_at, status")
+        .select("id, verification_code, student_name, course_name, completion_date, issued_at, status, academic_history")
         .eq("user_id", userId).eq("curso_id", cursoId).eq("status", "valid")
         .single();
       if (racedError) throw racedError;
