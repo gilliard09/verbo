@@ -14,7 +14,7 @@ import {
 
 // ── Offline layer ──────────────────────────────────────────────────────────────
 import { getSermaoLocal, upsertSermaoLocal, enqueueOp, getRascunhoLocal, upsertRascunhoLocal, deleteRascunhoLocal } from '../lib/db';
-import { gerarIdLocal } from '../lib/sync';
+import { gerarIdLocal, gerarUuidRemoto, criarSermaoIdempotente } from '../lib/sync';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { usePlano } from '../hooks/usePlano';
 import { importarArquivoSermao } from '../lib/importarSermao';
@@ -333,6 +333,9 @@ const Editor = () => {
 
   // Id local para sermões criados offline
   const localIdRef = useRef(id || null);
+  // Mantém a mesma chave entre tentativas de criação, inclusive quando a
+  // requisição chega ao Supabase mas a resposta se perde na conexão.
+  const remoteIdRef = useRef(null);
 
   const { isOnline, atualizarPendentes } = useOfflineSync();
 
@@ -771,9 +774,20 @@ Oração:`
       let salvouOnline = false;
       const eraSermaoNovo = !id; // só sermões recém-criados contam pro gatilho de upgrade por degrau
       try {
-        const res = id
-          ? await supabase.from('sermoes').update(dadosSermao).eq('id', id).select().single()
-          : await supabase.from('sermoes').insert([dadosSermao]).select().single();
+        let res;
+        if (id) {
+          res = await supabase
+            .from('sermoes')
+            .update(dadosSermao)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+        } else {
+          const remoteId = remoteIdRef.current || (remoteIdRef.current = gerarUuidRemoto());
+          const data = await criarSermaoIdempotente(dadosSermao, user.id, remoteId);
+          res = { data, error: null };
+        }
 
         if (!res.error) {
           const idFinal = id || res.data?.id;
@@ -842,12 +856,14 @@ Oração:`
           if (!localIdRef.current || !localIdRef.current.startsWith('local_')) {
             localIdRef.current = gerarIdLocal();
           }
+          const remoteId = remoteIdRef.current || (remoteIdRef.current = gerarUuidRemoto());
           const novoLocal = {
             ...dadosSermao,
             id: localIdRef.current,
             created_at: agora,
             updated_at: agora,
             local_temp_id: localIdRef.current,
+            remote_id: remoteId,
             _synced: false,
           };
           await upsertSermaoLocal(novoLocal);
