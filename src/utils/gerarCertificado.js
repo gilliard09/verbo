@@ -1,5 +1,5 @@
 // utils/gerarCertificado.js
-export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoValidacao }) {
+export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoValidacao, janelaImpressao = null }) {
   const qrUrl = `https://appverbo.com.br/verificar?codigo=${codigoValidacao}`;
 
   const html = `<!DOCTYPE html>
@@ -267,8 +267,16 @@ export function gerarCertificado({ nomeAluno, nomeCurso, dataFormatada, codigoVa
 </body>
 </html>`;
 
+  if (janelaImpressao && !janelaImpressao.closed) {
+    janelaImpressao.document.open();
+    janelaImpressao.document.write(html);
+    janelaImpressao.document.close();
+    return;
+  }
+
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  const novaJanela = window.open(url, '_blank');
+  if (!novaJanela) URL.revokeObjectURL(url);
+  else setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
