@@ -153,7 +153,15 @@ export async function enqueueOp(operacao, localId, payload = {}) {
     const deletePendente = ordenadas.some(item => item.operacao === 'delete');
 
     // Delete é terminal: uma edição posterior não ressuscita o registro.
-    if (!deletePendente) {
+    if (deletePendente) {
+      // Preserva a exclusão já enfileirada; não a remove nem a substitui
+      // por uma atualização posterior.
+      proxima = {
+        ...ordenadas.find(item => item.operacao === 'delete'),
+        atualizado_em: agora,
+        _queue_token: token,
+      };
+    } else {
       proxima = {
         ...(ultima || {}),
         operacao: createPendente ? 'create' : 'update',
