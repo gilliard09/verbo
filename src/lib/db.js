@@ -162,11 +162,14 @@ export async function enqueueOp(operacao, localId, payload = {}) {
         _queue_token: token,
       };
     } else {
+      const createAnterior = ordenadas.find(item => item.operacao === 'create');
       proxima = {
         ...(ultima || {}),
         operacao: createPendente ? 'create' : 'update',
         local_id: localId,
-        payload,
+        payload: createPendente
+          ? { ...payload, remote_id: payload?.remote_id || createAnterior?.payload?.remote_id }
+          : payload,
         criado_em: ultima?.criado_em || agora,
         atualizado_em: agora,
         _queue_token: token,
@@ -200,6 +203,27 @@ export async function dequeueOp(queueId, expectedToken) {
     await store.delete(queueId);
   }
   await tx.done;
+}
+
+/**
+ * Atualiza o payload de uma operação sem alterar sua identidade na fila.
+ * Usado para atribuir um UUID remoto estável a operações antigas de criação.
+ */
+export async function atualizarPayloadFila(queueId, expectedToken, payload) {
+  const db = await getDB();
+  const tx = db.transaction('sync_queue', 'readwrite');
+  const store = tx.objectStore('sync_queue');
+  const atual = await store.get(queueId);
+
+  if (!atual || (expectedToken !== undefined && atual._queue_token !== expectedToken)) {
+    await tx.done;
+    return null;
+  }
+
+  const atualizado = { ...atual, payload };
+  await store.put(atualizado);
+  await tx.done;
+  return atualizado;
 }
 
 /** Quantidade de operações pendentes */
