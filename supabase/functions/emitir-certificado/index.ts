@@ -1,25 +1,34 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://appverbo.com.br",
+const allowedOrigins = new Set([
+  "https://appverbo.com.br",
+  "https://www.appverbo.com.br",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
+
+const getCorsHeaders = (origin: string | null) => ({
+  ...(origin && allowedOrigins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+  "Vary": "Origin",
+});
 
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...headers, "Content-Type": "application/json" },
   });
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = getCorsHeaders(req.headers.get("Origin"));
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
+  if (req.method !== "POST") return json({ error: "Método não permitido." }, 405, corsHeaders);
 
   try {
     const authorization = req.headers.get("Authorization");
     if (!authorization?.startsWith("Bearer ")) {
-      return json({ error: "É necessário estar autenticado para emitir o certificado." }, 401);
+      return json({ error: "É necessário estar autenticado para emitir o certificado." }, 401, corsHeaders);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -33,13 +42,13 @@ Deno.serve(async (req: Request) => {
     });
     const { data: authData, error: authError } = await authClient.auth.getUser(token);
     if (authError || !authData.user) {
-      return json({ error: "Sessão inválida ou expirada. Entre novamente." }, 401);
+      return json({ error: "Sessão inválida ou expirada. Entre novamente." }, 401, corsHeaders);
     }
 
     const body = await req.json().catch(() => ({}));
     const cursoId = typeof body.cursoId === "string" ? body.cursoId : "";
     if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(cursoId)) {
-      return json({ error: "Curso inválido." }, 400);
+      return json({ error: "Curso inválido." }, 400, corsHeaders);
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -50,7 +59,7 @@ Deno.serve(async (req: Request) => {
     const { data: course, error: courseError } = await admin
       .from("cursos").select("id, titulo").eq("id", cursoId).maybeSingle();
     if (courseError) throw courseError;
-    if (!course) return json({ error: "Curso não encontrado." }, 404);
+    if (!course) return json({ error: "Curso não encontrado." }, 404, corsHeaders);
 
     const { data: existing, error: existingError } = await admin
       .from("certificates")
@@ -59,7 +68,7 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (existingError) throw existingError;
     if (existing) {
-      return json({ certificate: existing, alreadyIssued: true });
+      return json({ certificate: existing, alreadyIssued: true }, 200, corsHeaders);
     }
 
 
@@ -68,7 +77,7 @@ Deno.serve(async (req: Request) => {
     if (subjectsError) throw subjectsError;
     const subjectIds = (subjects || []).map((item) => item.id);
     if (!subjectIds.length) {
-      return json({ error: "Este curso ainda não possui matérias cadastradas." }, 409);
+      return json({ error: "Este curso ainda não possui matérias cadastradas." }, 409, corsHeaders);
     }
 
     const { data: lessons, error: lessonsError } = await admin
@@ -76,7 +85,7 @@ Deno.serve(async (req: Request) => {
     if (lessonsError) throw lessonsError;
     const lessonIds = (lessons || []).map((item) => item.id);
     if (!lessonIds.length) {
-      return json({ error: "Este curso ainda não possui aulas cadastradas." }, 409);
+      return json({ error: "Este curso ainda não possui aulas cadastradas." }, 409, corsHeaders);
     }
 
     const { data: progress, error: progressError } = await admin
@@ -93,7 +102,7 @@ Deno.serve(async (req: Request) => {
       return json({
         error: "O curso ainda não está 100% concluído.",
         aulasPendentes: missing.length,
-      }, 409);
+      }, 409, corsHeaders);
     }
 
     const completionTimestamp = (progress || [])
@@ -101,7 +110,7 @@ Deno.serve(async (req: Request) => {
       .filter(Boolean)
       .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
     if (!completionTimestamp) {
-      return json({ error: "Não foi possível determinar a data de conclusão." }, 409);
+      return json({ error: "Não foi possível determinar a data de conclusão." }, 409, corsHeaders);
     }
     const completionDate = new Date(completionTimestamp).toISOString().slice(0, 10);
 
@@ -116,7 +125,7 @@ Deno.serve(async (req: Request) => {
       ""
     ).trim();
     if (!studentName) {
-      return json({ error: "Não foi possível identificar o nome do aluno no perfil." }, 422);
+      return json({ error: "Não foi possível identificar o nome do aluno no perfil." }, 422, corsHeaders);
     }
 
     const payload = {
@@ -140,7 +149,7 @@ Deno.serve(async (req: Request) => {
         .eq("user_id", userId).eq("curso_id", cursoId).eq("status", "valid")
         .single();
       if (racedError) throw racedError;
-      return json({ certificate: raced, alreadyIssued: true });
+      return json({ certificate: raced, alreadyIssued: true }, 200, corsHeaders);
     }
     if (insertError) throw insertError;
 
@@ -149,9 +158,9 @@ Deno.serve(async (req: Request) => {
       .update({ concluido_em: completionTimestamp, certificado_emitido: true })
       .eq("user_id", userId).eq("curso_id", cursoId);
 
-    return json({ certificate: inserted, alreadyIssued: false }, 201);
+    return json({ certificate: inserted, alreadyIssued: false }, 201, corsHeaders);
   } catch (error) {
     console.error("emitir-certificado:", error);
-    return json({ error: "Não foi possível emitir o certificado agora. Tente novamente." }, 500);
+    return json({ error: "Não foi possível emitir o certificado agora. Tente novamente." }, 500, corsHeaders);
   }
 });
