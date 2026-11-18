@@ -12,7 +12,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME    = 'verbo_offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 // ─── Abre / inicializa o banco ────────────────────────────────────────────────
 let _db = null;
@@ -27,6 +27,12 @@ export async function getDB() {
         const store = db.createObjectStore('sermoes_local', { keyPath: 'id' });
         store.createIndex('user_id',    'user_id',    { unique: false });
         store.createIndex('updated_at', 'updated_at', { unique: false });
+      }
+
+      // Rascunhos em edição: separados dos sermões sincronizados e da fila.
+      // Assim, autosave local não dispara uma sincronização antes do usuário salvar.
+      if (!db.objectStoreNames.contains('sermoes_drafts')) {
+        db.createObjectStore('sermoes_drafts', { keyPath: 'draft_id' });
       }
 
       // Fila de operações pendentes
@@ -137,4 +143,28 @@ export async function dequeueOp(queueId) {
 export async function countQueue() {
   const db = await getDB();
   return db.count('sync_queue');
+}
+
+/* ─── RASCUNHOS DO EDITOR ─────────────────────────────────────────────────── */
+
+/** Lê um rascunho por chave composta de usuário + sermão (ou "novo"). */
+export async function getRascunhoLocal(draftId) {
+  const db = await getDB();
+  return db.get('sermoes_drafts', draftId);
+}
+
+/** Persiste o estado de edição sem marcar o sermão como pendente de sync. */
+export async function upsertRascunhoLocal(rascunho) {
+  const db = await getDB();
+  await db.put('sermoes_drafts', {
+    ...rascunho,
+    savedAt: rascunho.savedAt || new Date().toISOString(),
+  });
+}
+
+/** Remove o rascunho depois que o usuário confirma o salvamento do sermão. */
+export async function deleteRascunhoLocal(draftId) {
+  if (!draftId) return;
+  const db = await getDB();
+  await db.delete('sermoes_drafts', draftId);
 }
