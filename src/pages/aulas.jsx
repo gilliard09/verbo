@@ -363,6 +363,17 @@ const Aulas = () => {
 
   const handleGerarCertificado = async () => {
     if (emitindoCertificado || !cursoId) return;
+
+    // Safari/iOS exige que a janela seja aberta diretamente durante o clique.
+    const janelaImpressao = window.open('', '_blank');
+    if (!janelaImpressao) {
+      alert('O navegador bloqueou a janela do certificado. Permita pop-ups para o Verbo e tente novamente.');
+      return;
+    }
+
+    janelaImpressao.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Preparando certificado</title></head><body style="font-family:Arial,sans-serif;display:grid;place-items:center;min-height:90vh;color:#2c126a"><p>Preparando seu certificado...</p></body></html>');
+    janelaImpressao.document.close();
+
     setEmitindoCertificado(true);
     try {
       const { data, error } = await supabase.functions.invoke('emitir-certificado', {
@@ -383,9 +394,11 @@ const Aulas = () => {
         nomeCurso: certificado.course_name,
         dataFormatada,
         codigoValidacao: certificado.verification_code,
+        janelaImpressao,
       });
     } catch (error) {
       console.error('Erro ao emitir certificado:', error);
+      if (!janelaImpressao.closed) janelaImpressao.close();
       alert(error?.message || 'Não foi possível emitir o certificado. Tente novamente.');
     } finally {
       setEmitindoCertificado(false);
