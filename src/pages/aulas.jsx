@@ -398,8 +398,24 @@ const Aulas = () => {
       });
     } catch (error) {
       console.error('Erro ao emitir certificado:', error);
-      if (!janelaImpressao.closed) janelaImpressao.close();
-      alert(error?.message || 'Não foi possível emitir o certificado. Tente novamente.');
+      const mensagemErro = error?.message || 'Não foi possível emitir o certificado. Tente novamente.';
+      if (!janelaImpressao.closed) {
+        try {
+          janelaImpressao.document.body.innerHTML = '';
+          const aviso = janelaImpressao.document.createElement('p');
+          aviso.textContent = mensagemErro;
+          aviso.style.cssText = 'font:16px Arial,sans-serif;color:#9b1c1c;padding:32px;text-align:center';
+          janelaImpressao.document.body.appendChild(aviso);
+          const fechar = janelaImpressao.document.createElement('button');
+          fechar.textContent = 'Fechar';
+          fechar.style.cssText = 'display:block;margin:16px auto;padding:10px 20px';
+          fechar.onclick = () => janelaImpressao.close();
+          janelaImpressao.document.body.appendChild(fechar);
+        } catch (erroJanela) {
+          console.warn('Não foi possível exibir o erro na janela do certificado:', erroJanela);
+        }
+      }
+      alert(mensagemErro);
     } finally {
       setEmitindoCertificado(false);
     }
