@@ -389,7 +389,7 @@ const Aulas = () => {
       const dataFormatada = new Date(`${certificado.completion_date}T12:00:00`)
         .toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-      gerarCertificado({
+      await gerarCertificado({
         nomeAluno: certificado.student_name,
         nomeCurso: certificado.course_name,
         dataFormatada,
