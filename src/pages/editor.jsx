@@ -637,6 +637,7 @@ Oração:`
   async function salvar() {
     if (!titulo.trim()) { mostrarToast('Insira um título para salvar.', 'erro'); return; }
     setLoading(true);
+    mostrarToast('Salvando…', 'info', 30000);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -680,7 +681,7 @@ Oração:`
           }
           salvouOnline = true;
           localStorage.removeItem(RASCUNHO_KEY(id));
-          mostrarToast('Sermão salvo com sucesso!', 'sucesso');
+          mostrarToast('Salvo ✓', 'sucesso');
 
           // ── Analytics: sermon_created / sermon_edited / first_sermon_created ──
           // Reaproveitamos a contagem de sermões do usuário tanto pra saber se é
