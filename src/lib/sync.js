@@ -45,7 +45,7 @@ export async function processarFila() {
   for (const item of fila) {
     try {
       await processarItem(item, session.user.id);
-      await dequeueOp(item.queue_id);
+      await dequeueOp(item.queue_id, item._queue_token);
       sincronizados++;
     } catch (err) {
       console.warn(`[Verbo Sync] Falha ao processar op ${item.operacao}:`, err.message);
