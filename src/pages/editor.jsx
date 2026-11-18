@@ -563,9 +563,30 @@ Oração:`
         const userId = session?.user?.id;
         draftKeyRef.current = userId ? `${userId}:${id || 'novo'}` : null;
 
-        const draft = draftKeyRef.current
+        let draft = draftKeyRef.current
           ? await getRascunhoLocal(draftKeyRef.current)
           : null;
+
+        // Migra automaticamente rascunhos gravados pelo autosave antigo.
+        if (!draft) {
+          try {
+            const legado = localStorage.getItem(RASCUNHO_KEY(id));
+            if (legado) {
+              const parsed = JSON.parse(legado);
+              if (parsed && (parsed.titulo || parsed.conteudo || parsed.referencia)) {
+                draft = parsed;
+                if (draftKeyRef.current) {
+                  await upsertRascunhoLocal({
+                    draft_id: draftKeyRef.current,
+                    user_id: userId || null,
+                    sermon_id: id || null,
+                    ...parsed,
+                  });
+                }
+              }
+            }
+          } catch { /* ignora rascunho legado inválido */ }
+        }
 
         if (cancelled) return;
 
@@ -629,6 +650,10 @@ Oração:`
       return;
     }
 
+    // O conteúdo local já foi carregado; não precisamos esperar a rede para
+    // começar a proteger novas alterações feitas pelo usuário.
+    draftReadyRef.current = true;
+
     // 3. Sem rascunho pendente, busca a versão remota mais recente.
     try {
       const { data, error } = await supabase
@@ -652,11 +677,19 @@ Oração:`
   // ── Autosave local: IndexedDB primeiro, localStorage como compatibilidade ──
   useEffect(() => {
     if (!draftReadyRef.current) return;
-    if (!conteudo.trim() && !titulo.trim() && !referencia.trim()) return;
 
     clearTimeout(autoSaveRef.current);
     setAutoSaveAtivo(false);
     autoSaveRef.current = setTimeout(async () => {
+      const vazio = !conteudo.trim() && !titulo.trim() && !referencia.trim();
+      if (vazio) {
+        try {
+          if (draftKeyRef.current) await deleteRascunhoLocal(draftKeyRef.current);
+          localStorage.removeItem(RASCUNHO_KEY(id));
+        } catch { /* limpeza local é best-effort */ }
+        return;
+      }
+
       const dados = {
         titulo,
         conteudo,
@@ -748,7 +781,10 @@ Oração:`
             });
           }
           salvouOnline = true;
-          if (draftKeyRef.current) await deleteRascunhoLocal(draftKeyRef.current);
+          if (draftKeyRef.current) {
+            try { await deleteRascunhoLocal(draftKeyRef.current); }
+            catch (error) { console.warn('[Verbo Editor] Rascunho local não removido:', error); }
+          }
           localStorage.removeItem(RASCUNHO_KEY(id));
           mostrarToast('Salvo ✓', 'sucesso');
 
@@ -812,7 +848,10 @@ Oração:`
           await enqueueOp('create', localIdRef.current, novoLocal);
         }
         await atualizarPendentes();
-        if (draftKeyRef.current) await deleteRascunhoLocal(draftKeyRef.current);
+        if (draftKeyRef.current) {
+          try { await deleteRascunhoLocal(draftKeyRef.current); }
+          catch (error) { console.warn('[Verbo Editor] Rascunho local não removido:', error); }
+        }
         localStorage.removeItem(RASCUNHO_KEY(id));
         mostrarToast('Salvo offline — sincronizará quando conectar', 'offline');
         setTimeout(() => navigate('/'), 1500);
