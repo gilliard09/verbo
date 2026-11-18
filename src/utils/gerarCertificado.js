@@ -209,11 +209,11 @@ export async function gerarCertificado({
   const eixoDireitoTexto = 1235;
   // O título do curso foi removido. A certificação e a data ficam abaixo
   // da palavra CERTIFICADO, mantendo a borda direita no mesmo eixo visual.
-  desenharImagem(page, certificacao, eixoDireitoTexto - certificacao.largura, 790);
-  desenharImagem(page, data, eixoDireitoTexto - data.largura, 930);
+  desenharImagem(page, certificacao, eixoDireitoTexto - certificacao.largura, 930);
+  desenharImagem(page, data, eixoDireitoTexto - data.largura, 1070);
   page.drawImage(qr, {
-    x: 1878 * SCALE_X,
-    y: A4_HEIGHT - ((1250 + 300) * SCALE_Y),
+    x: 1908 * SCALE_X,
+    y: A4_HEIGHT - ((1280 + 300) * SCALE_Y),
     width: 300 * SCALE_X,
     height: 300 * SCALE_Y,
   });
