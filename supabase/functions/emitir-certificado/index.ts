@@ -58,6 +58,10 @@ Deno.serve(async (req: Request) => {
       .eq("user_id", userId).eq("curso_id", cursoId).eq("status", "valid")
       .maybeSingle();
     if (existingError) throw existingError;
+    if (existing) {
+      return json({ certificate: existing, alreadyIssued: true });
+    }
+
 
     const { data: subjects, error: subjectsError } = await admin
       .from("materias").select("id").eq("curso_id", cursoId);
@@ -100,10 +104,6 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Não foi possível determinar a data de conclusão." }, 409);
     }
     const completionDate = new Date(completionTimestamp).toISOString().slice(0, 10);
-
-    if (existing) {
-      return json({ certificate: existing, alreadyIssued: true });
-    }
 
     const { data: profile, error: profileError } = await admin
       .from("profiles").select("full_name").eq("id", userId).maybeSingle();
