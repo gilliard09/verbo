@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { ShieldCheck, Search, CheckCircle2, XCircle, Clock3, Loader2, BookOpen, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Search, CheckCircle2, XCircle, Clock3, Loader2, BookOpen, ArrowLeft, GraduationCap } from 'lucide-react';
 
 const formatarData = (valor) => {
   if (!valor) return '—';
@@ -136,9 +136,36 @@ export default function VerificarCertificado() {
                 <div className="py-4 sm:pr-4"><dt className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Conclusão</dt><dd className="mt-1.5 text-sm font-semibold text-slate-700">{formatarData(certificado.completion_date)}</dd></div>
                 <div className="py-4 sm:pl-4"><dt className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Emissão</dt><dd className="mt-1.5 text-sm font-semibold text-slate-700">{formatarData(certificado.issued_at)}</dd></div>
               </dl>
-              <div className="border-t border-slate-100 bg-slate-50 px-5 py-3">
-                <p className="break-all text-[10px] font-medium text-slate-400">Código: {certificado.verification_code}</p>
-              </div>
+              {Array.isArray(certificado.academic_history) && certificado.academic_history.length > 0 && (
+                <div className="border-t border-slate-100 px-5 py-5">
+                  <div className="mb-4 flex items-center gap-2">
+                    <GraduationCap size={19} className="text-[#5B21B6]" />
+                    <h2 className="text-sm font-extrabold text-slate-900">Histórico acadêmico</h2>
+                  </div>
+                  <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl bg-violet-50 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-violet-500">Matérias</p><p className="mt-1 text-xl font-black text-violet-950">{certificado.academic_history.length}</p></div>
+                    <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Avaliações concluídas</p><p className="mt-1 text-xl font-black text-slate-900">{certificado.academic_history.reduce((n, m) => n + m.assessments.filter((a) => a.status === 'completed').length, 0)}</p></div>
+                    <div className="col-span-2 rounded-xl bg-slate-50 p-3 sm:col-span-1"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Média das notas</p><p className="mt-1 text-xl font-black text-slate-900">{(() => { const grades = certificado.academic_history.flatMap((m) => m.assessments.filter((a) => a.status === 'completed' && a.grade !== null).map((a) => Number(a.grade))); return grades.length ? (grades.reduce((s, n) => s + n, 0) / grades.length).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '—'; })()}</p></div>
+                  </div>
+                  <div className="space-y-3">
+                    {certificado.academic_history.map((materia, index) => (
+                      <div key={index} className="rounded-xl border border-slate-200 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-extrabold text-slate-900">{materia.title}</h3><span className="text-[11px] font-medium text-slate-500">{materia.lessons_completed}/{materia.lessons_total} aulas concluídas</span></div>
+                        {materia.assessments.length > 0 ? <div className="mt-3 divide-y divide-slate-100">
+                          {materia.assessments.map((avaliacao, idx) => (
+                            <div key={idx} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                              <div className="min-w-0 flex-1"><p className="text-xs font-bold text-slate-700">{avaliacao.title}</p><p className="mt-1 text-[10px] text-slate-400">{avaliacao.status === 'completed' ? `Concluída em ${formatarData(avaliacao.completed_at)}` : 'Não realizada'}{avaliacao.minimum_grade !== null ? ` · Nota mínima: ${avaliacao.minimum_grade}` : ''}</p></div>
+                              {avaliacao.status === 'completed' ? <div className="text-right"><p className="text-sm font-black text-slate-900">{Number(avaliacao.grade).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</p><p className={`text-[10px] font-bold ${avaliacao.passed ? 'text-emerald-700' : 'text-amber-700'}`}>{avaliacao.passed ? 'Aprovado' : 'Não aprovado'}</p></div> : <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500">Pendente</span>}
+                            </div>
+                          ))}
+                        </div> : <p className="mt-2 text-xs text-slate-500">Matéria concluída sem avaliação cadastrada.</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(!Array.isArray(certificado.academic_history) || certificado.academic_history.length === 0) && <div className="border-t border-slate-100 px-5 py-4 text-xs leading-5 text-slate-500">O histórico acadêmico não está disponível para este certificado, emitido antes da implantação deste recurso.</div>}
+              <div className="border-t border-slate-100 bg-slate-50 px-5 py-3"><p className="break-all text-[10px] font-medium text-slate-400">Código: {certificado.verification_code}</p></div>
             </div>
           )}
         </section>
