@@ -269,7 +269,6 @@ const Aulas = () => {
   const [toastVisivel, setToastVisivel] = useState(false);
   const [toastTitulo, setToastTitulo] = useState('');
 
-  const dadosCertificadoRef = useRef(null);
   const aulaAtivaRef = useRef(null);
   const sidebarRef = useRef(null);
 
@@ -309,13 +308,6 @@ const Aulas = () => {
       } else {
         setDadosMateria(null);
       }
-
-      const nomeAluno = user.user_metadata?.full_name || user.email.split('@')[0];
-      const nomeCurso = cursoBD?.titulo || 'Curso Ministerial';
-      const dataFormatada = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-      const hash = (user.id || '').slice(0, 4).toUpperCase();
-      const codigoValidacao = `VERBO-${hash}-${new Date().getFullYear()}`;
-      dadosCertificadoRef.current = { nomeAluno, nomeCurso, dataFormatada, codigoValidacao };
 
       const { data: matricula } = await supabase.from('matriculas').select('status')
         .eq('user_id', user.id).eq('curso_id', cursoId).maybeSingle();
