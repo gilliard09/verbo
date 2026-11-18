@@ -105,27 +105,72 @@ export async function deleteSermaoLocal(id) {
  * @param {object} payload  — dados do sermão (vazio para delete)
  */
 export async function enqueueOp(operacao, localId, payload = {}) {
+  if (!['create', 'update', 'delete'].includes(operacao)) {
+    throw new Error(`Operação de sincronização inválida: ${operacao}`);
+  }
+  if (!localId) throw new Error('local_id é obrigatório para enfileirar uma operação');
+
   const db = await getDB();
+  const tx = db.transaction('sync_queue', 'readwrite');
+  const store = tx.objectStore('sync_queue');
+  const existentes = await store.index('local_id').getAll(localId);
+  const ordenadas = existentes.sort((a, b) => a.queue_id - b.queue_id);
+  const ultima = ordenadas[ordenadas.length - 1];
 
-  // Se já existe uma operação pendente para este id + tipo, substitui
-  const existentes = await db.getAllFromIndex('sync_queue', 'local_id', localId);
-  const mesmaTipo  = existentes.find(e => e.operacao === operacao);
+  // Uma única intenção pendente por sermão. O estado final substitui
+  // combinações anteriores, evitando create/update/delete concorrentes.
+  let proxima = null;
+  const agora = new Date().toISOString();
+  const token = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-  if (mesmaTipo) {
-    // Atualiza o payload em vez de duplicar
-    await db.put('sync_queue', {
-      ...mesmaTipo,
-      payload,
-      criado_em: new Date().toISOString(),
-    });
-  } else {
-    await db.add('sync_queue', {
-      operacao,
+  if (operacao === 'delete') {
+    // Um sermão criado offline e ainda não enviado pode simplesmente
+    // desaparecer: não existe registro remoto para excluir.
+    const createPendente = ordenadas.some(item => item.operacao === 'create');
+    if (!(createPendente && String(localId).startsWith('local_'))) {
+      proxima = {
+        ...(ultima || {}),
+        operacao: 'delete',
+        local_id: localId,
+        payload: {},
+        criado_em: ultima?.criado_em || agora,
+        atualizado_em: agora,
+        _queue_token: token,
+      };
+    }
+  } else if (operacao === 'create') {
+    proxima = {
+      ...(ultima || {}),
+      operacao: 'create',
       local_id: localId,
       payload,
-      criado_em: new Date().toISOString(),
-    });
+      criado_em: ultima?.criado_em || agora,
+      atualizado_em: agora,
+      _queue_token: token,
+    };
+  } else {
+    const createPendente = ordenadas.some(item => item.operacao === 'create');
+    const deletePendente = ordenadas.some(item => item.operacao === 'delete');
+
+    // Delete é terminal: uma edição posterior não ressuscita o registro.
+    if (!deletePendente) {
+      proxima = {
+        ...(ultima || {}),
+        operacao: createPendente ? 'create' : 'update',
+        local_id: localId,
+        payload,
+        criado_em: ultima?.criado_em || agora,
+        atualizado_em: agora,
+        _queue_token: token,
+      };
+    }
   }
+
+  for (const item of ordenadas) {
+    await store.delete(item.queue_id);
+  }
+  if (proxima) await store.add(proxima);
+  await tx.done;
 }
 
 /** Retorna todas as operações pendentes, em ordem de inserção */
@@ -135,9 +180,18 @@ export async function getQueue() {
 }
 
 /** Remove uma operação da fila após sync bem-sucedido */
-export async function dequeueOp(queueId) {
+export async function dequeueOp(queueId, expectedToken) {
   const db = await getDB();
-  await db.delete('sync_queue', queueId);
+  const tx = db.transaction('sync_queue', 'readwrite');
+  const store = tx.objectStore('sync_queue');
+  const atual = await store.get(queueId);
+
+  // Não apaga uma operação que foi atualizada enquanto o sync estava
+  // processando uma versão anterior dela.
+  if (atual && (expectedToken === undefined || atual._queue_token === expectedToken)) {
+    await store.delete(queueId);
+  }
+  await tx.done;
 }
 
 /** Quantidade de operações pendentes */
