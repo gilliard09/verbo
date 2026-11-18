@@ -145,12 +145,12 @@
 
 .verbo-splash-page-left {
   transform-origin: right bottom;
-  animation: verbo-page-open-left 620ms cubic-bezier(.2,.8,.2,1) both;
+  animation: verbo-page-open-left 540ms cubic-bezier(.2,.8,.2,1) both;
 }
 
 .verbo-splash-page-right {
   transform-origin: left bottom;
-  animation: verbo-page-open-right 620ms cubic-bezier(.2,.8,.2,1) both;
+  animation: verbo-page-open-right 540ms cubic-bezier(.2,.8,.2,1) both;
 }
 
 .verbo-splash-wordmark {
@@ -163,7 +163,7 @@
   padding-left: .22em;
   opacity: 0;
   transform: translateY(7px);
-  animation: verbo-wordmark-in 360ms 420ms ease-out forwards;
+  animation: verbo-wordmark-in 320ms 340ms ease-out forwards;
 }
 
 .verbo-splash-tagline {
@@ -174,7 +174,7 @@
   font-weight: 500;
   letter-spacing: .025em;
   opacity: 0;
-  animation: verbo-wordmark-in 300ms 560ms ease-out forwards;
+  animation: verbo-wordmark-in 260ms 470ms ease-out forwards;
 }
 
 @keyframes verbo-page-open-left {
@@ -228,6 +228,12 @@ select:focus-visible {
   .verbo-splash *,
   .verbo-route-enter {
     animation: none !important;
+  }
+
+  .verbo-splash-wordmark,
+  .verbo-splash-tagline {
+    opacity: 1;
+    transform: none;
   }
 
   .verbo-splash,
