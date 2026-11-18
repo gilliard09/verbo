@@ -205,8 +205,11 @@
 }
 
 @keyframes verbo-route-in {
-  from { opacity: .72; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  /* Não animar transform no contêiner da rota: isso cria um containing
+     block para descendentes position: fixed e quebra overlays e controles
+     que precisam acompanhar a viewport (Modo Púlpito, modais etc.). */
+  from { opacity: .72; }
+  to { opacity: 1; }
 }
 
 /* Resposta tátil visual e foco acessível para controles interativos. */
