@@ -199,10 +199,10 @@ export async function dequeueOp(queueId, expectedToken) {
 
   // Não apaga uma operação que foi atualizada enquanto o sync estava
   // processando uma versão anterior dela.
-  if (atual && (expectedToken === undefined || atual._queue_token === expectedToken)) {
-    await store.delete(queueId);
-  }
+  const removida = Boolean(atual && (expectedToken === undefined || atual._queue_token === expectedToken));
+  if (removida) await store.delete(queueId);
   await tx.done;
+  return removida;
 }
 
 /**
