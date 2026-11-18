@@ -35,6 +35,11 @@
   overflow: visible;
 }
 
+.sermon-editor-page input[type="text"] {
+  scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 76px);
+  scroll-margin-bottom: calc(var(--kb, 0px) + 100px);
+}
+
 .verbo-tiptap {
   width: 100%;
   padding-bottom: 1rem;
