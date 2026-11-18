@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 // ── Offline layer ──────────────────────────────────────────────────────────────
-import { getSermaoLocal, upsertSermaoLocal, enqueueOp } from '../lib/db';
+import { getSermaoLocal, upsertSermaoLocal, enqueueOp, getRascunhoLocal, upsertRascunhoLocal, deleteRascunhoLocal } from '../lib/db';
 import { gerarIdLocal } from '../lib/sync';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { usePlano } from '../hooks/usePlano';
@@ -336,6 +336,8 @@ const Editor = () => {
   const [previewImportacao, setPreviewImportacao] = useState(null);
   const [autoSaveAtivo, setAutoSaveAtivo] = useState(false);
   const autoSaveRef = useRef(null);
+  const draftReadyRef = useRef(false);
+  const draftKeyRef = useRef(null);
   const [historico,       setHistorico]       = useState([]);
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [toast, setToast] = useState({ visivel: false, tipo: 'info', mensagem: '' });
@@ -550,32 +552,66 @@ Oração:`
     track('editor_opened', { sermon_id: id || null, tipo: tipo || null });
   }, [id, tipo]);
 
-  // ── Carregamento inicial ────────────────────────────────────────────────────
+  // ── Carregamento e recuperação de rascunhos ─────────────────────────────────
   useEffect(() => {
-    if (id) {
-      carregarSermao(id);
-    } else {
-      // Sermão novo: tenta rascunho do localStorage (só se não veio com tipo guiado)
-      if (!tipo) {
-        const rascunho = localStorage.getItem(RASCUNHO_KEY(null));
-        if (rascunho) {
-          try {
-            const { titulo: t, conteudo: c, referencia: r, savedAt } = JSON.parse(rascunho);
-            setTitulo(t || ''); setConteudo(c || ''); setReferencia(r || '');
-            const tempo = new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            mostrarToast(`Rascunho recuperado das ${tempo}`, 'info');
-          } catch { /* silencioso */ }
+    let cancelled = false;
+    draftReadyRef.current = false;
+
+    const inicializar = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        draftKeyRef.current = userId ? `${userId}:${id || 'novo'}` : null;
+
+        const draft = draftKeyRef.current
+          ? await getRascunhoLocal(draftKeyRef.current)
+          : null;
+
+        if (cancelled) return;
+
+        if (id) {
+          await carregarSermao(id, draft);
+        } else if (draft) {
+          setTitulo(draft.titulo || '');
+          setConteudo(draft.conteudo || '');
+          setReferencia(draft.referencia || '');
+          const tempo = new Date(draft.savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          mostrarToast(`Rascunho recuperado das ${tempo}`, 'info');
+        } else if (!tipo) {
+          // Compatibilidade: recupera rascunhos criados por versões anteriores.
+          const legado = localStorage.getItem(RASCUNHO_KEY(null));
+          if (legado) {
+            try {
+              const { titulo: t, conteudo: c, referencia: r, savedAt } = JSON.parse(legado);
+              setTitulo(t || '');
+              setConteudo(c || '');
+              setReferencia(r || '');
+              const tempo = new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+              mostrarToast(`Rascunho recuperado das ${tempo}`, 'info');
+            } catch { /* rascunho legado inválido */ }
+          }
         }
+
+        try {
+          const hist = JSON.parse(localStorage.getItem(HISTORICO_KEY(id)) || '[]');
+          if (!cancelled) setHistorico(hist);
+        } catch { /* silencioso */ }
+      } catch (error) {
+        console.warn('[Verbo Editor] Não foi possível recuperar o rascunho:', error);
+      } finally {
+        if (!cancelled) draftReadyRef.current = true;
       }
-    }
-    try {
-      const hist = JSON.parse(localStorage.getItem(HISTORICO_KEY(id)) || '[]');
-      setHistorico(hist);
-    } catch { /* silencioso */ }
+    };
+
+    inicializar();
+    return () => {
+      cancelled = true;
+      clearTimeout(autoSaveRef.current);
+    };
   }, [id, tipo]);
 
-  async function carregarSermao(sermoId) {
-    // 1. Carrega do IndexedDB imediatamente (sem esperar rede)
+  async function carregarSermao(sermoId, draft = null) {
+    // 1. Cache do sermão: leitura local antes de qualquer chamada de rede.
     const local = await getSermaoLocal(sermoId);
     if (local) {
       setTitulo(local.titulo || '');
@@ -583,7 +619,17 @@ Oração:`
       setReferencia(local.referencia_biblica || '');
     }
 
-    // 2. Tenta buscar versão mais recente do Supabase
+    // 2. Rascunho em edição tem prioridade: ainda não foi confirmado pelo usuário.
+    if (draft) {
+      setTitulo(draft.titulo || '');
+      setConteudo(draft.conteudo || '');
+      setReferencia(draft.referencia || '');
+      const tempo = new Date(draft.savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      mostrarToast(`Alterações recuperadas das ${tempo}`, 'info');
+      return;
+    }
+
+    // 3. Sem rascunho pendente, busca a versão remota mais recente.
     try {
       const { data, error } = await supabase
         .from('sermoes').select('*').eq('id', sermoId).single();
@@ -591,8 +637,6 @@ Oração:`
       if (data) {
         const localAt  = local ? new Date(local.updated_at || local.created_at || 0) : new Date(0);
         const remotoAt = new Date(data.updated_at || data.created_at || 0);
-        // Uma edição pendente local nunca deve ser substituída por uma cópia remota,
-        // mesmo se o relógio do dispositivo estiver atrasado.
         if (local?._synced !== false && remotoAt >= localAt) {
           setTitulo(data.titulo || '');
           setConteudo(data.conteudo || '');
@@ -601,23 +645,47 @@ Oração:`
         }
       }
     } catch {
-      if (!local) {
-        mostrarToast('Offline e sem cache local para este sermão', 'erro');
-      }
+      if (!local) mostrarToast('Offline e sem cache local para este sermão', 'erro');
     }
   }
 
-  // ── Auto-save no localStorage (rascunho) ───────────────────────────────────
+  // ── Autosave local: IndexedDB primeiro, localStorage como compatibilidade ──
   useEffect(() => {
-    if (!conteudo && !titulo) return;
+    if (!draftReadyRef.current) return;
+    if (!conteudo.trim() && !titulo.trim() && !referencia.trim()) return;
+
     clearTimeout(autoSaveRef.current);
     setAutoSaveAtivo(false);
-    autoSaveRef.current = setTimeout(() => {
-      setAutoSaveAtivo(true);
-      const dados = { titulo, conteudo, referencia, savedAt: new Date().toISOString() };
-      localStorage.setItem(RASCUNHO_KEY(id), JSON.stringify(dados));
-      setTimeout(() => setAutoSaveAtivo(false), 2000);
-    }, AUTO_SAVE_DELAY);
+    autoSaveRef.current = setTimeout(async () => {
+      const dados = {
+        titulo,
+        conteudo,
+        referencia,
+        savedAt: new Date().toISOString(),
+      };
+
+      try {
+        if (draftKeyRef.current) {
+          await upsertRascunhoLocal({
+            draft_id: draftKeyRef.current,
+            user_id: draftKeyRef.current.split(':')[0],
+            sermon_id: id || null,
+            ...dados,
+          });
+        }
+        // Mantém uma cópia compatível com versões anteriores e recuperação emergencial.
+        localStorage.setItem(RASCUNHO_KEY(id), JSON.stringify(dados));
+        setAutoSaveAtivo(true);
+        setTimeout(() => setAutoSaveAtivo(false), 2000);
+      } catch (error) {
+        console.warn('[Verbo Editor] Falha no autosave local:', error);
+        try {
+          localStorage.setItem(RASCUNHO_KEY(id), JSON.stringify(dados));
+          setAutoSaveAtivo(true);
+        } catch { /* armazenamento indisponível */ }
+      }
+    }, 500);
+
     return () => clearTimeout(autoSaveRef.current);
   }, [titulo, conteudo, referencia, id]);
 
@@ -680,6 +748,7 @@ Oração:`
             });
           }
           salvouOnline = true;
+          if (draftKeyRef.current) await deleteRascunhoLocal(draftKeyRef.current);
           localStorage.removeItem(RASCUNHO_KEY(id));
           mostrarToast('Salvo ✓', 'sucesso');
 
@@ -743,6 +812,7 @@ Oração:`
           await enqueueOp('create', localIdRef.current, novoLocal);
         }
         await atualizarPendentes();
+        if (draftKeyRef.current) await deleteRascunhoLocal(draftKeyRef.current);
         localStorage.removeItem(RASCUNHO_KEY(id));
         mostrarToast('Salvo offline — sincronizará quando conectar', 'offline');
         setTimeout(() => navigate('/'), 1500);
