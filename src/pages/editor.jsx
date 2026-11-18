@@ -696,6 +696,7 @@ Oração:`
         savedAt: new Date().toISOString(),
       };
 
+      let salvoNoIndexedDB = false;
       try {
         if (draftKeyRef.current) {
           await upsertRascunhoLocal({
@@ -704,17 +705,24 @@ Oração:`
             sermon_id: id || null,
             ...dados,
           });
+          salvoNoIndexedDB = true;
         }
-        // Mantém uma cópia compatível com versões anteriores e recuperação emergencial.
+      } catch (error) {
+        console.warn('[Verbo Editor] Falha ao persistir no IndexedDB:', error);
+      }
+
+      // Cópia legada é best-effort; uma falha no localStorage não invalida o IndexedDB.
+      try {
         localStorage.setItem(RASCUNHO_KEY(id), JSON.stringify(dados));
+      } catch (error) {
+        console.warn('[Verbo Editor] Cópia localStorage indisponível:', error);
+      }
+
+      if (salvoNoIndexedDB) {
         setAutoSaveAtivo(true);
         setTimeout(() => setAutoSaveAtivo(false), 2000);
-      } catch (error) {
-        console.warn('[Verbo Editor] Falha no autosave local:', error);
-        try {
-          localStorage.setItem(RASCUNHO_KEY(id), JSON.stringify(dados));
-          setAutoSaveAtivo(true);
-        } catch { /* armazenamento indisponível */ }
+      } else {
+        mostrarToast('Não foi possível salvar o rascunho neste dispositivo.', 'erro');
       }
     }, 500);
 
