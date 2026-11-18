@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Zap, CheckCircle2, ShieldCheck, GraduationCap, CalendarCheck } from 'lucide-react';
 import { usePlano } from '../hooks/usePlano';
 import { supabase } from '../supabaseClient';
+import { CHECKOUT_PLUS } from '../constants/checkout';
 
 // Campanha temporária: BLACK DAS BLACKS, válida até 30/11/2026.
 const CAMPANHA_VITALICIO_ATIVA = true;
@@ -90,10 +91,20 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     setAberto(false);
   };
 
-  // Recusar fecha somente o pop-up; a campanha volta a aparecer no próximo dia.
+  // Ao recusar o vitalício, apresenta imediatamente a alternativa mensal de R$ 47.
   const recusarBlackFriday = () => {
-    registrarEvento('recusou_black_das_blacks');
+    registrarEvento('dispensou');
     setAberto(false);
+    setOfertaMensalAberta(true);
+  };
+
+  const abrirCheckoutMensal = () => {
+    registrarEvento('clicou_plus');
+    if (!CHECKOUT_PLUS) {
+      console.error('Checkout do Plus não configurado. Verifique VITE_CHECKOUT_PLUS.');
+      return;
+    }
+    window.open(CHECKOUT_PLUS, '_blank', 'noopener,noreferrer');
   };
 
   const fecharOfertaMensal = () => {
@@ -102,7 +113,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
   };
 
   const abrirCheckout = () => {
-    registrarEvento('clicou_vitalicio_97');
+    registrarEvento('clicou_vitalicio');
     window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer');
   };
 
