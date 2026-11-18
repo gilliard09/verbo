@@ -192,9 +192,9 @@ export async function gerarCertificado({
   const qr = await gerarImagemQr(pdf, urlValidacao);
 
   // Posições medidas sobre o modelo original; todas são reduzidas na mesma proporção do fundo.
-  desenharImagem(page, titulo, 294, 900);
-  desenharImagem(page, certificacao, 344, 1055);
-  desenharImagem(page, data, 420, 1270);
+  desenharImagem(page, titulo, 294, 970);
+  desenharImagem(page, certificacao, 344, 1080);
+  desenharImagem(page, data, 420, 1280);
   page.drawImage(qr, {
     x: 1890 * SCALE,
     y: A4_HEIGHT - ((1268 + 285) * SCALE),
