@@ -20,7 +20,6 @@ import { usePlano } from '../hooks/usePlano';
 import { importarArquivoSermao } from '../lib/importarSermao';
 
 const PALAVRAS_POR_MINUTO = 120;
-const AUTO_SAVE_DELAY     = 30000;
 const RASCUNHO_KEY  = (id) => `verbo_rascunho_${id  || 'novo'}`;
 const HISTORICO_KEY = (id) => `verbo_historico_${id || 'novo'}`;
 
