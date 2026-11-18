@@ -293,19 +293,8 @@ const Editor = () => {
   const isApplyingEditorContentRef = useRef(false);
   const keyboardOpen = useKeyboardInset();
 
-  // Mantém o scroll nativo do documento no iOS sem bloquear html/body.
-  useEffect(() => {
-    const body = document.body;
-    const previousOverscroll = body.style.overscrollBehaviorY;
-    const previousMomentum = body.style.webkitOverflowScrolling;
-    body.style.overscrollBehaviorY = 'contain';
-    body.style.webkitOverflowScrolling = 'touch';
-    return () => {
-      body.style.overscrollBehaviorY = previousOverscroll;
-      body.style.webkitOverflowScrolling = previousMomentum;
-    };
-  }, []);
-
+  // O documento usa a rolagem nativa do navegador. Não criamos um scroll
+  // interno nem alteramos o overscroll global do body.
   // ── Tipo via URL ─────────────────────────────────────────────────────────
   const params = new URLSearchParams(location.search);
   const tipo   = params.get('tipo');
@@ -334,6 +323,7 @@ const Editor = () => {
   const [importando, setImportando] = useState(false);
   const [previewImportacao, setPreviewImportacao] = useState(null);
   const [autoSaveAtivo, setAutoSaveAtivo] = useState(false);
+  const [, setSelectionRevision] = useState(0);
   const autoSaveRef = useRef(null);
   const draftReadyRef = useRef(false);
   const draftKeyRef = useRef(null);
@@ -364,30 +354,41 @@ const Editor = () => {
       transformPastedHTML: (html) => {
         if (typeof DOMParser === 'undefined') return html;
         const pasted = new DOMParser().parseFromString(html, 'text/html');
-        return '<p>' + escapeHtml(pasted.body.textContent || '').replace(/\n/g, '<br>') + '</p>';
+
+        // Mantém o texto e as quebras de parágrafo, sem importar estilos,
+        // fontes ou estruturas estranhas de páginas e editores externos.
+        const toPlainText = (node) => {
+          if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+          if (node.nodeType !== Node.ELEMENT_NODE) return '';
+          const tag = node.tagName.toLowerCase();
+          if (tag === 'br') return '\n';
+          const children = Array.from(node.childNodes).map(toPlainText).join('');
+          if (tag === 'li') return '- ' + children.trim() + '\n';
+          if (['p', 'div', 'section', 'article', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
+            return children.trimEnd() + '\n\n';
+          }
+          return children;
+        };
+
+        const plain = toPlainText(pasted.body)
+          .replace(/[ \\t]+\\n/g, '\\n')
+          .replace(/\\n{3,}/g, '\\n\\n')
+          .trim();
+        if (!plain) return '<p></p>';
+        return plain.split('\\n').map((line) =>
+          line ? '<p>' + escapeHtml(line) + '</p>' : '<p></p>'
+        ).join('');
       },
+      transformPastedText: (text) => text.replace(/\\r\\n?/g, '\\n'),
     },
     onUpdate: ({ editor: activeEditor }) => {
       if (!isApplyingEditorContentRef.current) {
         setConteudo(editorHtmlToMarkdown(activeEditor.getHTML()));
       }
     },
-    onSelectionUpdate: () => {
-      requestAnimationFrame(() => {
-        const selection = window.getSelection();
-        if (!selection?.rangeCount) return;
-        const rect = selection.getRangeAt(0).getBoundingClientRect();
-        const viewport = window.visualViewport;
-        const visibleTop = viewport?.offsetTop || 0;
-        const visibleBottom = (viewport ? viewport.offsetTop + viewport.height : window.innerHeight) - 84;
-        if (rect.bottom > visibleBottom || rect.top < visibleTop + 12) {
-          const delta = rect.bottom > visibleBottom
-            ? rect.bottom - visibleBottom + 18
-            : rect.top - visibleTop - 18;
-          window.scrollBy({ top: delta, behavior: 'auto' });
-        }
-      });
-    },
+    // Atualiza apenas o estado visual da toolbar. A rolagem do cursor fica
+    // sob controle do Safari, evitando disputas com o teclado do iOS.
+    onSelectionUpdate: () => setSelectionRevision((revision) => revision + 1),
   });
 
   // Sincroniza carregamento, importação e restauração de histórico sem mudar
@@ -1080,7 +1081,7 @@ Oração:`
       </div>
 
       {/* Documento único: título, referência e texto compartilham o scroll da página */}
-      <main className="px-6 pt-5 pb-6 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <main className="px-6 pt-5 pb-6">
         <input type="text" placeholder="Título da pregação..."
           className="w-full text-[26px] leading-tight font-bold tracking-tight border-none outline-none mb-3 placeholder:text-slate-200 focus:ring-0 text-slate-900"
           value={titulo} onChange={e => setTitulo(e.target.value)} />
@@ -1097,7 +1098,7 @@ Oração:`
         <div className="flex items-center gap-2 mb-5 text-[#4C1D95] bg-purple-50/80 px-3 py-2.5 rounded-xl">
           <Book size={16} className="shrink-0" />
           <input type="text" placeholder="Referência bíblica (ex.: João 3:16)"
-            className="text-sm font-semibold border-none outline-none w-full bg-transparent focus:ring-0 placeholder:text-purple-300"
+            className="text-base font-semibold border-none outline-none w-full bg-transparent focus:ring-0 placeholder:text-purple-300"
             value={referencia} onChange={e => setReferencia(e.target.value)} />
         </div>
 
