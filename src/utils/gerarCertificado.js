@@ -183,9 +183,6 @@ export async function gerarCertificado({
   const curso = String(nomeCurso || '').trim();
   const urlValidacao = `https://appverbo.com.br/verificar?codigo=${encodeURIComponent(codigoValidacao)}`;
 
-  const titulo = await textoImagem(pdf, curso, {
-    tamanho: 68, peso: 500, largura: 1300, alturaLinha: 1.18, alinhamento: 'left',
-  });
   const certificacao = await textoRicoImagem(pdf, [
     [
       { texto: 'A ', peso: 500 },
@@ -210,9 +207,10 @@ export async function gerarCertificado({
   // Coordenadas no arquivo-base: texto organizado no eixo esquerdo/direito
   // e QR dimensionado para caber dentro do retângulo de validação.
   const eixoDireitoTexto = 1235;
-  desenharImagem(page, titulo, 270, 680);
-  desenharImagem(page, certificacao, eixoDireitoTexto - certificacao.largura, 755);
-  desenharImagem(page, data, eixoDireitoTexto - data.largura, 895);
+  // O título do curso foi removido. A certificação e a data ficam abaixo
+  // da palavra CERTIFICADO, mantendo a borda direita no mesmo eixo visual.
+  desenharImagem(page, certificacao, eixoDireitoTexto - certificacao.largura, 790);
+  desenharImagem(page, data, eixoDireitoTexto - data.largura, 930);
   page.drawImage(qr, {
     x: 1878 * SCALE_X,
     y: A4_HEIGHT - ((1250 + 300) * SCALE_Y),
