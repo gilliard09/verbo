@@ -100,3 +100,145 @@
     font-size: 17px;
   }
 }
+
+/* ─── Verbo Motion System ─────────────────────────────────────────────────── */
+.verbo-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+  background: #6D28D9;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 220ms ease, visibility 0s linear 0s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.verbo-splash.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 220ms ease, visibility 0s linear 220ms;
+}
+
+.verbo-splash-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(-4px);
+}
+
+.verbo-splash-mark {
+  display: block;
+  width: clamp(88px, 25vw, 116px);
+  height: auto;
+  overflow: visible;
+}
+
+.verbo-splash-page {
+  transform-box: fill-box;
+  backface-visibility: hidden;
+}
+
+.verbo-splash-page-left {
+  transform-origin: right bottom;
+  animation: verbo-page-open-left 620ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.verbo-splash-page-right {
+  transform-origin: left bottom;
+  animation: verbo-page-open-right 620ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.verbo-splash-wordmark {
+  margin-top: 17px;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: .22em;
+  padding-left: .22em;
+  opacity: 0;
+  transform: translateY(7px);
+  animation: verbo-wordmark-in 360ms 420ms ease-out forwards;
+}
+
+.verbo-splash-tagline {
+  margin-top: 7px;
+  color: rgba(255,255,255,.78);
+  font-family: Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .025em;
+  opacity: 0;
+  animation: verbo-wordmark-in 300ms 560ms ease-out forwards;
+}
+
+@keyframes verbo-page-open-left {
+  from { opacity: .35; transform: perspective(500px) rotateY(-88deg) scale(.94); }
+  to { opacity: 1; transform: perspective(500px) rotateY(0) scale(1); }
+}
+
+@keyframes verbo-page-open-right {
+  from { opacity: .35; transform: perspective(500px) rotateY(88deg) scale(.94); }
+  to { opacity: 1; transform: perspective(500px) rotateY(0) scale(1); }
+}
+
+@keyframes verbo-wordmark-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.verbo-route-enter {
+  animation: verbo-route-in 220ms ease-out both;
+}
+
+@keyframes verbo-route-in {
+  from { opacity: .72; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Resposta tátil visual e foco acessível para controles interativos. */
+button,
+[role="button"],
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button:not(:disabled):active,
+[role="button"]:active,
+a:active {
+  transform: scale(.985);
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #6D28D9;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verbo-splash *,
+  .verbo-route-enter {
+    animation: none !important;
+  }
+
+  .verbo-splash,
+  .verbo-splash.is-hidden {
+    transition: none;
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:active,
+  a:active {
+    transform: none;
+  }
+}
+
