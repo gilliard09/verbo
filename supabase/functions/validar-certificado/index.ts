@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
 
     const { data, error } = await admin
       .from("certificates")
-      .select("verification_code, student_name, course_name, completion_date, issued_at, status")
+      .select("verification_code, student_name, course_name, completion_date, issued_at, status, academic_history")
       .eq("verification_code", codigo)
       .maybeSingle();
 
