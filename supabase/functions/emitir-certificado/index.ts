@@ -21,10 +21,10 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
   });
 
 
-async function buildAcademicHistory(admin: ReturnType<typeof createClient>, userId: string, cursoId: string, subjectIds: string[]) {
+async function buildAcademicHistory(admin: ReturnType<typeof createClient>, userId: string, cursoId: string) {
   const { data: subjects, error: subjectsError } = await admin
     .from("materias")
-    .select("id, titulo, ordem")
+    .select("id, titulo, descricao, ordem, created_at")
     .eq("curso_id", cursoId)
     .order("ordem", { ascending: true });
   if (subjectsError) throw subjectsError;
@@ -47,7 +47,7 @@ async function buildAcademicHistory(admin: ReturnType<typeof createClient>, user
   const completed = new Set((progress || []).filter((item) => item.concluida_em).map((item) => item.aula_id));
   const { data: evaluations, error: evaluationsError } = await admin
     .from("avaliacoes")
-    .select("id, materia_id, titulo, nota_minima")
+    .select("id, materia_id, titulo, descricao, nota_minima, ativa, created_at")
     .in("materia_id", ids)
     .order("created_at", { ascending: true });
   if (evaluationsError) throw evaluationsError;
@@ -72,14 +72,22 @@ async function buildAcademicHistory(admin: ReturnType<typeof createClient>, user
     const subjectLessons = (lessons || []).filter((lesson) => lesson.materia_id === subject.id);
     const subjectEvaluations = (evaluations || []).filter((evaluation) => evaluation.materia_id === subject.id);
     return {
+      subject_id: subject.id,
       title: subject.titulo,
+      description: subject.descricao ?? null,
+      order: subject.ordem,
+      created_at: subject.created_at,
       lessons_completed: subjectLessons.filter((lesson) => completed.has(lesson.id)).length,
       lessons_total: subjectLessons.length,
       assessments: subjectEvaluations.map((evaluation) => {
         const attempt = latestAttempt.get(evaluation.id);
         return {
+          assessment_id: evaluation.id,
           title: evaluation.titulo,
+          description: evaluation.descricao ?? null,
           minimum_grade: evaluation.nota_minima,
+          active: evaluation.ativa,
+          created_at: evaluation.created_at,
           status: attempt ? "completed" : "not_taken",
           grade: attempt?.nota ?? null,
           passed: attempt?.aprovado ?? null,
@@ -89,7 +97,7 @@ async function buildAcademicHistory(admin: ReturnType<typeof createClient>, user
         };
       }),
     };
-  }).filter((subject) => subject.lessons_total > 0);
+  });
 }
 
 Deno.serve(async (req: Request) => {
@@ -201,7 +209,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Congela o histórico acadêmico no momento da emissão.
-    const academicHistory = await buildAcademicHistory(admin, userId, cursoId, subjectIds);
+    const academicHistory = await buildAcademicHistory(admin, userId, cursoId);
 
     const payload = {
       academic_history: academicHistory,
