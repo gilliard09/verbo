@@ -83,7 +83,7 @@ function configurarTexto(ctx, peso, tamanho) {
 }
 
 function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
-  const palavras = String(texto || '').trim().split(/\\s+/).filter(Boolean);
+  const palavras = String(texto || '').trim().split(/\s+/).filter(Boolean);
   if (!palavras.length) return { linhas: [], tamanho: tamanhoInicial };
 
   // A medição e a largura usam a mesma escala lógica (sem multiplicar por RENDER_SCALE).
@@ -189,7 +189,7 @@ async function criarLinhaRica(pdf, trechos, { tamanho = TEXTO_FONT_SIZE, largura
   // Converte os trechos em palavras mantendo o peso tipográfico de cada trecho.
   const palavras = [];
   trechos.forEach(trecho => {
-    const partes = String(trecho.texto || '').trim().split(/\\s+/).filter(Boolean);
+    const partes = String(trecho.texto || '').trim().split(/\s+/).filter(Boolean);
     partes.forEach((palavra, index) => {
       palavras.push({
         texto: palavra,
