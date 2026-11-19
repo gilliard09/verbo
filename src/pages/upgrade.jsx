@@ -50,7 +50,7 @@ const Upgrade = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const motivo = searchParams.get('motivo');
-  const { plano, isEssencial, isPlus, isAssinante } = usePlano();
+  const { plano, isEssencial, isPlus } = usePlano();
   const [planoSelecionado, setPlanoSelecionado] = useState('plus');
   const [emailUsuario, setEmailUsuario] = useState('');
 
