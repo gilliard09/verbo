@@ -83,7 +83,7 @@ function configurarTexto(ctx, peso, tamanho) {
 }
 
 function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
-  const palavras = String(texto).trim().split(/\\s+/);
+  const palavras = String(texto).trim().split(/\s+/);
   let tamanho = tamanhoInicial;
 
   while (tamanho >= CURSO_MIN_FONT_SIZE) {
@@ -208,14 +208,14 @@ async function criarLinhaRica(pdf, trechos, { tamanho = TEXTO_FONT_SIZE, largura
 
 function formatarDataExtenso(valor) {
   const entrada = String(valor || '').trim();
-  const iso = entrada.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
+  const iso = entrada.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
   if (iso) {
     const data = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
     return `${data.getDate()} de ${data.toLocaleDateString('pt-BR', { month: 'long' })} de ${data.getFullYear()}.`;
   }
 
-  const semPonto = entrada.replace(/[.\\s]+$/, '');
+  const semPonto = entrada.replace(/[.\s]+$/, '');
   return semPonto ? `${semPonto}.` : '';
 }
 
