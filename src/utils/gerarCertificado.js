@@ -147,7 +147,7 @@ async function criarImagemCurso(pdf, nomeCurso) {
     medir,
     String(nomeCurso || '').trim().toLocaleLowerCase('pt-BR'),
     CURSO_MAX_WIDTH * RENDER_SCALE,
-    CURSO_FONT_SIZE * RENDER_SCALE,
+    CURSO_FONT_SIZE,
   );
 
   const largura = CURSO_MAX_WIDTH;
