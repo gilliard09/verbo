@@ -857,7 +857,7 @@ Oração:`
         // Limite de plano é uma regra de negócio, não uma falha de conexão.
         // Não colocamos esse sermão na fila offline para evitar tentativas
         // repetidas de sincronização que jamais poderão ser concluídas.
-        if (error?.code === 'P0001' || /limite de \\d+ sermões/i.test(error?.message || '')) {
+        if (error?.code === 'P0001' || /limite de \d+ sermões/i.test(error?.message || '')) {
           throw error;
         }
         // Falhas de rede continuam usando o fluxo offline existente.
