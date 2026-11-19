@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { QRCodeSVG } from 'qrcode.react';
 import { PDFDocument } from 'pdf-lib';
 
-const MODELO_URL = 'https://auuancsrpqaununsuigy.supabase.co/storage/v1/object/public/materiais/modelo%20certificado.pdf';
+const MODELO_URL = 'https://auuancsrpqaununsuigy.supabase.co/storage/v1/object/public/materiais/modelo-certificado-v2.pdf';
 
 // Sistema de coordenadas da arte de referência. Todas as posições são proporcionais.
 const BASE_WIDTH = 2048;
@@ -337,7 +337,7 @@ export async function gerarCertificado({
   await carregarPoppins();
 
   // Única origem do fundo: arquivo oficial em branco. Nunca lê URL de certificado emitido.
-  const resposta = await fetch(MODELO_URL);
+  const resposta = await fetch(MODELO_URL, { cache: 'no-store' });
   if (!resposta.ok) throw new Error('Não foi possível carregar o modelo oficial do certificado.');
   const modelo = await resposta.arrayBuffer();
 
