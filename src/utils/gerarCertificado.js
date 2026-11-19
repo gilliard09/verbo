@@ -21,12 +21,12 @@ const CURSO_X = BASE_WIDTH * 0.112;
 const CURSO_TOP = BASE_HEIGHT * 0.16;
 const CURSO_MAX_WIDTH = BASE_WIDTH * 0.28;
 const CURSO_FONT_SIZE = 68;
-const CURSO_MIN_FONT_SIZE = 18;
+const CURSO_MIN_FONT_SIZE = Math.round(CURSO_FONT_SIZE * 0.70); // mínimo de 70% do tamanho original.
 const CURSO_LINE_HEIGHT = 1.0;
 
 // Constantes do parágrafo: x em %, e centros verticais em % da altura.
 const TEXTO_X = BASE_WIDTH * 0.112;
-const TEXTO_MAX_WIDTH = BASE_WIDTH * 0.76; // 76% da largura total da arte, iniciando em x=11,2%.
+const TEXTO_MAX_WIDTH = Math.min(BASE_WIDTH * 0.76, BASE_WIDTH * (0.80 - 0.112 - 0.005)); // até 76%, limitado à borda esquerda do QR com 0,5% de respiro.
 const TEXTO_FONT_SIZE = 49;
 const LINHA_1_CENTER_Y = BASE_HEIGHT * 0.594;
 const LINHA_2_CENTER_Y = BASE_HEIGHT * 0.626;
@@ -108,8 +108,8 @@ function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
     }
   }
 
-  // Não corta o nome: se necessário, reduz até caber em no máximo duas linhas.
-  // O limite inferior é pequeno de propósito para acomodar títulos extensos.
+  // Mantém o mínimo de 70%: não trunca nem reduz abaixo da especificação.
+  // Nomes excepcionalmente longos continuam íntegros; a validação abaixo evita corte silencioso.
   let tamanho = CURSO_MIN_FONT_SIZE;
   configurarTexto(ctx, 500, tamanho);
   const linhas = [];
@@ -126,7 +126,7 @@ function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
   if (linha) linhas.push(linha);
 
   // Um título com palavra isolada muito longa também é ajustado, nunca truncado.
-  while (linhas.length > 2 && tamanho > 10) {
+  while (linhas.length > 2 && tamanho > CURSO_MIN_FONT_SIZE) {
     tamanho -= 1;
     configurarTexto(ctx, 500, tamanho);
     linhas.length = 0;
@@ -141,6 +141,10 @@ function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
       }
     }
     if (linha) linhas.push(linha);
+  }
+
+  if (linhas.length > 2) {
+    throw new Error('O nome do curso é longo demais para caber em duas linhas com a fonte mínima de 70%. Ajuste o nome do curso para emitir o certificado.');
   }
 
   return { linhas, tamanho };
