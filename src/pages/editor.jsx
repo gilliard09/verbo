@@ -306,10 +306,15 @@ const Editor = () => {
   // aparecendo pra quem já é assinante Essencial. `isAssinante` (Essencial OU
   // Plus) é o conceito certo pro fluxo de degraus (gratuito → pagante).
   // `isEssencial` especificamente é usado agora pro convite Essencial → Plus.
-  const { isPlus, isEssencial, isAssinante } = usePlano();
-  const podeCreiarSermao = true;
-  const sermoesRestantes = null;
-  const percentualUso    = 0;
+  const {
+    isPlus,
+    isEssencial,
+    isAssinante,
+    podeCreiarSermao,
+    limiteSermoes,
+    totalSermoes,
+    loading: planoCarregando,
+  } = usePlano();
 
   // NOVO: um único estado cobre as duas famílias de modal (degrau do
   // usuário gratuito e convite Essencial→Plus) — { aberto, tipo, degrau }
@@ -746,6 +751,11 @@ Oração:`
   // ── Salvar ─────────────────────────────────────────────────────────────────
   async function salvar() {
     if (!titulo.trim()) { mostrarToast('Insira um título para salvar.', 'erro'); return; }
+    if (!id && !planoCarregando && !podeCreiarSermao) {
+      mostrarToast(`Você atingiu o limite de ${limiteSermoes} sermões do seu plano. Faça upgrade para continuar.`, 'erro', 6000);
+      navigate('/upgrade?motivo=limite_sermoes');
+      return;
+    }
     setLoading(true);
     mostrarToast('Salvando…', 'info', 30000);
 
@@ -788,6 +798,8 @@ Oração:`
           const data = await criarSermaoIdempotente(dadosSermao, user.id, remoteId);
           res = { data, error: null };
         }
+
+        if (res.error) throw res.error;
 
         if (!res.error) {
           const idFinal = id || res.data?.id;
@@ -842,8 +854,14 @@ Oração:`
 
           setTimeout(() => navigate('/'), 1200);
         }
-      } catch {
-        // Rede indisponível — salva offline abaixo
+      } catch (error) {
+        // Limite de plano é uma regra de negócio, não uma falha de conexão.
+        // Não colocamos esse sermão na fila offline para evitar tentativas
+        // repetidas de sincronização que jamais poderão ser concluídas.
+        if (error?.code === 'P0001' || /limite de \\d+ sermões/i.test(error?.message || '')) {
+          throw error;
+        }
+        // Falhas de rede continuam usando o fluxo offline existente.
       }
 
       if (!salvouOnline) {
@@ -979,7 +997,8 @@ Oração:`
   const varianteModalAtual = modalUpgrade.tipo === 'fundador' ? 'fundador' : `degrau_${modalUpgrade.degrau}`;
 
   // ── Bloqueio de criação no limite ──────────────────────────────────────────
-  if (!id && !podeCreiarSermao) {
+  if (!id && !planoCarregando && !podeCreiarSermao) {
+    const nomePlanoAtual = isEssencial ? 'Essencial' : 'gratuito';
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center gap-5">
         <div className="w-16 h-16 bg-purple-50 rounded-[24px] flex items-center justify-center">
@@ -988,7 +1007,7 @@ Oração:`
         <div>
           <h2 className="font-black text-xl text-slate-800 mb-2">Limite de sermões atingido</h2>
           <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
-            Você está no plano gratuito.. Faça upgrade para ter sermões ilimitados.
+            Você atingiu o limite de {limiteSermoes} sermões do plano {nomePlanoAtual}. Faça upgrade para continuar criando mensagens.
           </p>
         </div>
         <button onClick={() => navigate('/upgrade?motivo=limite_sermoes')}
