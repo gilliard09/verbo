@@ -21,12 +21,12 @@ const CURSO_X = BASE_WIDTH * 0.112;
 const CURSO_TOP = BASE_HEIGHT * 0.16;
 const CURSO_MAX_WIDTH = BASE_WIDTH * 0.28;
 const CURSO_FONT_SIZE = 68;
-const CURSO_MIN_FONT_SIZE = 44;
+const CURSO_MIN_FONT_SIZE = 18;
 const CURSO_LINE_HEIGHT = 1.0;
 
 // Constantes do parágrafo: x em %, e centros verticais em % da altura.
 const TEXTO_X = BASE_WIDTH * 0.112;
-const TEXTO_MAX_WIDTH = BASE_WIDTH * 0.888;
+const TEXTO_MAX_WIDTH = BASE_WIDTH * 0.76; // 76% da largura total da arte, iniciando em x=11,2%.
 const TEXTO_FONT_SIZE = 49;
 const LINHA_1_CENTER_Y = BASE_HEIGHT * 0.594;
 const LINHA_2_CENTER_Y = BASE_HEIGHT * 0.626;
@@ -83,10 +83,11 @@ function configurarTexto(ctx, peso, tamanho) {
 }
 
 function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
-  const palavras = String(texto).trim().split(/\s+/);
-  let tamanho = tamanhoInicial;
+  const palavras = String(texto || '').trim().split(/\\s+/).filter(Boolean);
+  if (!palavras.length) return { linhas: [], tamanho: tamanhoInicial };
 
-  while (tamanho >= CURSO_MIN_FONT_SIZE) {
+  // A medição e a largura usam a mesma escala lógica (sem multiplicar por RENDER_SCALE).
+  for (let tamanho = tamanhoInicial; tamanho >= CURSO_MIN_FONT_SIZE; tamanho -= 1) {
     configurarTexto(ctx, 500, tamanho);
     const linhas = [];
     let linha = '';
@@ -102,13 +103,15 @@ function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
     }
     if (linha) linhas.push(linha);
 
-    if (linhas.length <= 2 && linhas.every((item) => ctx.measureText(item).width <= larguraMaxima)) {
+    if (linhas.length <= 2 && linhas.every(item => ctx.measureText(item).width <= larguraMaxima)) {
       return { linhas, tamanho };
     }
-    tamanho -= 1;
   }
 
-  configurarTexto(ctx, 500, CURSO_MIN_FONT_SIZE);
+  // Não corta o nome: se necessário, reduz até caber em no máximo duas linhas.
+  // O limite inferior é pequeno de propósito para acomodar títulos extensos.
+  let tamanho = CURSO_MIN_FONT_SIZE;
+  configurarTexto(ctx, 500, tamanho);
   const linhas = [];
   let linha = '';
   for (const palavra of palavras) {
@@ -116,12 +119,14 @@ function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
     if (linha && ctx.measureText(tentativa).width > larguraMaxima) {
       linhas.push(linha);
       linha = palavra;
-    } else linha = tentativa;
+    } else {
+      linha = tentativa;
+    }
   }
   if (linha) linhas.push(linha);
 
-  // Evita uma terceira linha: a fonte é reduzida até que o nome caiba em duas.
-  while (linhas.length > 2 && tamanho > 28) {
+  // Um título com palavra isolada muito longa também é ajustado, nunca truncado.
+  while (linhas.length > 2 && tamanho > 10) {
     tamanho -= 1;
     configurarTexto(ctx, 500, tamanho);
     linhas.length = 0;
@@ -131,32 +136,38 @@ function quebrarEmDuasLinhas(ctx, texto, larguraMaxima, tamanhoInicial) {
       if (linha && ctx.measureText(tentativa).width > larguraMaxima) {
         linhas.push(linha);
         linha = palavra;
-      } else linha = tentativa;
+      } else {
+        linha = tentativa;
+      }
     }
     if (linha) linhas.push(linha);
   }
-  return { linhas: linhas.slice(0, 2), tamanho };
+
+  return { linhas, tamanho };
 }
 
 async function criarImagemCurso(pdf, nomeCurso) {
-  const canvas = document.createElement('canvas');
-  const medir = canvas.getContext('2d');
+  const canvasMedida = document.createElement('canvas');
+  const medir = canvasMedida.getContext('2d');
   if (!medir) throw new Error('Não foi possível preparar o nome do curso.');
 
   const { linhas, tamanho } = quebrarEmDuasLinhas(
     medir,
     String(nomeCurso || '').trim().toLocaleLowerCase('pt-BR'),
-    CURSO_MAX_WIDTH * RENDER_SCALE,
+    CURSO_MAX_WIDTH,
     CURSO_FONT_SIZE,
   );
 
   const largura = CURSO_MAX_WIDTH;
   const alturaLinha = tamanho * CURSO_LINE_HEIGHT;
   const altura = Math.max(alturaLinha, linhas.length * alturaLinha);
+  const canvas = document.createElement('canvas');
   canvas.width = Math.ceil(largura * RENDER_SCALE);
   canvas.height = Math.ceil(altura * RENDER_SCALE);
 
   const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Não foi possível desenhar o nome do curso.');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.scale(RENDER_SCALE, RENDER_SCALE);
   configurarTexto(ctx, 500, tamanho);
   linhas.forEach((linha, index) => {
@@ -175,28 +186,77 @@ async function criarLinhaRica(pdf, trechos, { tamanho = TEXTO_FONT_SIZE, largura
   const medir = canvasMedida.getContext('2d');
   if (!medir) throw new Error('Não foi possível preparar os textos do certificado.');
 
-  let tamanhoFinal = tamanho;
-  const medirLinha = () => trechos.reduce((total, trecho) => {
-    configurarTexto(medir, trecho.peso, tamanhoFinal * RENDER_SCALE);
-    return total + medir.measureText(trecho.texto).width;
-  }, 0);
+  // Converte os trechos em palavras mantendo o peso tipográfico de cada trecho.
+  const palavras = [];
+  trechos.forEach(trecho => {
+    const partes = String(trecho.texto || '').trim().split(/\\s+/).filter(Boolean);
+    partes.forEach((palavra, index) => {
+      palavras.push({
+        texto: palavra,
+        peso: trecho.peso,
+        espacoAntes: palavras.length > 0,
+      });
+    });
+  });
 
-  while (medirLinha() > larguraMaxima * RENDER_SCALE && tamanhoFinal > 36) {
+  let tamanhoFinal = tamanho;
+  let linhas = [];
+  const montarLinhas = () => {
+    const resultado = [];
+    let linha = [];
+    let larguraLinha = 0;
+
+    palavras.forEach(item => {
+      configurarTexto(medir, item.peso, tamanhoFinal);
+      const larguraPalavra = medir.measureText(item.texto).width;
+      const larguraEspaco = item.espacoAntes
+        ? (configurarTexto(medir, 500, tamanhoFinal), medir.measureText(' ').width)
+        : 0;
+      const larguraAdicional = larguraPalavra + larguraEspaco;
+
+      if (linha.length && larguraLinha + larguraAdicional > larguraMaxima) {
+        resultado.push(linha);
+        linha = [];
+        larguraLinha = 0;
+      }
+
+      const espaco = linha.length ? larguraEspaco : 0;
+      linha.push({ ...item, largura: larguraPalavra, espacoAntes: Boolean(espaco), larguraEspaco: espaco });
+      larguraLinha += larguraPalavra + espaco;
+    });
+
+    if (linha.length) resultado.push(linha);
+    return resultado;
+  };
+
+  linhas = montarLinhas();
+  // Evita texto cortado horizontalmente; reduz a fonte se uma palavra isolada exceder a caixa.
+  while (linhas.some(linha => {
+    const larguraLinha = linha.reduce((soma, item) => soma + item.largura + item.larguraEspaco, 0);
+    return larguraLinha > larguraMaxima;
+  }) && tamanhoFinal > 24) {
     tamanhoFinal -= 1;
+    linhas = montarLinhas();
   }
 
-  const altura = tamanhoFinal * 1.35;
+  const alturaLinha = tamanhoFinal * 1.35;
+  const altura = Math.max(alturaLinha, linhas.length * alturaLinha);
   const canvas = document.createElement('canvas');
   canvas.width = Math.ceil(larguraMaxima * RENDER_SCALE);
   canvas.height = Math.ceil(altura * RENDER_SCALE);
   const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Não foi possível desenhar os textos do certificado.');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.scale(RENDER_SCALE, RENDER_SCALE);
 
-  let x = 0;
-  trechos.forEach((trecho) => {
-    configurarTexto(ctx, trecho.peso, tamanhoFinal);
-    ctx.fillText(trecho.texto, x, altura / 2);
-    x += ctx.measureText(trecho.texto).width;
+  linhas.forEach((linha, linhaIndex) => {
+    let x = 0;
+    linha.forEach(item => {
+      configurarTexto(ctx, item.peso, tamanhoFinal);
+      if (x > 0) x += item.larguraEspaco;
+      ctx.fillText(item.texto, x, tamanhoFinal / 2 + linhaIndex * alturaLinha);
+      x += item.largura;
+    });
   });
 
   return {
@@ -272,7 +332,7 @@ export async function gerarCertificado({
 }) {
   await carregarPoppins();
 
-  const resposta = await fetch(MODELO_URL);
+  // Única origem do fundo: arquivo oficial em branco. Nunca lê URL de certificado emitido.\n  const resposta = await fetch(MODELO_URL);
   if (!resposta.ok) throw new Error('Não foi possível carregar o modelo oficial do certificado.');
   const modelo = await resposta.arrayBuffer();
 
