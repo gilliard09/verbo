@@ -50,7 +50,7 @@ const Upgrade = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const motivo = searchParams.get('motivo');
-  const { plano, isFundador, isPlus, isAssinante } = usePlano();
+  const { plano, isEssencial, isPlus, isAssinante } = usePlano();
   const [planoSelecionado, setPlanoSelecionado] = useState('plus');
   const [emailUsuario, setEmailUsuario] = useState('');
 
@@ -74,7 +74,7 @@ const Upgrade = () => {
   }
 
   // Já é Essencial — só mostra opção de upgrade para Plus
-  if (isFundador) {
+  if (isEssencial) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] pb-12" style={{ fontFamily: "'Poppins', sans-serif" }}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');`}</style>
