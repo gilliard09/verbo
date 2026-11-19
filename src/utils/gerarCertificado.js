@@ -5,7 +5,7 @@ import { PDFDocument } from 'pdf-lib';
 
 // ATENÇÃO: sempre que trocar o PDF do modelo, suba com um nome NOVO (v3, v4...)
 // para evitar cache da CDN do Supabase.
-const MODELO_URL = 'https://auuancsrpqaununsuigy.supabase.co/storage/v1/object/public/materiais/modelo-certificado-v2.pdf';
+const MODELO_URL = 'https://auuancsrpqaununsuigy.supabase.co/storage/v1/object/public/materiais/modelo-certificado-v2';
 
 // Sistema de coordenadas da arte de referência. Todas as posições são proporcionais.
 const BASE_WIDTH = 2048;
