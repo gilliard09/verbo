@@ -332,7 +332,8 @@ export async function gerarCertificado({
 }) {
   await carregarPoppins();
 
-  // Única origem do fundo: arquivo oficial em branco. Nunca lê URL de certificado emitido.\n  const resposta = await fetch(MODELO_URL);
+  // Única origem do fundo: arquivo oficial em branco. Nunca lê URL de certificado emitido.
+  const resposta = await fetch(MODELO_URL);
   if (!resposta.ok) throw new Error('Não foi possível carregar o modelo oficial do certificado.');
   const modelo = await resposta.arrayBuffer();
 
