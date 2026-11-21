@@ -215,7 +215,7 @@ const Upgrade = () => {
               </div>
               <div>
                 <p className="font-black text-slate-800">Plano Essencial</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">10 sermões por mês + recursos intermediários + Modo Púlpito.</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Até 20 sermões salvos + recursos intermediários + Modo Púlpito.</p>
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-4">
                   <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-[#4C1D95]">R$ 19,90</span>
                   <span className="text-xs text-gray-400 font-bold">/mês para sempre</span>
@@ -259,7 +259,7 @@ const Upgrade = () => {
               planoSelecionado === 'anual' ? 'border-[#4C1D95] bg-purple-50' : 'border-slate-200 bg-white'
             }`}
           >
-            <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">Black Friday</div>
+            <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">Melhor custo-benefício</div>
             <div className="flex items-start gap-3 pr-2">
               <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${planoSelecionado === 'anual' ? 'border-[#4C1D95] bg-[#4C1D95]' : 'border-slate-300'}`}>
                 {planoSelecionado === 'anual' && <div className="w-2 h-2 bg-white rounded-full" />}
@@ -271,7 +271,7 @@ const Upgrade = () => {
                   <span className="whitespace-nowrap text-[clamp(1.875rem,7vw,2.25rem)] leading-none tracking-tight font-black text-[#4C1D95]">R$ 197</span>
                   <span className="text-xs text-gray-400 font-bold">/ano</span>
                 </div>
-                <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mt-1">R$ 16,42 por mês · economia de R$ 367</p>
+                <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mt-1">Equivalente a R$ 16,42/mês · economia de R$ 367</p>
               </div>
             </div>
           </button>
