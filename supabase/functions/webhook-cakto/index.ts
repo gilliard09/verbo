@@ -27,6 +27,15 @@ const asObject = (value: unknown): JsonObject =>
 const asString = (value: unknown): string =>
   value == null ? '' : String(value)
 
+const obterFimPeriodoPago = (subscription: JsonObject): string | null => {
+  // A API de assinaturas da Cakto documenta next_payment_date como a próxima
+  // data de cobrança. Não usar data.due_date, que pertence ao pedido.
+  const proximaCobranca = asString(subscription.next_payment_date)
+  const timestamp = Date.parse(proximaCobranca)
+  if (!proximaCobranca || !Number.isFinite(timestamp)) return null
+  return new Date(timestamp).toISOString()
+}
+
 const jsonResponse = (body: JsonObject, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -407,19 +416,39 @@ const processarEvento = async (
       return 'Cancelamento recebido; licença vitalícia ativa preservada.'
     }
 
-    const { error: erroRebaixar } = await supabaseClient
+    const fimPeriodoPago = obterFimPeriodoPago(subscription)
+    if (!fimPeriodoPago) {
+      // Sem uma data confiável, não revogar nem conceder acesso indefinido.
+      // O 500 deixa a entrega visível como falha para conferência/reenvio manual.
+      console.error('Cancelamento sem subscription.next_payment_date válido; acesso preservado.')
+      throw new Error('Cancelamento sem data confiável de fim do período pago.')
+    }
+
+    const periodoJaEncerrado = new Date(fimPeriodoPago).getTime() <= Date.now()
+    const atualizacaoPlano = periodoJaEncerrado
+      ? {
+          plano: 'gratuito',
+          cakto_subscription_id: null,
+          plano_expira_em: null,
+          plano_atualizado_em: new Date().toISOString(),
+        }
+      : {
+          // Interrompe a renovação, mas mantém o plano até o fim já pago.
+          plano_expira_em: fimPeriodoPago,
+          plano_atualizado_em: new Date().toISOString(),
+        }
+
+    const { error: erroAtualizarPlano } = await supabaseClient
       .from('profiles')
-      .update({
-        plano: 'gratuito',
-        cakto_subscription_id: null,
-        plano_expira_em: null,
-        plano_atualizado_em: new Date().toISOString(),
-      })
+      .update(atualizacaoPlano)
       .eq('id', perfil.id)
       .eq('cakto_subscription_id', subscriptionId)
 
-    if (erroRebaixar) throw erroRebaixar
-    return 'Assinatura cancelada e acesso correspondente revogado.'
+    if (erroAtualizarPlano) throw erroAtualizarPlano
+
+    return periodoJaEncerrado
+      ? 'Assinatura cancelada; período pago já encerrado e acesso gratuito aplicado.'
+      : 'Renovação cancelada; acesso mantido até o fim do período pago.'
   }
 
   // Atraso, recusa de renovação e pausa não são cancelamentos definitivos.
