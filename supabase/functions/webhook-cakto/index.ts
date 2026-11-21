@@ -143,7 +143,11 @@ const processarEvento = async (
   ]
 
   if (eventosCompra.includes(evento)) {
-    if (data.status && asString(data.status).toLowerCase() !== 'paid') {
+    if (
+      data.status &&
+      asString(data.status).toLowerCase() !== 'paid' &&
+      evento !== 'subscription_late_recovered'
+    ) {
       return 'Pagamento ainda não aprovado; evento ignorado.'
     }
 
