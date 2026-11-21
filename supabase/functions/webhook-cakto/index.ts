@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 const PRODUTO_PLUS = Deno.env.get('CAKTO_PRODUTO_PLUS_ID') ?? ''
+const PRODUTO_ESSENCIAL = Deno.env.get('CAKTO_PRODUTO_ESSENCIAL_ID') ?? '4e2c36c0-586e-4475-8e12-b7c8b2435cee'
 const PRODUTO_FUNDADOR = Deno.env.get('CAKTO_PRODUTO_FUNDADOR_ID') ?? ''
 const PRODUTO_VITALICIO = Deno.env.get('CAKTO_PRODUTO_VITALICIO_ID') ?? ''
 const CAKTO_SECRET = Deno.env.get('CAKTO_WEBHOOK_SECRET') ?? ''
@@ -108,16 +109,17 @@ serve(async (req) => {
         checkoutUrl.includes('/' + OFERTA_VITALICIO_ID)
 
       const ehPlus = !!PRODUTO_PLUS && productId === PRODUTO_PLUS
+      const ehEssencial = !!PRODUTO_ESSENCIAL && productId === PRODUTO_ESSENCIAL
       const ehFundador = !!PRODUTO_FUNDADOR && productId === PRODUTO_FUNDADOR
 
       // Só registra produtos de assinatura do Verbo. Outros produtos Cakto não entram no relatório.
-      if (!ehVitalicio && !ehPlus && !ehFundador) {
+      if (!ehVitalicio && !ehPlus && !ehEssencial && !ehFundador) {
         console.log('Produto Cakto não mapeado para os planos do Verbo; compra ignorada.')
         return jsonResponse({ message: 'Produto não mapeado; evento ignorado.' })
       }
 
-      const planoVenda = ehVitalicio ? 'plus_vitalicio' : ehFundador ? 'fundador' : 'plus'
-      const planoAcesso = ehFundador ? 'fundador' : 'plus'
+      const planoVenda = ehVitalicio ? 'plus_vitalicio' : ehFundador ? 'fundador' : ehEssencial ? 'essencial' : 'plus'
+      const planoAcesso = ehFundador ? 'fundador' : ehEssencial ? 'essencial' : 'plus'
 
       const { data: perfil, error: erroPerfil } = await supabaseClient
         .from('profiles')
