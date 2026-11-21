@@ -2,13 +2,9 @@
 // Hook central que controla acesso por plano em todo o app.
 // Uso: const { plano, isPlus, isFundador, isAssinante, temAcessoCurso, podeCreiarSermao } = usePlano();
 //
-// IMPORTANTE — dois planos pagos, não confundir:
-//   • Fundador (R$9,90): plano de entrada, acesso a ALGUNS benefícios.
-//   • Plus     (R$47):   plano completo, acesso a TODOS os benefícios.
-// `isPlus` é true SÓ para o tier Plus. Para checar "é assinante de
-// qualquer plano pago" (ex: decidir se mostra oferta de upgrade), use
-// `isAssinante`, não `isPlus` — usar isPlus sozinho faz o Fundador cair
-// nos mesmos fluxos de quem nunca assinou nada.
+// Planos atuais: Gratuito (3 sermões), Essencial (20) e Plus (ilimitado).
+// O identificador `fundador` é mantido apenas para compatibilidade com contas antigas.
+// Use `isAssinante` para verificar qualquer plano pago e `isPlus` apenas para o Plus.
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
@@ -58,7 +54,7 @@ export function usePlano() {
   const isAssinante = isEssencial || isPlus;
 
   // Verifica se o plano do usuário dá acesso a um curso específico
-  // curso.plano_minimo: 'fundador' | 'plus' | null (livre para todos os assinantes)
+  // curso.plano_minimo: 'essencial' | 'fundador' (legado) | 'plus' | null
   const temAcessoCurso = (curso) => {
     if (!curso) return false;
     if (isPlus) return true; // plus acessa tudo
