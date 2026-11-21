@@ -13,10 +13,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 
-const LIMITE_SERMOES_GRATUITO = 50;
+const LIMITE_SERMOES_GRATUITO = 3;
+const LIMITE_SERMOES_ESSENCIAL = 20;
 
 export function usePlano() {
-  const [plano, setPlano]        = useState(null); // 'gratuito' | 'fundador' | 'plus'
+  const [plano, setPlano]        = useState(null); // 'gratuito' | 'essencial' | 'plus' (fundador legado)
   const [expira, setExpira]      = useState(null);
   const [totalSermoes, setTotal] = useState(0);
   const [loading, setLoading]    = useState(true);
@@ -51,28 +52,30 @@ export function usePlano() {
 
   useEffect(() => { carregar(); }, [carregar]);
 
-  const isFundador  = plano === 'fundador';
+  const isFundador  = plano === 'fundador'; // compatibilidade com contas antigas
+  const isEssencial = plano === 'essencial' || isFundador;
   const isPlus      = plano === 'plus';
-  const isAssinante = isFundador || isPlus; // qualquer plano pago (Fundador OU Plus)
+  const isAssinante = isEssencial || isPlus;
 
   // Verifica se o plano do usuário dá acesso a um curso específico
   // curso.plano_minimo: 'fundador' | 'plus' | null (livre para todos os assinantes)
   const temAcessoCurso = (curso) => {
     if (!curso) return false;
     if (isPlus) return true; // plus acessa tudo
-    if (isFundador) return !curso.plano_minimo || curso.plano_minimo === 'fundador';
+    if (isEssencial) return !curso.plano_minimo || ['essencial', 'fundador'].includes(curso.plano_minimo);
     return false; // gratuito não acessa nenhum curso
   };
 
-  const limiteSermoes    = LIMITE_SERMOES_GRATUITO;
-  const podeCreiarSermao = isAssinante || totalSermoes < LIMITE_SERMOES_GRATUITO;
-  const percentualUso    = isAssinante ? 0 : Math.min(100, Math.round((totalSermoes / LIMITE_SERMOES_GRATUITO) * 100));
-  const sermoesRestantes = isAssinante ? null : Math.max(0, LIMITE_SERMOES_GRATUITO - totalSermoes);
+  const limiteSermoes = isPlus ? null : isEssencial ? LIMITE_SERMOES_ESSENCIAL : LIMITE_SERMOES_GRATUITO;
+  const podeCreiarSermao = isPlus || totalSermoes < limiteSermoes;
+  const percentualUso = isPlus ? 0 : Math.min(100, Math.round((totalSermoes / limiteSermoes) * 100));
+  const sermoesRestantes = isPlus ? null : Math.max(0, limiteSermoes - totalSermoes);
 
   return {
     plano,
     isPlus,
     isFundador,
+    isEssencial,
     isAssinante,
     temAcessoCurso,
     loading,
