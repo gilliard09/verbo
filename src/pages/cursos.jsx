@@ -132,8 +132,8 @@ const CursosNew = () => {
       });
 
       cursosFormatados.sort((a, b) => {
-        const aAcesso = temAcessoCurso(a) || a.temMatricula;
-        const bAcesso = temAcessoCurso(b) || b.temMatricula;
+        const aAcesso = temAcessoCurso(a) || (a.temMatricula && a.plano_minimo !== 'plus');
+        const bAcesso = temAcessoCurso(b) || (b.temMatricula && b.plano_minimo !== 'plus');
         if (aAcesso && !bAcesso) return -1;
         if (!aAcesso && bAcesso) return 1;
         return 0;
@@ -142,7 +142,7 @@ const CursosNew = () => {
       setCursos(cursosFormatados);
 
       // Calcular stats
-      const cursosAcessiveis = cursosFormatados.filter(c => temAcessoCurso(c) || c.temMatricula);
+      const cursosAcessiveis = cursosFormatados.filter(c => temAcessoCurso(c) || (c.temMatricula && c.plano_minimo !== 'plus'));
       const cursosIniciados = cursosAcessiveis.filter(c => c.aulasFeitas > 0).length;
       const certificados = cursosAcessiveis.filter(c => c.concluido).length;
 
@@ -299,7 +299,7 @@ const CursosNew = () => {
   // ─── Componente: Continue de Onde Parou — card largo tipo "continue watching" ──
   const ContinueDeOndeParou = () => {
     const cursoEmProgresso = cursos.find(
-      c => (temAcessoCurso(c) || c.temMatricula) && c.aulasFeitas > 0 && !c.concluido
+      c => (temAcessoCurso(c) || (c.temMatricula && c.plano_minimo !== 'plus')) && c.aulasFeitas > 0 && !c.concluido
     );
 
     if (!cursoEmProgresso) return null;
@@ -364,7 +364,7 @@ const CursosNew = () => {
 
   // ─── Componente: Fileira de Cursos — scroll horizontal, cards pôster ──────
   const FileiraCursos = () => {
-    const cursosAcessiveis = cursos.filter(c => temAcessoCurso(c) || c.temMatricula);
+    const cursosAcessiveis = cursos.filter(c => temAcessoCurso(c) || (c.temMatricula && c.plano_minimo !== 'plus'));
 
     if (cursosAcessiveis.length === 0) {
       return (
