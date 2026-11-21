@@ -548,7 +548,7 @@ const CursosNew = () => {
             <Sparkles size={16} /> Ver Planos
           </button>
 
-          <p className="text-[10px] text-white/30 font-bold uppercase">A partir de R$9,90/mês</p>
+          <p className="text-[10px] text-white/30 font-bold uppercase">A partir de R$19,90/mês</p>
         </div>
       </div>
     );
