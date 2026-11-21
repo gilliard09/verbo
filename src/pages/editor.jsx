@@ -351,6 +351,7 @@ const Editor = () => {
   const editor = useEditor({
     extensions: [StarterKit, HighlightMark],
     content: '<p></p>',
+    editable: true,
     editorProps: {
       attributes: {
         class: 'verbo-tiptap prose prose-slate max-w-none outline-none',
@@ -1134,7 +1135,14 @@ Oração:`
             value={referencia} onChange={e => setReferencia(e.target.value)} />
         </div>
 
-        <div className="sermon-editor-content text-[18px] leading-[1.75] text-slate-700">
+        <div
+          className="sermon-editor-content text-[18px] leading-[1.75] text-slate-700 min-h-[45vh] cursor-text"
+          onClick={() => {
+            // O espaço vazio abaixo do último parágrafo também ativa o editor.
+            // Se o clique já posicionou o cursor no Tiptap, preservamos a seleção.
+            if (editor && !editor.isFocused) editor.commands.focus('end');
+          }}
+        >
           <EditorContent editor={editor} />
         </div>
 
