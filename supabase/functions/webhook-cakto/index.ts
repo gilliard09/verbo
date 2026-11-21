@@ -95,8 +95,9 @@ const autenticarCakto = async (
     return await validarAssinaturaCakto(rawBody, timestamp, signature, CAKTO_SECRET)
   }
 
-  // Compatibilidade com entregas sem os headers HMAC: valida o secret do corpo.
-  return constantTimeEqual(asString(body.secret), CAKTO_SECRET)
+  // Compatibilidade com entregas sem os headers HMAC e com integrações legadas por header.
+  const secretRecebido = asString(body.secret) || req.headers.get('x-cakto-secret') || ''
+  return constantTimeEqual(secretRecebido, CAKTO_SECRET)
 }
 
 const buscarPerfilPorEmail = async (supabaseClient: ReturnType<typeof createClient>, email: string) => {
