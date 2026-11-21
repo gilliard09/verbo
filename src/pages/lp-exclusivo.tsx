@@ -3,13 +3,18 @@ import {
   ArrowRight, Check, ChevronDown, CirclePlay, Clock3, BookOpen,
   PenTool, Mic2, Wifi, GraduationCap, Star, Quote, Sparkles
 } from 'lucide-react';
+import { CHECKOUT_ESSENCIAL, CHECKOUT_PLUS } from '../constants/checkout';
 
 const CHECKOUTS = {
-  fundador: 'https://pay.cakto.com.br/c8fyhqn_920183',
-  plus: 'https://pay.cakto.com.br/ykwdiud_920168',
+  essencial: CHECKOUT_ESSENCIAL,
+  plus: CHECKOUT_PLUS,
   anual: 'https://pay.cakto.com.br/s9tdarf_1199602',
   vitalicio: 'https://pay.cakto.com.br/zeegt89_920646',
+  vitalicioBlackFriday: 'https://pay.cakto.com.br/mf6mvvs',
 };
+
+const FIM_BLACK_FRIDAY = new Date('2026-12-01T00:00:00-03:00').getTime();
+const BLACK_FRIDAY_ATIVA = Date.now() < FIM_BLACK_FRIDAY;
 
 const DEPOIMENTOS = [
   {
@@ -35,10 +40,10 @@ const DEPOIMENTOS = [
 const FAQS = [
   ['O Verbo substitui meu estudo bíblico?', 'Não. O Verbo é uma ferramenta para ajudar você a organizar seus estudos e sermões. A interpretação responsável das Escrituras, a oração e a preparação continuam sendo parte do trabalho do pregador.'],
   ['Posso usar no celular e no computador?', 'O Verbo foi pensado para acompanhar sua rotina de preparação. Acesse pelo navegador nos dispositivos compatíveis e entre com sua conta.'],
-  ['O que está incluído em cada plano?', 'Os limites e recursos variam conforme o plano. Confira as condições apresentadas no checkout antes de concluir a compra.'],
-  ['Como funciona o plano Fundador?', 'O Fundador custa R$ 9,90 por mês. A cobrança é recorrente conforme as condições informadas no checkout da Cakto.'],
-  ['Como funciona o plano anual?', 'O Plus Anual custa R$ 197 por 12 meses durante a Black Friday. O pagamento e as condições de parcelamento são apresentados no checkout da Cakto.'],
-  ['Como funciona o Vitalício?', 'O Vitalício custa R$ 297 em pagamento único durante a Black Friday e dá acesso ao plano Plus por toda a vida útil da plataforma.'],
+  ['O que está incluído em cada plano?', 'O Gratuito permite criar até 3 sermões. O Essencial oferece 20 sermões por mês e acesso aos cursos Pregação do Zero e Líder 5.0. O Plus libera sermões ilimitados e todos os cursos da Academia Verbo.'],
+  ['Como funciona o plano Essencial?', 'O Essencial custa R$ 19,90 por mês e inclui 20 sermões mensais, Modo Púlpito e acesso aos cursos Pregação do Zero e Líder 5.0.'],
+  ['Como funciona o plano Plus?', 'O Plus mensal custa R$ 47 por mês. Também é possível contratar 12 meses por R$ 197 ou adquirir o acesso vitalício pelo valor regular de R$ 297.'],
+  ['Existe uma oferta de Black Friday?', 'Sim. Até 30/11/2026, o acesso Plus Vitalício está disponível por R$ 97 em pagamento único. Depois do encerramento da campanha, volta a valer o preço regular de R$ 297.'],
   ['Posso cancelar uma assinatura?', 'Para as condições de cancelamento, reembolso e cobrança, consulte os termos apresentados no checkout e as políticas aplicáveis à sua compra.'],
 ];
 
@@ -204,65 +209,75 @@ export default function LpExclusivo() {
               <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Um Verbo para cada momento da sua jornada.</h2>
               <p className="mt-4 leading-7 text-slate-600">Escolha o plano que faz sentido para sua rotina. Confira os detalhes e as condições no checkout antes de finalizar.</p>
             </div>
-            <div className="mt-12 grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-12 grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-5">
               <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
-                <p className="text-xs font-extrabold uppercase tracking-[.15em] text-slate-500">Para começar</p>
-                <h3 className="mt-3 text-2xl font-black">Fundador</h3>
-                <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 9,90</span><span className="text-sm text-slate-500">/mês</span></p>
-                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Uma forma acessível de começar a organizar suas mensagens com o Verbo.</p>
+                <p className="text-xs font-extrabold uppercase tracking-[.15em] text-slate-500">Para conhecer o Verbo</p>
+                <h3 className="mt-3 text-2xl font-black">Gratuito</h3>
+                <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 0</span></p>
+                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Comece a organizar suas mensagens sem pagar nada.</p>
                 <ul className="my-7 space-y-3 text-sm text-slate-700">{[
-                  'Até 50 sermões',
-                  'Editor de sermões com formatação e salvamento automático',
-                  'Modo Púlpito com leitura em tela cheia e ajustes de fonte',
-                  'Bíblia integrada ao editor',
-                  'Assinatura mensal',
-                  'Acesso ao curso Fundamentos da Pregação do Zero',
+                  'Até 3 sermões',
+                  'Editor de sermões',
+                  'Organização básica das mensagens',
                 ].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
-                <CheckoutButton href={CHECKOUTS.fundador} secondary className="mt-auto !border-slate-200 !bg-white !text-[#4C1D95] hover:!bg-violet-50">Assinar Fundador</CheckoutButton>
+                <CheckoutButton href="/login" secondary className="mt-auto !border-slate-200 !bg-white !text-[#4C1D95] hover:!bg-violet-50">Começar grátis</CheckoutButton>
               </article>
 
-              <article className="relative flex flex-col rounded-3xl border-2 border-[#6D28D9] bg-white p-7 shadow-xl shadow-violet-900/10 sm:p-8 lg:-translate-y-2">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#6D28D9] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white">Plano recomendado</div>
-                <p className="mt-2 text-xs font-extrabold uppercase tracking-[.15em] text-[#6D28D9]">Para uso contínuo</p>
-                <h3 className="mt-3 text-2xl font-black">Plus</h3>
-                <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 47,00</span><span className="text-sm text-slate-500">/mês</span></p>
-                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Para quem quer usar o Verbo de forma recorrente na preparação e organização das mensagens.</p>
+              <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+                <p className="text-xs font-extrabold uppercase tracking-[.15em] text-slate-500">Para dar o próximo passo</p>
+                <h3 className="mt-3 text-2xl font-black">Essencial</h3>
+                <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 19,90</span><span className="text-sm text-slate-500">/mês</span></p>
+                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Mais espaço para preparar suas mensagens e desenvolver sua comunicação.</p>
                 <ul className="my-7 space-y-3 text-sm text-slate-700">{[
-                  'Editor de sermões com formatação e salvamento automático',
-                  'Modo Púlpito com leitura em tela cheia e ajustes de fonte',
-                  'Bíblia integrada ao editor',
-                  'Academia Verbo com acesso a todos os cursos e certificados inclusos',
-                  'Acesso offline aos sermões salvos',
-                  'Organização dos sermões e histórico de versões',
-                  'Devocionais',
+                  '20 sermões por mês',
+                  'Recursos intermediários e Modo Púlpito',
+                  'Curso Pregação do Zero',
+                  'Curso Líder 5.0',
+                ].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
+                <CheckoutButton href={CHECKOUTS.essencial || '/login'} secondary className="mt-auto !border-slate-200 !bg-white !text-[#4C1D95] hover:!bg-violet-50">Assinar Essencial</CheckoutButton>
+              </article>
+
+              <article className="relative flex flex-col rounded-3xl border-2 border-[#6D28D9] bg-white p-7 shadow-xl shadow-violet-900/10 sm:p-8">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#6D28D9] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white">Plano completo</div>
+                <p className="mt-2 text-xs font-extrabold uppercase tracking-[.15em] text-[#6D28D9]">Para uso contínuo</p>
+                <h3 className="mt-3 text-2xl font-black">Plus Mensal</h3>
+                <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 47</span><span className="text-sm text-slate-500">/mês</span></p>
+                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Todos os recursos do Verbo para acompanhar sua preparação e o ministério.</p>
+                <ul className="my-7 space-y-3 text-sm text-slate-700">{[
                   'Sermões ilimitados',
+                  'Academia Verbo completa',
+                  'Importação de sermões em PDF e DOCX',
+                  'Acesso offline aos sermões salvos',
                   'Comunidade de pregadores',
                 ].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
-                <CheckoutButton href={CHECKOUTS.plus} secondary className="mt-auto !border-slate-200 !bg-white !text-[#4C1D95] hover:!bg-violet-50">Assinar mensal</CheckoutButton>
+                <CheckoutButton href={CHECKOUTS.plus || '/login'} secondary className="mt-auto !border-slate-200 !bg-white !text-[#4C1D95] hover:!bg-violet-50">Assinar Plus Mensal</CheckoutButton>
               </article>
 
-              <article className="relative flex flex-col rounded-3xl border-2 border-[#6D28D9] bg-white p-7 shadow-lg shadow-violet-900/10 sm:p-8">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#6D28D9] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white">Black Friday</div>
-                <p className="mt-2 text-xs font-extrabold uppercase tracking-[.15em] text-[#6D28D9]">12 meses de acesso</p>
+              <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+                <p className="text-xs font-extrabold uppercase tracking-[.15em] text-[#6D28D9]">12 meses de acesso</p>
                 <h3 className="mt-3 text-2xl font-black">Plus Anual</h3>
                 <p className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-black tracking-tight">R$ 197</span><span className="text-sm text-slate-500">/ano</span></p>
                 <p className="mt-1 text-xs font-semibold text-emerald-700">Equivale a R$ 16,42 por mês</p>
-                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Doze meses de acesso ao Plus por um valor especial de Black Friday.</p>
+                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">Doze meses de acesso completo ao Plus em uma única contratação anual.</p>
                 <ul className="my-7 space-y-3 text-sm text-slate-700">{['Todos os recursos do Plus', 'Academia Verbo completa', 'Sermões ilimitados', 'Pagamento anual, sem cobrança mensal'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-emerald-600" />{t}</li>)}</ul>
                 <CheckoutButton href={CHECKOUTS.anual} className="mt-auto">Assinar Plus Anual</CheckoutButton>
               </article>
 
               <article className="flex flex-col rounded-3xl border border-orange-200 bg-[#241435] p-7 text-white shadow-sm sm:p-8">
-                <div className="mb-4 inline-flex items-center gap-2 self-start rounded-full bg-orange-400/15 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-orange-200"><Clock3 size={13} /> Oferta promocional</div>
-                <h3 className="text-2xl font-black">Vitalício</h3>
-                <div className="mt-4"><p className="text-4xl font-black tracking-tight">R$ 297</p><p className="mt-1 text-sm text-white/60">pagamento único</p></div>
-                <p className="mt-4 min-h-12 text-sm leading-6 text-white/70">Pague uma única vez e tenha acesso ao plano Plus para sempre, sem mensalidade.</p>
-                <ul className="my-7 space-y-3 text-sm text-white/85">{['Acesso ao Plus para sempre', 'Pagamento à vista ou parcelado', 'Sem mensalidade recorrente'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-orange-300" />{t}</li>)}</ul>
-                <CheckoutButton href={CHECKOUTS.vitalicio} className="mt-auto">Ver oferta Vitalícia</CheckoutButton>
-                <p className="mt-3 text-center text-[11px] leading-5 text-white/45">Acesso Plus vitalício mediante pagamento único.</p>
+                <div className="mb-4 inline-flex items-center gap-2 self-start rounded-full bg-orange-400/15 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-orange-200"><Clock3 size={13} /> {BLACK_FRIDAY_ATIVA ? 'Black Friday até 30/11' : 'Acesso permanente'}</div>
+                <h3 className="text-2xl font-black">Plus Vitalício</h3>
+                {BLACK_FRIDAY_ATIVA ? (
+                  <div className="mt-4"><p className="text-sm font-bold text-white/55 line-through">R$ 297</p><p className="text-4xl font-black tracking-tight">R$ 97</p><p className="mt-1 text-sm text-white/60">pagamento único</p></div>
+                ) : (
+                  <div className="mt-4"><p className="text-4xl font-black tracking-tight">R$ 297</p><p className="mt-1 text-sm text-white/60">pagamento único</p></div>
+                )}
+                <p className="mt-4 min-h-12 text-sm leading-6 text-white/70">Pague uma única vez e tenha acesso ao plano Plus por toda a vida útil da plataforma.</p>
+                <ul className="my-7 space-y-3 text-sm text-white/85">{['Acesso a todos os recursos do Plus', 'Academia Verbo completa', 'Sermões ilimitados', 'Sem mensalidade recorrente'].map(t => <li key={t} className="flex gap-2"><Check size={17} className="mt-0.5 shrink-0 text-orange-300" />{t}</li>)}</ul>
+                <CheckoutButton href={BLACK_FRIDAY_ATIVA ? CHECKOUTS.vitalicioBlackFriday : CHECKOUTS.vitalicio} className="mt-auto">{BLACK_FRIDAY_ATIVA ? 'Garantir por R$ 97' : 'Adquirir Plus Vitalício'}</CheckoutButton>
+                {BLACK_FRIDAY_ATIVA && <p className="mt-3 text-center text-[11px] leading-5 text-white/55">Oferta de R$ 97 válida somente até 30/11/2026. Preço regular: R$ 297.</p>}
               </article>
             </div>
-            <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-slate-500">O Fundador e o Plus são assinaturas mensais. Na Black Friday, o Plus Anual custa R$ 197 por 12 meses e o Vitalício custa R$ 297 em pagamento único.</p>
+            <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-slate-500">Planos: Gratuito R$ 0; Essencial R$ 19,90/mês; Plus mensal R$ 47/mês; Plus anual R$ 197/ano; Plus vitalício R$ 297 em pagamento único. Durante a Black Friday, o Vitalício fica por R$ 97 até 30/11/2026.</p>
           </div>
         </section>
 

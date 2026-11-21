@@ -1,0 +1,29 @@
+name: Validate Cakto Edge Function
+
+on:
+  push:
+    branches:
+      - feat/centralizar-permissoes-planos
+    paths:
+      - "supabase/functions/webhook-cakto/**"
+      - ".github/workflows/validate-cakto-webhook.yml"
+  pull_request:
+    paths:
+      - "supabase/functions/webhook-cakto/**"
+      - ".github/workflows/validate-cakto-webhook.yml"
+
+jobs:
+  deno-check:
+    name: Type-check webhook-cakto
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check Edge Function
+        run: deno check supabase/functions/webhook-cakto/index.ts

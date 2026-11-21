@@ -128,7 +128,7 @@ const Curso = () => {
     );
   }
 
-  const temAcesso = temAcessoCurso(curso) || temMatricula;
+  const temAcesso = temAcessoCurso(curso) || (temMatricula && curso.plano_minimo !== 'plus');
 
   if (!temAcesso) {
     return (
