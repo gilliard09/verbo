@@ -312,6 +312,7 @@ const Editor = () => {
     isAssinante,
     podeCreiarSermao,
     limiteSermoes,
+    sermoesRestantes,
     loading: planoCarregando,
   } = usePlano();
 
