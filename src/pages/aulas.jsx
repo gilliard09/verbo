@@ -566,7 +566,7 @@ const Aulas = () => {
   );
 
   const acessoPorPlano = temAcessoCurso(dadosCurso);
-  if (!acessoPorPlano && !temAcessoMatricula) return (
+  if (!acessoPorPlano && (!temAcessoMatricula || dadosCurso?.plano_minimo === 'plus')) return (
     <div className="min-h-screen bg-[#0A0A0F] flex flex-col items-center justify-center p-8 text-center">
       <div className="w-24 h-24 bg-red-500/10 text-red-400 rounded-[32px] flex items-center justify-center mb-8">
         <Lock size={48} />
