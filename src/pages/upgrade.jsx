@@ -90,7 +90,7 @@ const Upgrade = () => {
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-amber-50 px-4 py-2 rounded-full mb-4">
               <Crown size={13} className="text-amber-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Você é Essencial</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">{plano === 'fundador' ? 'Você é Fundador' : 'Você é Essencial'}</span>
             </div>
             <h2 className="text-2xl font-black tracking-tight text-slate-900 leading-tight mb-2">
               Quer acesso a<br />todos os cursos?
@@ -136,7 +136,7 @@ const Upgrade = () => {
             <button onClick={() => window.open(CHECKOUT_VITALICIO, '_blank', 'noopener,noreferrer')} className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs font-black text-amber-800">VITALÍCIO · R$ 297</button>
           </div>
           <button onClick={() => navigate('/')} className="w-full text-center text-xs text-slate-400 font-bold py-3 hover:text-slate-600 transition-colors">
-            Continuar com o plano Essencial
+            Continuar com seu plano atual
           </button>
         </div>
       </div>
