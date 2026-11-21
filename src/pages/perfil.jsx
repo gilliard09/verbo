@@ -223,6 +223,11 @@ const BadgePlano = ({ plano }) => {
       <Crown size={9} /> Fundador
     </span>
   );
+  if (plano === 'essencial') return (
+    <span className="inline-flex items-center gap-1 bg-slate-800 text-white text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+      <BookOpen size={9} /> Essencial
+    </span>
+  );
   return (
     <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-400 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
       Gratuito
