@@ -44,6 +44,26 @@ export function useOfflineSync() {
     }
   }, [atualizarPendentes]);
 
+  // Mantém a fila visível vinculada à sessão atual, inclusive quando
+  // o usuário troca de conta sem fechar a aplicação.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const userId = session?.user?.id ?? null;
+      userIdRef.current = userId;
+
+      if (!userId) {
+        setPending(0);
+        return;
+      }
+
+      countQueue(userId)
+        .then(setPending)
+        .catch(err => console.warn('[Sync] Não foi possível atualizar pendências:', err));
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   useEffect(() => {
     const handleOnline  = () => { setIsOnline(true);  sincronizar(); };
     const handleOffline = () =>   setIsOnline(false);
