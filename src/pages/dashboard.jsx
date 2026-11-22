@@ -47,6 +47,7 @@ let getSermoesLocais = null;
 let enqueueOp = null;
 let deleteSermaoLocal = null;
 let processarFila = null;
+let downloadSermoes = null;
 const initOfflineModule = async () => {
   if (!useOfflineSync) {
     const mod = await import('../hooks/useOfflineSync');
@@ -57,6 +58,7 @@ const initOfflineModule = async () => {
     deleteSermaoLocal = dbMod.deleteSermaoLocal;
     const syncMod = await import('../lib/sync');
     processarFila = syncMod.processarFila;
+    downloadSermoes = syncMod.downloadSermoes;
   }
 };
 
@@ -461,11 +463,9 @@ const Dashboard = () => {
 
     const timeouts = [];
 
-    // Carrega dados + notificações em paralelo
-    Promise.all([
-      carregarDados(abortControllerRef.current.signal),
-      carregarNotificacoes(),
-    ]);
+    // O carregamento dos sermões é controlado pelo estado online/offline
+    // abaixo, evitando duas consultas simultâneas na abertura do Dashboard.
+    carregarNotificacoes();
 
     // Cleanup
     return () => {
@@ -487,9 +487,9 @@ const Dashboard = () => {
   }, [isOnline]);
 
   /**
-   * ✅ CARREGA DADOS
-   * 1 query, sem limite artificial (só campos específicos, então o custo
-   * extra de trazer todos os registros é mínimo).
+   * Carrega a biblioteca com prioridade local e atualização remota.
+   * Enquanto online, também prepara os 20 sermões mais recentes com conteúdo
+   * completo no IndexedDB. Offline, a tela abre diretamente do cache local.
    */
   async function carregarDados(signal) {
     try {
@@ -497,11 +497,11 @@ const Dashboard = () => {
       const user = session?.user ?? null;
 
       if (!user) {
+        setSermoes([]);
         setLoading(false);
         return;
       }
 
-      // Saudação
       const nomeCompleto = user.user_metadata?.full_name || 'Pregador';
       const hora = new Date().getHours();
       let periodo = 'Bom dia';
@@ -510,29 +510,53 @@ const Dashboard = () => {
       const ehPastor = user.email === 'jefersonrocha998@gmail.com';
       setSaudacao(`${periodo}, ${ehPastor ? 'Pastor ' : ''}${nomeCompleto.split(' ')[0]}`);
 
-      // ✅ UMA query apenas: select de campos específicos, sem limite artificial
+      await initOfflineModule();
+      const locais = await getSermoesLocais(user.id);
+      if (signal?.aborted) return;
+
+      // Exibe primeiro o que já está no aparelho, sem esperar pela rede.
+      setSermoes((locais || []).slice(0, 20));
+
+      if (!navigator.onLine) {
+        console.info('[Verbo] Offline — biblioteca carregada do IndexedDB.');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('sermoes')
-        .select('id,titulo,created_at') // ← Apenas campos necessários
+        .select('id,titulo,created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (signal?.aborted) return;
+      if (error) throw error;
 
-      if (!error && data) {
-        setSermoes(data);
-      } else if (!isOnline && getSermoesLocais) {
-        // Fallback offline
-        const locais = await getSermoesLocais(user.id);
-        if (signal?.aborted) return;
-        setSermoes(locais);
-        console.info('[Verbo] Offline — carregando do cache local.');
+      setSermoes(data || []);
+
+      // O Dashboard prepara os 20 sermões recentes completos para leitura
+      // e edição offline, sem limitar a lista online da biblioteca.
+      const cacheados = await downloadSermoes(user.id);
+      if (signal?.aborted) return;
+      if (cacheados) {
+        console.info(`[Verbo] ${cacheados.length} sermões recentes preparados para uso offline.`);
       }
     } catch (err) {
-      if (err.name === 'AbortError') return;
+      if (err.name === 'AbortError' || signal?.aborted) return;
       console.error('Erro ao carregar dados:', err);
+
+      // Se a consulta remota falhar, mantém a biblioteca que já está no aparelho.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        if (userId && getSermoesLocais) {
+          const locais = await getSermoesLocais(userId);
+          if (!signal?.aborted) setSermoes((locais || []).slice(0, 20));
+        }
+      } catch (offlineError) {
+        console.warn('[Verbo] Não foi possível recuperar a biblioteca local:', offlineError);
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }
 
