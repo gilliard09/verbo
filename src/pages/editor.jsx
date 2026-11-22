@@ -658,7 +658,11 @@ Oração:`
     // 3. Sem rascunho pendente, busca a versão remota mais recente.
     try {
       const { data, error } = await supabase
-        .from('sermoes').select('*').eq('id', sermoId).single();
+        .from('sermoes')
+        .select('*')
+        .eq('id', sermoId)
+        .eq('user_id', userId)
+        .single();
       if (error) throw error;
       if (data) {
         const localAt  = local ? new Date(local.updated_at || local.created_at || 0) : new Date(0);
