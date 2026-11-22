@@ -629,8 +629,10 @@ const Dashboard = () => {
     try {
       // Toda exclusão passa pela mesma fila, mesmo online. Assim uma edição
       // pendente nunca pode ser enviada depois de uma exclusão mais recente.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error('Sessão não encontrada para registrar a exclusão.');
       await initOfflineModule();
-      await enqueueOp('delete', id);
+      await enqueueOp('delete', id, { user_id: session.user.id });
       await deleteSermaoLocal(id);
 
       if (navigator.onLine && processarFila) {
