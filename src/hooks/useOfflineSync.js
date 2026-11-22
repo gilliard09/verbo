@@ -15,8 +15,11 @@ export function useOfflineSync() {
   const syncingRef                  = useRef(false);
 
   const atualizarPendentes = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const n = await countQueue(session?.user?.id);
+    if (!userIdRef.current) {
+      setPending(0);
+      return;
+    }
+    const n = await countQueue(userIdRef.current);
     setPending(n);
   }, []);
 
