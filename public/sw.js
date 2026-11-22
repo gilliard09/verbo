@@ -45,7 +45,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  const isStaticAsset = /\\.(?:js|css|ico|svg|png|jpe?g|webp|woff2|webmanifest)$/i.test(url.pathname);
+  const isStaticAsset = /\.(?:js|css|ico|svg|png|jpe?g|webp|woff2|webmanifest)$/i.test(url.pathname);
   if (!isStaticAsset) return;
 
   event.respondWith(
