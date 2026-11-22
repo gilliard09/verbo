@@ -9,71 +9,21 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // Usa o Service Worker próprio para combinar precache do app e push.
+      // O registro é feito manualmente em App.jsx, sem uma segunda inscrição.
+      strategies: 'injectManifest',
+      srcDir: 'public',
+      filename: 'sw.js',
+      injectRegister: false,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
 
-      // Service Worker com Workbox
-      workbox: {
-        // Estratégia para assets estáticos: CacheFirst (instantâneo)
-        globPatterns: ['**/*.{html,css,ico,svg,woff2,webmanifest}'],
-
-        runtimeCaching: [
-          // Fontes do Google: CacheFirst por 1 ano
-          {
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          // Supabase REST (sermões, perfil): NetworkFirst com fallback pro cache
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 }, // 7 dias
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          // JS/CSS dos chunks lazy: cacheia depois do primeiro acesso.
-          // Não pré-carregamos todos os chunks no primeiro visit.
-          {
-            urlPattern: /\/assets\/.*\.(?:js|css)$/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'verbo-assets',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          // Imagens locais: cacheia depois que forem realmente solicitadas.
-          {
-            urlPattern: /\.(?:png|jpe?g|webp|svg)$/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'verbo-images',
-              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          // Imagens externas (capas de cursos, avatars): StaleWhileRevalidate
-          {
-            urlPattern: /^https:\/\/.*\.(supabase\.co\/storage|unsplash\.com|images\.)/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'imagens',
-              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
+      injectManifest: {
+        globPatterns: ['**/*.{html,css,js,ico,svg,png,jpg,jpeg,webp,woff2,webmanifest}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
 
-      // Manifest do PWA (ícone, nome, cores)
+      // Manifest do PWA
       manifest: {
         name: 'Verbo — Plataforma do Pregador',
         short_name: 'Verbo',
@@ -91,9 +41,8 @@ export default defineConfig({
         ],
       },
 
-      // Desenvolvimento: ativa o SW mesmo em dev para testar
       devOptions: {
-        enabled: false, // mude para true se quiser testar offline em dev
+        enabled: false,
       },
     }),
   ],
