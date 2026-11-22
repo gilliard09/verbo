@@ -50,6 +50,30 @@ export async function getDB() {
   return _db;
 }
 
+/** Solicita ao navegador proteção contra limpeza automática do IndexedDB. */
+export async function solicitarArmazenamentoPersistente() {
+  if (typeof navigator === 'undefined' || !navigator.storage) {
+    return { supported: false, persisted: false };
+  }
+
+  try {
+    if (typeof navigator.storage.persisted === 'function') {
+      const jaPersistente = await navigator.storage.persisted();
+      if (jaPersistente) return { supported: true, persisted: true };
+    }
+
+    if (typeof navigator.storage.persist !== 'function') {
+      return { supported: false, persisted: false };
+    }
+
+    const persistido = await navigator.storage.persist();
+    return { supported: true, persisted: persistido };
+  } catch (error) {
+    console.warn('[Offline] Não foi possível solicitar armazenamento persistente:', error);
+    return { supported: true, persisted: false, error };
+  }
+}
+
 // ─── SERMÕES LOCAIS ───────────────────────────────────────────────────────────
 
 /** Retorna todos os sermões do usuário, ordenados por data de criação desc */
