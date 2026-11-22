@@ -9,7 +9,7 @@ import {
   getSermaoLocal,
 } from './db';
 
-const SERMOES_CACHE = 15;
+const SERMOES_CACHE = 20;
 let processamentoEmAndamento = null;
 
 export function gerarUuidRemoto() {
