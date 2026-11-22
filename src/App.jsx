@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import { solicitarArmazenamentoPersistente } from './lib/db';
 import { Analytics } from '@vercel/analytics/react';
 
 // --- IMPORTAÇÕES LAZY (CARREGAMENTO SOB DEMANDA) ---
@@ -216,6 +217,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Solicita proteção contra limpeza automática dos dados offline pelo navegador.
+    solicitarArmazenamentoPersistente().then(({ supported, persisted }) => {
+      if (persisted) console.info('[Offline] Armazenamento persistente ativo.');
+      else if (supported) console.info('[Offline] Navegador não concedeu armazenamento persistente.');
+    });
+
     // O landing page não depende da autenticação. A sessão é verificada
     // em segundo plano para não bloquear o primeiro paint.
     if ('serviceWorker' in navigator) {
