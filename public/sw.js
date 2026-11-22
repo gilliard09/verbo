@@ -1,57 +1,75 @@
-// Nome do cache para versionamento
-const CACHE_NAME = 'verbo-v1';
+// Service Worker do Verbo
+// O vite-plugin-pwa injeta os arquivos do build em self.__WB_MANIFEST.
+// O cache local de sermões fica no IndexedDB; respostas autenticadas da API
+// Supabase nunca são armazenadas pelo Service Worker.
 
-// Arquivos críticos para o carregamento offline (App Shell)
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/logo.webp'
-];
+const CACHE_NAME = 'verbo-app-shell-v2';
+const PRECACHE_ENTRIES = self.__WB_MANIFEST || [];
+const PRECACHE_URLS = PRECACHE_ENTRIES
+  .map((entry) => typeof entry === 'string' ? entry : entry.url)
+  .filter(Boolean);
 
-// 1. Instalação: Armazena os arquivos no cache
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
   );
   self.skipWaiting();
 });
 
-// 2. Ativação: Remove caches antigos que não são mais necessários
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
-        })
-      );
-    })
+    caches.keys().then((cacheNames) => Promise.all(
+      cacheNames
+        .filter((cacheName) => cacheName !== CACHE_NAME)
+        .map((cacheName) => caches.delete(cacheName))
+    )).then(() => self.clients.claim())
   );
 });
 
-// 3. Fetch: Intercepta requisições de rede
 self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  // Não intercepta APIs externas (incluindo Supabase): os dados do usuário
+  // são disponibilizados offline pelo IndexedDB, isolados por user_id.
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(async () => {
+        const cache = await caches.open(CACHE_NAME);
+        return (await cache.match('/index.html')) || Response.error();
+      })
+    );
+    return;
+  }
+
+  const isStaticAsset = /\\.(?:js|css|ico|svg|png|jpe?g|webp|woff2|webmanifest)$/i.test(url.pathname);
+  if (!isStaticAsset) return;
+
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      // Retorna do cache se existir, caso contrário busca na rede
-      return cachedResponse || fetch(event.request);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+
+      const response = await fetch(request);
+      if (response.ok) {
+        await cache.put(request, response.clone());
+      }
+      return response;
     })
   );
 });
 
-// 4. Push Notifications: Ouvinte de eventos enviados pelo servidor
+// Push Notifications
 self.addEventListener('push', (event) => {
   let data = {};
-  
+
   if (event.data) {
     try {
       data = event.data.json();
-    } catch (e) {
+    } catch {
       data = { title: 'Verbo', body: event.data.text() };
     }
   }
@@ -60,7 +78,7 @@ self.addEventListener('push', (event) => {
     body: data.body || 'Novo conteúdo disponível no seu devocional!',
     icon: '/logo.webp',
     badge: '/logo.webp',
-    data: { url: '/' } // URL para onde o app deve ir ao clicar
+    data: { url: data.url || '/' },
   };
 
   event.waitUntil(
@@ -68,10 +86,9 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// 5. Clique na notificação: Abre o PWA
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+    clients.openWindow(event.notification.data?.url || '/')
   );
 });
