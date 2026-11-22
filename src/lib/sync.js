@@ -143,7 +143,7 @@ async function executarFila() {
           await deleteSermaoLocal(item.local_id);
           await upsertSermaoLocal({ ...resultado.data, _synced: true });
         } else if (removida && resultado?.tipo === 'update') {
-          const local = await getSermaoLocal(item.local_id);
+          const local = await getSermaoLocal(item.local_id, session.user.id);
           if (local) {
             await upsertSermaoLocal({
               ...local,
