@@ -59,10 +59,13 @@ export async function getSermoesLocais(userId) {
   return todos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-/** Retorna um sermão pelo id */
-export async function getSermaoLocal(id) {
+/** Retorna um sermão pelo id, validando a conta quando informada. */
+export async function getSermaoLocal(id, userId = null) {
   const db = await getDB();
-  return db.get('sermoes_local', id);
+  const sermao = await db.get('sermoes_local', id);
+  if (!sermao) return null;
+  if (userId && sermao.user_id !== userId) return null;
+  return sermao;
 }
 
 /** Salva (upsert) um sermão localmente */
