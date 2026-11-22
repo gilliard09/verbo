@@ -592,7 +592,7 @@ Oração:`
         if (cancelled) return;
 
         if (id) {
-          await carregarSermao(id, draft);
+          await carregarSermao(id, draft, userId);
         } else if (draft) {
           setTitulo(draft.titulo || '');
           setConteudo(draft.conteudo || '');
@@ -632,9 +632,9 @@ Oração:`
     };
   }, [id, tipo]);
 
-  async function carregarSermao(sermoId, draft = null) {
+  async function carregarSermao(sermoId, draft = null, userId = null) {
     // 1. Cache do sermão: leitura local antes de qualquer chamada de rede.
-    const local = await getSermaoLocal(sermoId);
+    const local = await getSermaoLocal(sermoId, userId);
     if (local) {
       setTitulo(local.titulo || '');
       setConteudo(local.conteudo || '');
@@ -848,7 +848,7 @@ Oração:`
 
       if (!salvouOnline) {
         if (id) {
-          const local = await getSermaoLocal(id) || {};
+          const local = await getSermaoLocal(id, user.id) || {};
           const atualizado = { ...local, ...dadosSermao, id, updated_at: agora, _synced: false };
           await upsertSermaoLocal(atualizado);
           await enqueueOp('update', id, atualizado);
