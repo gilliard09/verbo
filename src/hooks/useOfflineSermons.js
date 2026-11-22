@@ -20,7 +20,7 @@ export async function salvarOffline(sermao) {
  * Busca um sermão do IndexedDB pelo id.
  * Retorna null se não encontrado.
  */
-export async function buscarOffline(id) {
-  if (!id) return null;
-  return getSermaoLocal(id) ?? null;
+export async function buscarOffline(id, userId) {
+  if (!id || !userId) return null;
+  return getSermaoLocal(id, userId);
 }
