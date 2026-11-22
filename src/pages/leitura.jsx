@@ -102,22 +102,65 @@ const Leitura = () => {
     return () => window.removeEventListener('scroll', calc);
   }, [sermao]);
 
-  // ─── Fetch sermão ───────────────────────────────────────────────────────────
+  // ─── Fetch sermão: cache local primeiro, rede em seguida ─────────────────────
   useEffect(() => {
+    let cancelado = false;
+
     const fetchSermao = async () => {
+      let local = null;
+
       try {
-        const { data, error } = await supabase.from('sermoes').select('*').eq('id', id).single();
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        if (!userId) throw new Error('Sessão não encontrada.');
+
+        // O conteúdo local aparece imediatamente; a rede atualiza em segundo plano.
+        local = await buscarOffline(id, userId);
+        if (cancelado) return;
+        if (local) {
+          setSermao(local);
+          setModoOffline(!navigator.onLine);
+        }
+
+        if (!navigator.onLine) {
+          if (!local) setSermao(null);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('sermoes')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', userId)
+          .single();
+
+        if (error) throw error;
+        if (cancelado) return;
+
         if (data) {
+          htmlInjetado.current = false;
           setSermao(data);
           setModoOffline(false);
           salvarOffline(data).catch(() => {});
-        } else throw error;
+        }
       } catch {
-        const c = await buscarOffline(id);
-        if (c) { setSermao(c); setModoOffline(true); }
+        if (cancelado) return;
+        if (local) {
+          setSermao(local);
+          setModoOffline(true);
+        } else {
+          const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+          const cached = session?.user?.id ? await buscarOffline(id, session.user.id) : null;
+          if (!cancelado && cached) {
+            setSermao(cached);
+            setModoOffline(true);
+          }
+        }
       }
     };
+
     fetchSermao();
+    return () => { cancelado = true; };
   }, [id]);
 
   // ─── Carregar highlights salvos ─────────────────────────────────────────────
