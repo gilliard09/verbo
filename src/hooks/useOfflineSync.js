@@ -15,7 +15,8 @@ export function useOfflineSync() {
   const syncingRef                  = useRef(false);
 
   const atualizarPendentes = useCallback(async () => {
-    const n = await countQueue();
+    const { data: { session } } = await supabase.auth.getSession();
+    const n = await countQueue(session?.user?.id);
     setPending(n);
   }, []);
 
@@ -24,6 +25,8 @@ export function useOfflineSync() {
     syncingRef.current = true;
     setSyncStatus('syncing');
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) userIdRef.current = session.user.id;
       const { sincronizados } = await processarFila();
       if (userIdRef.current) await downloadSermoes(userIdRef.current);
       await atualizarPendentes();
@@ -51,11 +54,10 @@ export function useOfflineSync() {
 
   useEffect(() => {
     const init = async () => {
-      await atualizarPendentes();
-      if (!navigator.onLine) return;
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      userIdRef.current = session.user.id;
+      if (session?.user?.id) userIdRef.current = session.user.id;
+      await atualizarPendentes();
+      if (!navigator.onLine || !session?.user) return;
       await sincronizar();
     };
     init();
