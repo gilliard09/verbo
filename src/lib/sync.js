@@ -6,7 +6,7 @@ import { supabase } from '../supabaseClient';
 import {
   getQueue, dequeueOp, atualizarPayloadFila,
   upsertSermoesLocais, upsertSermaoLocal, deleteSermaoLocal,
-  getSermaoLocal,
+  pruneSermoesLocais, getSermaoLocal,
 } from './db';
 
 const SERMOES_CACHE = 20;
@@ -80,7 +80,8 @@ export async function downloadSermoes(userId) {
       .limit(SERMOES_CACHE);
 
     if (error) throw error;
-    if (data && data.length > 0) await upsertSermoesLocais(data);
+    await upsertSermoesLocais(data ?? []);
+    await pruneSermoesLocais(userId, (data ?? []).map(sermao => sermao.id));
     return data ?? [];
   } catch (err) {
     console.warn('[Verbo Sync] Download falhou:', err.message);
