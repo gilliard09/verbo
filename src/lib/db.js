@@ -93,6 +93,25 @@ export async function upsertSermoesLocais(sermoes) {
   await tx.done;
 }
 
+/** Remove do cache remoto os sermões antigos que não fazem parte do lote recente.
+ * Alterações locais ainda não sincronizadas são preservadas.
+ */
+export async function pruneSermoesLocais(userId, keepIds = []) {
+  if (!userId) return;
+  const db = await getDB();
+  const tx = db.transaction('sermoes_local', 'readwrite');
+  const keep = new Set(keepIds);
+  const locais = await tx.store.index('user_id').getAll(userId);
+
+  for (const sermao of locais) {
+    if (sermao._synced !== false && !keep.has(sermao.id)) {
+      await tx.store.delete(sermao.id);
+    }
+  }
+
+  await tx.done;
+}
+
 /** Remove um sermão local pelo id */
 export async function deleteSermaoLocal(id) {
   const db = await getDB();
