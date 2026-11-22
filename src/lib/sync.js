@@ -113,7 +113,7 @@ async function executarFila() {
   // Reconsulta a fila para capturar alterações feitas enquanto uma operação
   // estava em trânsito. Cada versão (token) é tentada no máximo uma vez por ciclo.
   while (true) {
-    const fila = await getQueue();
+    const fila = await getQueue(session.user.id);
     const novas = fila.filter(item => !tentadas.has(item._queue_token || String(item.queue_id)));
     if (novas.length === 0) break;
 
