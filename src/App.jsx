@@ -219,11 +219,17 @@ function App() {
     // O landing page não depende da autenticação. A sessão é verificada
     // em segundo plano para não bloquear o primeiro paint.
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+      const registrarSW = () => {
         navigator.serviceWorker.register('/sw.js')
           .then(reg => console.log('SW registrado:', reg.scope))
           .catch(err => console.error('Falha SW:', err));
-      });
+      };
+
+      if (document.readyState === 'complete') {
+        registrarSW();
+      } else {
+        window.addEventListener('load', registrarSW, { once: true });
+      }
     }
 
     let mounted = true;
