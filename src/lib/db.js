@@ -180,14 +180,20 @@ export async function enqueueOp(operacao, localId, payload = {}) {
   for (const item of ordenadas) {
     await store.delete(item.queue_id);
   }
-  if (proxima) await store.add(proxima);
+  if (proxima) {
+    // Toda operação nova fica vinculada à conta que a criou.
+    proxima.user_id = payload?.user_id || ultima?.user_id || null;
+    await store.add(proxima);
+  }
   await tx.done;
 }
 
-/** Retorna todas as operações pendentes, em ordem de inserção */
-export async function getQueue() {
+/** Retorna operações pendentes; quando informado, restringe à conta autenticada. */
+export async function getQueue(userId = null) {
   const db = await getDB();
-  return db.getAll('sync_queue');
+  const fila = await db.getAll('sync_queue');
+  if (!userId) return fila;
+  return fila.filter(item => item.user_id === userId || item.payload?.user_id === userId);
 }
 
 /** Remove uma operação da fila após sync bem-sucedido */
@@ -226,8 +232,9 @@ export async function atualizarPayloadFila(queueId, expectedToken, payload) {
   return atualizado;
 }
 
-/** Quantidade de operações pendentes */
-export async function countQueue() {
+/** Quantidade de operações pendentes da conta informada. */
+export async function countQueue(userId = null) {
+  if (userId) return (await getQueue(userId)).length;
   const db = await getDB();
   return db.count('sync_queue');
 }
