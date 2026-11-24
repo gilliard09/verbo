@@ -54,7 +54,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
     }
 
     // A oferta é apenas para usuários Gratuito e Fundador.
-    if (plano !== 'gratuito' && plano !== 'fundador') {
+    if (!['gratuito', 'fundador', 'essencial'].includes(plano)) {
       setAberto(false);
       return undefined;
     }
