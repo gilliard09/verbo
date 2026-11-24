@@ -262,7 +262,7 @@ const PlusVitalicioModal = ({ session, outroModalAberto = false }) => {
               Formação bíblica e prática para crescer no conhecimento e no ministério.
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {['Doutrinas Cristãs', 'Fundamentos da Pregação Cristã', 'Apologética Cristã', 'Discipulado Cristão', 'Teologia Fundamental', 'Método Pregação Impactante'].map((curso) => (
+              {['Novo Testamento Explicado', 'Fundamentos da Pregação Cristã', 'Líder 5.0', 'Discipulado Cristão', 'Teologia Fundamental', 'Método Pregação Impactante'].map((curso) => (
                 <span key={curso} className="rounded-full border border-orange-300/20 bg-orange-300/10 px-2.5 py-1 text-[10px] font-semibold leading-tight text-orange-100">{curso}</span>
               ))}
             </div>
